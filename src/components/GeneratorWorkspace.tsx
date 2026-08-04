@@ -36,6 +36,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
     const frameCount = module.readFrameCount(typedSession.parameters)
     const category = module.categories.find((entry) => entry.id === typedSession.activeCategory)!
     const Controls = module.Controls
+    const PreviewTools = module.PreviewTools
 
     const dispatch = (action: GeneratorSessionAction<Parameters, Category>) => {
       onSessionAction({
@@ -82,6 +83,9 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           onFrameCount={(frameCount) => dispatchParameters(
             module.writeFrameCount(typedSession.parameters, frameCount),
           )}
+          tools={PreviewTools ? (
+            <PreviewTools parameters={typedSession.parameters} onChange={dispatchParameters} />
+          ) : undefined}
           footer={(
             <ExportBar
               frameSet={typedSession.frames}
@@ -130,7 +134,6 @@ function GeneratorNav({
           </button>
         ))}
       </div>
-      <p className="catalog-note">New effect families can join this catalog without changing the workspace.</p>
     </nav>
   )
 }

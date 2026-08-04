@@ -19,6 +19,7 @@ interface PreviewProps {
   readonly onPlaying: (isPlaying: boolean) => void
   readonly onPreviewFps: (previewFps: number) => void
   readonly onFrameCount: (frameCount: number) => void
+  readonly tools?: ReactNode
   readonly footer?: ReactNode
 }
 
@@ -38,6 +39,7 @@ export function Preview({
   onPlaying,
   onPreviewFps,
   onFrameCount,
+  tools,
   footer,
 }: PreviewProps) {
   const previewCanvas = useRef<HTMLCanvasElement>(null)
@@ -130,6 +132,7 @@ export function Preview({
           </label>
           <strong>{previewFps} FPS preview</strong>
         </div>
+        {tools ? <div className="preview-tools" aria-label="Generator preview tools">{tools}</div> : null}
       </div>
       {footer}
     </section>

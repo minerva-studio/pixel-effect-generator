@@ -105,6 +105,7 @@ describe('dual module sessions', () => {
     expect(sheet.height).toBe(slashModule.frameHeight)
   })
   it('exposes per-generator preview metadata', () => {
+    expect(slashModule.categories.map((category) => category.id)).toEqual(['shape', 'palette', 'motion', 'fragments', 'breakup'])
     expect(GENERATOR_REGISTRY.get('slash').previewTitle).toBe('Sweep study')
     expect(GENERATOR_REGISTRY.get('slash').frameWidth).toBe(128)
     expect(GENERATOR_REGISTRY.get('slash').frameHeight).toBe(128)

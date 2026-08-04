@@ -1,16 +1,17 @@
 import { createGeneratorWorkspace } from '../../components/GeneratorWorkspace'
 import { defineGenerator, registerGenerator } from '../registry'
-import { SlashControls } from './controls'
+import { SlashControls, SlashPreviewTools } from './controls'
 import { DEFAULT_SLASH_PARAMETERS, MAX_FRAME_COUNT, MIN_FRAME_COUNT, type SlashParameters } from './model'
 import { renderSlashFrames } from './renderer'
 
-export type SlashCategory = 'shape' | 'palette' | 'motion' | 'breakup'
+export type SlashCategory = 'shape' | 'palette' | 'motion' | 'breakup' | 'fragments'
 
 export const SLASH_CATEGORIES = [
   { id: 'shape', label: 'Shape', description: 'Define the arc silhouette, orientation, and perspective.' },
   { id: 'palette', label: 'Palette', description: 'Build the radial color bands from the inner edge outward.' },
   { id: 'motion', label: 'Motion', description: 'Control timing, trail length, and the direction of the sweep.' },
-  { id: 'breakup', label: 'Breakup', description: 'Compose dissolve, edge, and fragment modes with deterministic patterns.' },
+  { id: 'fragments', label: 'Fragments', description: 'Shape and animate debris released from the trailing edge.' },
+  { id: 'breakup', label: 'Breakup', description: 'Control dissolve and outer-edge damage patterns.' },
 ] as const satisfies readonly { id: SlashCategory; label: string; description: string }[]
 
 /** Slash generator registered once for navigation, workspace, and exports. */
@@ -32,6 +33,7 @@ export const slashModule = defineGenerator({
   frameWidth: 128,
   frameHeight: 128,
   Controls: SlashControls,
+  PreviewTools: SlashPreviewTools,
 })
 
 /** Opaque runtime registration consumed by the App and registry. */

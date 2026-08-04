@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react'
+import { useId } from 'react'
 import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
 import { hexToRgb, rgbToHex } from '../../shared/pixel/color'
 import { insertPaletteColor, removePaletteColor } from './palette'
@@ -46,68 +46,61 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
       )
     case 'breakup':
       return (
-        <div className="control-groups">
-          <ControlGroup title="Arc breakup">
-            <SelectControl
-              label="Dissolve mode"
-              description="How the trailing edge erodes pixels: ordered dither, clustered noise blocks, or streak-like tears."
-              value={parameters.dissolveMode}
-              options={[
-                { value: 'ordered', label: 'Ordered' },
-                { value: 'clusteredNoise', label: 'Clustered noise' },
-                { value: 'directionalStreaks', label: 'Directional streaks' },
-              ]}
-              onChange={(value) => update('dissolveMode', value)}
-            />
-            <SelectControl
-              label="Edge mode"
-              description="How the outer edge breaks up: 2×2 chips, a jagged contour, or wedge-shaped slash cuts."
-              value={parameters.edgeBreakupMode}
-              options={[
-                { value: 'blockChips', label: 'Block chips' },
-                { value: 'jaggedContour', label: 'Jagged contour' },
-                { value: 'slashCuts', label: 'Slash cuts' },
-              ]}
-              onChange={(value) => update('edgeBreakupMode', value)}
-            />
-            <NumberControl label="Dissolve" description="Length of the dissolution transition immediately ahead of the trailing edge." value={parameters.dissolveLength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('dissolveLength', value)} />
-            <NumberControl label="Edge breakup" description="Intensity of outer-edge removal for the active edge mode." value={parameters.edgeBreakup} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeBreakup', value)} />
-            <NumberControl label="Breakup depth" description="Maximum depth of edge breakup while preserving the core arc." value={parameters.edgeDepth} minimum={0.05} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeDepth', value)} />
-          </ControlGroup>
-          <ControlGroup title="Fragments">
-            <SelectControl
-              label="Fragment mode"
-              description="How debris is drawn: square chunks, tangent-aligned shards, or fast short-lived sparks."
-              value={parameters.fragmentMode}
-              options={[
-                { value: 'pixelChunks', label: 'Pixel chunks' },
-                { value: 'directionalShards', label: 'Directional shards' },
-                { value: 'energySparks', label: 'Energy sparks' },
-              ]}
-              onChange={(value) => update('fragmentMode', value)}
-            />
-            <NumberControl label="Amount" description="Amount of colored debris released as the trailing edge passes." value={parameters.fragmentAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentAmount', value)} />
-            <NumberControl label="Size" description="Maximum chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentSize} minimum={1} maximum={3} unit="px" onChange={(value) => update('fragmentSize', value)} />
-            <NumberControl label="Tangent speed" description="Motion along the direction of the sweep per animation cycle." value={parameters.fragmentTangentSpeed} minimum={0} maximum={32} unit="px" onChange={(value) => update('fragmentTangentSpeed', value)} />
-            <NumberControl label="Outward speed" description="Motion away from the slash center per animation cycle." value={parameters.fragmentOutwardSpeed} minimum={0} maximum={24} unit="px" onChange={(value) => update('fragmentOutwardSpeed', value)} />
-            <NumberControl label="Lifetime" description="Fraction of the animation for which detached fragments remain alive." value={parameters.fragmentLifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentLifetime', value)} />
-          </ControlGroup>
-          <ControlGroup title="Pattern">
-            <SeedControl value={parameters.seed} onChange={(value) => update('seed', value)} />
-          </ControlGroup>
+        <div className="control-list">
+          <SelectControl
+            label="Dissolve mode"
+            description="How the trailing edge erodes pixels: ordered dither, clustered noise blocks, or streak-like tears."
+            value={parameters.dissolveMode}
+            options={[
+              { value: 'ordered', label: 'Ordered' },
+              { value: 'clusteredNoise', label: 'Clustered noise' },
+              { value: 'directionalStreaks', label: 'Directional streaks' },
+            ]}
+            onChange={(value) => update('dissolveMode', value)}
+          />
+          <SelectControl
+            label="Edge mode"
+            description="How the outer edge breaks up: 2×2 chips, a jagged contour, or wedge-shaped slash cuts."
+            value={parameters.edgeBreakupMode}
+            options={[
+              { value: 'blockChips', label: 'Block chips' },
+              { value: 'jaggedContour', label: 'Jagged contour' },
+              { value: 'slashCuts', label: 'Slash cuts' },
+            ]}
+            onChange={(value) => update('edgeBreakupMode', value)}
+          />
+          <NumberControl label="Dissolve" description="Length of the dissolution transition immediately ahead of the trailing edge." value={parameters.dissolveLength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('dissolveLength', value)} />
+          <NumberControl label="Edge breakup" description="Intensity of outer-edge removal for the active edge mode." value={parameters.edgeBreakup} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeBreakup', value)} />
+          <NumberControl label="Breakup depth" description="Maximum depth of edge breakup while preserving the core arc." value={parameters.edgeDepth} minimum={0.05} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeDepth', value)} />
+        </div>
+      )
+    case 'fragments':
+      return (
+        <div className="control-list">
+          <SelectControl
+            label="Fragment mode"
+            description="How debris is drawn: square chunks, tangent-aligned shards, or fast short-lived sparks."
+            value={parameters.fragmentMode}
+            options={[
+              { value: 'pixelChunks', label: 'Pixel chunks' },
+              { value: 'directionalShards', label: 'Directional shards' },
+              { value: 'energySparks', label: 'Energy sparks' },
+            ]}
+            onChange={(value) => update('fragmentMode', value)}
+          />
+          <NumberControl label="Amount" description="Amount of colored debris released as the trailing edge passes." value={parameters.fragmentAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentAmount', value)} />
+          <NumberControl label="Size" description="Maximum chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentSize} minimum={1} maximum={3} unit="px" onChange={(value) => update('fragmentSize', value)} />
+          <NumberControl label="Tangent speed" description="Motion along the direction of the sweep per animation cycle." value={parameters.fragmentTangentSpeed} minimum={0} maximum={32} unit="px" onChange={(value) => update('fragmentTangentSpeed', value)} />
+          <NumberControl label="Outward speed" description="Motion away from the slash center per animation cycle." value={parameters.fragmentOutwardSpeed} minimum={0} maximum={24} unit="px" onChange={(value) => update('fragmentOutwardSpeed', value)} />
+          <NumberControl label="Lifetime" description="Fraction of the animation for which detached fragments remain alive." value={parameters.fragmentLifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentLifetime', value)} />
         </div>
       )
   }
 }
 
-/** Groups parameters by the visual system they directly control. */
-function ControlGroup({ title, children }: { readonly title: string; readonly children: ReactNode }) {
-  return (
-    <section className="control-group">
-      <h4>{title}</h4>
-      <div className="control-list">{children}</div>
-    </section>
-  )
+/** Renders Slash-specific deterministic controls beneath preview timing. */
+export function SlashPreviewTools({ parameters, onChange }: Omit<SlashControlsProps, 'category'>) {
+  return <SeedControl value={parameters.seed} onChange={(seed) => onChange({ ...parameters, seed })} />
 }
 
 /** Renders the ordered inner-to-outer palette editor. */
@@ -198,13 +191,11 @@ function SeedControl({ value, onChange }: { readonly value: number; readonly onC
   }
 
   return (
-    <div className="parameter-field">
-      <div className="field-copy">
-        <span className="field-title">
-          <label htmlFor={seedId}>Random seed</label>
-          <InfoHint label="Random seed" description="Re-enter the same unsigned 32-bit value to reproduce breakup exactly." hintId={hintId} />
-        </span>
-      </div>
+    <div className="preview-seed-control">
+      <span className="field-title">
+        <label htmlFor={seedId}>Random seed</label>
+        <InfoHint label="Random seed" description="Re-enter the same unsigned 32-bit value to reproduce breakup exactly." hintId={hintId} />
+      </span>
       <div className="seed-inputs">
         <input id={seedId} type="number" min="0" max="4294967295" step="1" value={value} onChange={(event) => onChange(clampSeed(Number(event.target.value)))} />
         <button className="secondary-button" type="button" onClick={randomize}>Randomize</button>

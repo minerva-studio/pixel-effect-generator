@@ -4,7 +4,6 @@
   .generator-panel { grid-column: 1 / -1; min-height: auto; padding: 14px 16px; }
   .generator-list { display: flex; }
   .generator-item { width: min(300px, 100%); }
-  .catalog-note { display: none; }
   .navigation-heading { padding-bottom: 10px; }
 }
 
@@ -29,6 +28,9 @@
   .palette-row .remove-button { grid-column: 2 / -1; justify-self: end; }
   .preview-settings { flex-wrap: wrap; justify-content: flex-start; }
   .preview-settings strong { margin-left: auto; }
+  .preview-seed-control { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
+  .preview-seed-control > .field-title { min-width: 0; }
+  .preview-seed-control .seed-inputs { grid-template-columns: minmax(0, 1fr) auto; }
   .preview-stage { min-height: 340px; }
   .export-row { align-items: flex-end; }
 }

@@ -52,6 +52,11 @@ export interface GeneratorModule<Id extends string, Parameters, Category extends
     readonly parameters: Parameters
     readonly onChange: (parameters: Parameters) => void
   }>
+  /** Optional generator-specific controls rendered below preview timing. */
+  readonly PreviewTools?: ComponentType<{
+    readonly parameters: Parameters
+    readonly onChange: (parameters: Parameters) => void
+  }>
 }
 
 /** Immutable snapshot of the workspace state for one generator. */

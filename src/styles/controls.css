@@ -8,7 +8,7 @@
 
 .category-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(max-content, 1fr));
+  grid-template-columns: repeat(5, minmax(max-content, 1fr));
   overflow-x: auto;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -33,9 +33,6 @@
 .category-heading h3 { margin-bottom: 7px; font-size: 1.05rem; }
 .category-heading > p:last-child { margin-bottom: 0; color: var(--muted); font-size: 0.75rem; line-height: 1.55; }
 .control-list { display: grid; }
-.control-groups { display: grid; gap: 22px; padding-top: 18px; }
-.control-group h4 { margin: 0; color: #929bb0; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; }
-.control-group .parameter-field:last-child { border-bottom-color: rgba(39, 45, 59, 0.38); }
 
 .parameter-field {
   display: grid;
