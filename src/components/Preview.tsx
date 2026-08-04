@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef, type ReactNode } from 'react'
 import type { RenderedFrameSet } from '../generators/contract'
 import { drawFrame } from './export'
 
@@ -19,6 +19,7 @@ interface PreviewProps {
   readonly onPlaying: (isPlaying: boolean) => void
   readonly onPreviewFps: (previewFps: number) => void
   readonly onFrameCount: (frameCount: number) => void
+  readonly footer?: ReactNode
 }
 
 /** Owns the canvas display, playback loop, frame scrubbing, and preview timing. */
@@ -37,6 +38,7 @@ export function Preview({
   onPlaying,
   onPreviewFps,
   onFrameCount,
+  footer,
 }: PreviewProps) {
   const previewCanvas = useRef<HTMLCanvasElement>(null)
   const advancePlayback = useEffectEvent(() => {
@@ -129,6 +131,7 @@ export function Preview({
           <strong>{previewFps} FPS preview</strong>
         </div>
       </div>
+      {footer}
     </section>
   )
 }

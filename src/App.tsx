@@ -37,7 +37,7 @@ export default function App() {
       ...current,
       [selectedGeneratorId]: activeGenerator.reduceSession(defaultSession, {
         generatorId: selectedGeneratorId,
-        action: { type: 'play', isPlaying: false },
+        action: { type: 'play', isPlaying: current[selectedGeneratorId].isPlaying },
       }),
     }))
   }

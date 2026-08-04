@@ -82,13 +82,15 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           onFrameCount={(frameCount) => dispatchParameters(
             module.writeFrameCount(typedSession.parameters, frameCount),
           )}
-        />
-        <ExportBar
-          frameSet={typedSession.frames}
-          frameCount={frameCount}
-          frameWidth={module.frameWidth}
-          frameHeight={module.frameHeight}
-          fileName={`pixel-${module.definition.id}-${module.readFrameCount(typedSession.parameters)}-frames.png`}
+          footer={(
+            <ExportBar
+              frameSet={typedSession.frames}
+              frameCount={frameCount}
+              frameWidth={module.frameWidth}
+              frameHeight={module.frameHeight}
+              fileName={`pixel-${module.definition.id}-${frameCount}-frames.png`}
+            />
+          )}
         />
       </section>
     )
