@@ -19,6 +19,9 @@ export interface RgbColor {
 }
 
 export type SlashDirection = 'clockwise' | 'counterClockwise'
+export type DissolveMode = 'ordered' | 'clusteredNoise' | 'directionalStreaks'
+export type EdgeBreakupMode = 'blockChips' | 'jaggedContour' | 'slashCuts'
+export type FragmentMode = 'pixelChunks' | 'directionalShards' | 'energySparks'
 
 export interface SlashParameters {
   readonly palette: readonly RgbColor[]
@@ -34,6 +37,9 @@ export interface SlashParameters {
   readonly trailLength: number
   readonly dissolveLength: number
   readonly edgeBreakup: number
+  readonly dissolveMode: DissolveMode
+  readonly edgeBreakupMode: EdgeBreakupMode
+  readonly fragmentMode: FragmentMode
   readonly fragmentAmount: number
   readonly seed: number
   readonly edgeDepth: number
@@ -80,6 +86,9 @@ export const DEFAULT_SLASH_PARAMETERS: SlashParameters = {
   trailLength: 0.25,
   dissolveLength: 0.25,
   edgeBreakup: 0.08,
+  dissolveMode: 'clusteredNoise',
+  edgeBreakupMode: 'slashCuts',
+  fragmentMode: 'directionalShards',
   fragmentAmount: 0.2,
   seed: 1337,
   edgeDepth: 0.24,
@@ -171,11 +180,179 @@ export function bayerThreshold(x: number, y: number): number {
   return (BAYER_4X4[matrixY * 4 + matrixX] + 0.5) / 16
 }
 
+/** Resolves the seeded dissolution threshold for the active dissolve mode. */
+function dissolveThreshold(parameters: SlashParameters, x: number, y: number, radius: number): number {
+  switch (parameters.dissolveMode) {
+    case 'ordered':
+      return bayerThreshold(x, y)
+    case 'clusteredNoise':
+      return clusteredNoiseThreshold(parameters.seed, x, y)
+    case 'directionalStreaks':
+      return directionalStreakThreshold(parameters.seed, x, y, radius)
+  }
+}
+
+/**
+ * Combines smooth low-frequency value noise with a fine hash detail so the
+ * dissolve edge forms irregular contiguous blocks instead of a fixed grid.
+ */
+function clusteredNoiseThreshold(seed: number, x: number, y: number): number {
+  const noiseScale = 0.26
+  const coarse = valueNoise(seed, x / 10, y / 10)
+  const fine = hashUnit(seed ^ 0x5f3759df, x, y)
+  const value = 0.3 + coarse * noiseScale + fine * 0.14
+  return smoothStep(clamp01(value))
+}
+
+/**
+ * Produces stable bands elongated along the sweep direction in arc coordinates;
+ * the pattern varies across the arc radius so strips read as speed tears.
+ */
+function directionalStreakThreshold(seed: number, x: number, y: number, radius: number): number {
+  const radialCell = radius / 2.4
+  const bandStart = Math.floor(radialCell)
+  const local = radialCell - bandStart
+  const taper = 0.62
+  const current = streakBandValue(seed, bandStart)
+  const next = streakBandValue(seed, bandStart + 1)
+  const blend = smoothStep(clamp01((local - 0.5) / taper + 0.5))
+  const arcVariation = hashUnit(seed ^ 0xa5a5a5a5, x, y) * 0.08
+  return clamp01(current + (next - current) * blend + arcVariation)
+}
+
+/** Samples one deterministic streak band's width and central threshold. */
+function streakBandValue(seed: number, bandIndex: number): number {
+  const width = 1 + hashUnit(seed ^ 0x9e3779b9, bandIndex, 0) * 1.6
+  const center = 0.3 + hashUnit(seed ^ 0x85ebca6b, bandIndex, 1) * 0.62
+  return center / Math.sqrt(width)
+}
+
+/** Bilinearly interpolated value noise with deterministic cell hashes. */
+function valueNoise(seed: number, x: number, y: number): number {
+  const x0 = Math.floor(x)
+  const y0 = Math.floor(y)
+  const fx = x - x0
+  const fy = y - y0
+  const topLeft = hashUnit(seed, x0, y0)
+  const topRight = hashUnit(seed, x0 + 1, y0)
+  const bottomLeft = hashUnit(seed, x0, y0 + 1)
+  const bottomRight = hashUnit(seed, x0 + 1, y0 + 1)
+  return lerp(
+    lerp(topLeft, topRight, smoothStep(fx)),
+    lerp(bottomLeft, bottomRight, smoothStep(fx)),
+    smoothStep(fy),
+  )
+}
+
+/** Decides whether the active edge mode removes this outer-edge pixel. */
+function edgeBreakupCut(
+  parameters: SlashParameters,
+  directedProgress: number,
+  radius: number,
+  radialProgress: number,
+): boolean {
+  switch (parameters.edgeBreakupMode) {
+    case 'blockChips': {
+      if (radialProgress < 1 - parameters.edgeDepth) {
+        return false
+      }
+      const arcCell = Math.floor(directedProgress * parameters.radius / 2)
+      const radialCell = Math.floor((radius - (parameters.radius - parameters.thickness)) / 2)
+      return hashUnit(parameters.seed, arcCell, radialCell) < parameters.edgeBreakup
+    }
+    case 'jaggedContour': {
+      if (parameters.edgeBreakup <= 0) {
+        return false
+      }
+      const arcDistancePixels = directedProgress * parameters.radius
+      const inset = jaggedContourInset(parameters.seed, arcDistancePixels, parameters.edgeBreakup, parameters.edgeDepth)
+      return radialProgress >= 1 - inset
+    }
+    case 'slashCuts': {
+      if (parameters.edgeBreakup <= 0) {
+        return false
+      }
+      const arcDistancePixels = directedProgress * parameters.radius
+      return radialProgress >= 1 - slashCutDepth(parameters.seed, arcDistancePixels, parameters.edgeBreakup, parameters.edgeDepth)
+    }
+  }
+}
+
+/** Returns a continuous jagged inset sampled in local arc-length pixels. */
+export function jaggedContourInset(seed: number, arcDistancePixels: number, edgeBreakup: number, edgeDepth: number): number {
+  const noise = 0.55 + 0.45 * valueNoise(seed ^ 0x1234567, arcDistancePixels / 4, 0)
+  return clamp01(noise) * edgeBreakup * edgeDepth
+}
+
+/**
+ * Samples the sparse, wedge-shaped cut depth at one arc fraction. Cuts are
+ * gate-hashed so most arc cells remain intact, and depth is capped by
+ * `edgeDepth` at maximum intensity.
+ */
+export function slashCutDepth(seed: number, arcDistancePixels: number, edgeBreakup: number, edgeDepth: number): number {
+  const arcCells = arcDistancePixels / 8
+  const cell = Math.floor(arcCells)
+  const local = arcCells - cell
+  let depth = 0
+  for (let offset = -1; offset <= 1; offset += 1) {
+    const candidateCell = cell + offset
+    const gate = hashUnit(seed ^ 0x6a09e667, candidateCell, 0)
+    if (gate >= 0.58) {
+      continue
+    }
+    const centerOffset = (hashUnit(seed ^ 0xbb67ae85, candidateCell, 1) - 0.5) * 2.2
+    const distanceFromCenter = Math.abs(local - offset - centerOffset)
+    if (distanceFromCenter >= 1) {
+      continue
+    }
+    const wedgeWidth = 0.45 + hashUnit(seed ^ 0x3c6ef372, candidateCell, 2) * 0.55
+    const coreDepth = 0.35 + hashUnit(seed ^ 0xa54ff53a, candidateCell, 3) * 0.55
+    const falloff = 1 - smoothStep(clamp01(distanceFromCenter / wedgeWidth))
+    const candidate = coreDepth * (0.55 + 0.45 * falloff)
+    depth = Math.max(depth, candidate)
+  }
+  return clamp01(depth) * edgeBreakup * edgeDepth
+}
+
 /** Builds stable fragment descriptors once so their motion remains continuous across frames. */
 export function generateFragments(parameters: SlashParameters): readonly FragmentDescriptor[] {
   assertValidParameters(parameters)
+  if (parameters.fragmentMode === 'pixelChunks') {
+    return generatePixelChunks(parameters)
+  }
+  return generateModernFragments(parameters)
+}
+
+/** Legacy deterministic square-chunk descriptors with the original stream. */
+function generatePixelChunks(parameters: SlashParameters): readonly FragmentDescriptor[] {
   const count = Math.round(parameters.fragmentAmount * MAX_FRAGMENT_COUNT)
   const next = createXorshift32(parameters.seed)
+  const random = () => next() / 0x100000000
+  const tailStart = trailStartTime(parameters.trailLength)
+  const outerPaletteStart = Math.floor(parameters.palette.length / 2)
+
+  return Array.from({ length: count }, () => {
+    const spawnTime = lerp(tailStart, 0.9, random())
+    const arcProgress = tailProgressAt(spawnTime, tailStart)
+    return {
+      spawnTime,
+      arcProgress,
+      radius: parameters.radius - random() * parameters.thickness * 0.35,
+      size: 1 + Math.floor(random() * parameters.fragmentSize),
+      tangentSpeed: parameters.fragmentTangentSpeed * lerp(0.7, 1.3, random()),
+      outwardSpeed: parameters.fragmentOutwardSpeed * lerp(0.7, 1.3, random()),
+      lifetime: parameters.fragmentLifetime * lerp(0.75, 1.25, random()),
+      colorIndex: outerPaletteStart + Math.floor(random() * (parameters.palette.length - outerPaletteStart)),
+      ditherOffsetX: Math.floor(random() * 4),
+      ditherOffsetY: Math.floor(random() * 4),
+    }
+  })
+}
+
+/** Modern fragment descriptors for shard and spark modes with their own stream. */
+function generateModernFragments(parameters: SlashParameters): readonly FragmentDescriptor[] {
+  const count = Math.round(parameters.fragmentAmount * MAX_FRAGMENT_COUNT)
+  const next = createXorshift32(parameters.seed ^ 0x1f123bb5)
   const random = () => next() / 0x100000000
   const tailStart = trailStartTime(parameters.trailLength)
   const outerPaletteStart = Math.floor(parameters.palette.length / 2)
@@ -267,18 +444,14 @@ function renderSlashFrame(
       const dissolveSpan = arcRadians * parameters.dissolveLength
       if (dissolveSpan > 0 && distanceFromTail < dissolveSpan) {
         const survival = distanceFromTail / dissolveSpan
-        if (survival < bayerThreshold(x, y)) {
+        if (survival < dissolveThreshold(parameters, x, y, radius)) {
           continue
         }
       }
 
       const radialProgress = (radius - innerRadius) / parameters.thickness
-      if (radialProgress >= 1 - parameters.edgeDepth) {
-        const arcCell = Math.floor(directedProgress * parameters.radius / 2)
-        const radialCell = Math.floor((radius - innerRadius) / 2)
-        if (hashUnit(parameters.seed, arcCell, radialCell) < parameters.edgeBreakup) {
-          continue
-        }
+      if (edgeBreakupCut(parameters, directedProgress, radius, radialProgress)) {
+        continue
       }
 
       writePixel(pixels, x, y, parameters.palette[colorBandIndex(radialProgress, parameters.palette.length)])
@@ -290,6 +463,27 @@ function renderSlashFrame(
 }
 
 function renderFragments(
+  pixels: Uint8ClampedArray,
+  parameters: SlashParameters,
+  fragments: readonly FragmentDescriptor[],
+  sampleTime: number,
+  arcStart: number,
+  rotationCosine: number,
+  rotationSine: number,
+): void {
+  if (parameters.fragmentMode === 'pixelChunks') {
+    renderPixelChunks(pixels, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
+    return
+  }
+  if (parameters.fragmentMode === 'energySparks') {
+    renderEnergySparks(pixels, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
+    return
+  }
+  renderDirectionalShards(pixels, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
+}
+
+/** Legacy square-chunk fragment rendering. */
+function renderPixelChunks(
   pixels: Uint8ClampedArray,
   parameters: SlashParameters,
   fragments: readonly FragmentDescriptor[],
@@ -337,6 +531,139 @@ function renderFragments(
   }
 }
 
+/** Renders fragments as short integer-pixel lines aligned with the tangent. */
+function renderDirectionalShards(
+  pixels: Uint8ClampedArray,
+  parameters: SlashParameters,
+  fragments: readonly FragmentDescriptor[],
+  sampleTime: number,
+  arcStart: number,
+  rotationCosine: number,
+  rotationSine: number,
+): void {
+  const tiltScale = Math.max(Math.cos(degreesToRadians(parameters.tiltDegrees)), 1 / parameters.radius)
+  const center = FRAME_SIZE / 2
+  const directionSign = parameters.direction === 'clockwise' ? 1 : -1
+
+  for (const fragment of fragments) {
+    const age = sampleTime - fragment.spawnTime
+    if (age < 0 || age > fragment.lifetime) {
+      continue
+    }
+
+    const angle = parameters.direction === 'clockwise'
+      ? arcStart + fragment.arcProgress * degreesToRadians(parameters.sweepDegrees)
+      : arcStart - fragment.arcProgress * degreesToRadians(parameters.sweepDegrees)
+    const normalX = Math.cos(angle)
+    const normalY = Math.sin(angle)
+    const tangentX = -normalY * directionSign
+    const tangentY = normalX * directionSign
+    const localX = normalX * fragment.radius
+      + tangentX * fragment.tangentSpeed * age
+      + normalX * fragment.outwardSpeed * age
+    const localY = (normalY * fragment.radius
+      + tangentY * fragment.tangentSpeed * age
+      + normalY * fragment.outwardSpeed * age) * tiltScale
+    const screenX = Math.round(center + localX * rotationCosine - localY * rotationSine)
+    const screenY = Math.round(center + localX * rotationSine + localY * rotationCosine)
+    const color = parameters.palette[fragment.colorIndex]
+    const segmentLength = Math.max(1, fragment.size)
+    const stepX = tangentX * rotationCosine - tangentY * tiltScale * rotationSine
+    const stepY = tangentX * rotationSine + tangentY * tiltScale * rotationCosine
+
+    const endX = Math.round(screenX + stepX * (segmentLength - 1))
+    const endY = Math.round(screenY + stepY * (segmentLength - 1))
+    for (const point of integerLinePoints(screenX, screenY, endX, endY)) {
+      writePixel(pixels, point.x, point.y, color)
+    }
+  }
+}
+
+/** Renders fast, short-lived single or double pixel sparks. */
+function renderEnergySparks(
+  pixels: Uint8ClampedArray,
+  parameters: SlashParameters,
+  fragments: readonly FragmentDescriptor[],
+  sampleTime: number,
+  arcStart: number,
+  rotationCosine: number,
+  rotationSine: number,
+): void {
+  const tiltScale = Math.max(Math.cos(degreesToRadians(parameters.tiltDegrees)), 1 / parameters.radius)
+  const center = FRAME_SIZE / 2
+  const directionSign = parameters.direction === 'clockwise' ? 1 : -1
+
+  for (let fragmentIndex = 0; fragmentIndex < fragments.length; fragmentIndex += 1) {
+    const fragment = fragments[fragmentIndex]
+    const age = sampleTime - fragment.spawnTime
+    const effectiveLifetime = fragment.lifetime * 0.55
+    if (age < 0 || age > effectiveLifetime) {
+      continue
+    }
+
+    const angle = parameters.direction === 'clockwise'
+      ? arcStart + fragment.arcProgress * degreesToRadians(parameters.sweepDegrees)
+      : arcStart - fragment.arcProgress * degreesToRadians(parameters.sweepDegrees)
+    const normalX = Math.cos(angle)
+    const normalY = Math.sin(angle)
+    const tangentX = -normalY * directionSign
+    const tangentY = normalX * directionSign
+    const localX = normalX * fragment.radius
+      + tangentX * fragment.tangentSpeed * 1.7 * age
+      + normalX * fragment.outwardSpeed * 1.7 * age
+    const localY = (normalY * fragment.radius
+      + tangentY * fragment.tangentSpeed * 1.7 * age
+      + normalY * fragment.outwardSpeed * 1.7 * age) * tiltScale
+    const screenX = Math.round(center + localX * rotationCosine - localY * rotationSine)
+    const screenY = Math.round(center + localX * rotationSine + localY * rotationCosine)
+    const color = parameters.palette[fragment.colorIndex]
+    const trailHash = hashUnit(parameters.seed ^ 0x165667b1, fragmentIndex, 0)
+
+    writePixel(pixels, screenX, screenY, color)
+    if (fragment.size >= 2 && trailHash < 0.55) {
+      const trailX = tangentX * rotationCosine - tangentY * tiltScale * rotationSine
+      const trailY = tangentX * rotationSine + tangentY * tiltScale * rotationCosine
+      writePixel(pixels, Math.round(screenX + trailX), Math.round(screenY + trailY), color)
+    }
+  }
+}
+
+/** Rasterizes an inclusive integer line for portable shard drawing. */
+export function integerLinePoints(
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+): readonly { readonly x: number; readonly y: number }[] {
+  const points: { x: number; y: number }[] = []
+  let x = Math.round(startX)
+  let y = Math.round(startY)
+  const targetX = Math.round(endX)
+  const targetY = Math.round(endY)
+  const deltaX = Math.abs(targetX - x)
+  const deltaY = Math.abs(targetY - y)
+  const stepX = x < targetX ? 1 : -1
+  const stepY = y < targetY ? 1 : -1
+  let error = deltaX - deltaY
+
+  while (true) {
+    points.push({ x, y })
+    if (x === targetX && y === targetY) {
+      break
+    }
+    const doubledError = error * 2
+    if (doubledError > -deltaY) {
+      error -= deltaY
+      x += stepX
+    }
+    if (doubledError < deltaX) {
+      error += deltaX
+      y += stepY
+    }
+  }
+  return points
+}
+
 function writePixel(pixels: Uint8ClampedArray, x: number, y: number, color: RgbColor): void {
   if (x < 0 || x >= FRAME_SIZE || y < 0 || y >= FRAME_SIZE) {
     return
@@ -376,6 +703,15 @@ function assertValidParameters(parameters: SlashParameters): void {
   }
   if (parameters.direction !== 'clockwise' && parameters.direction !== 'counterClockwise') {
     throw new RangeError('direction is invalid.')
+  }
+  if (parameters.dissolveMode !== 'ordered' && parameters.dissolveMode !== 'clusteredNoise' && parameters.dissolveMode !== 'directionalStreaks') {
+    throw new RangeError('dissolveMode is invalid.')
+  }
+  if (parameters.edgeBreakupMode !== 'blockChips' && parameters.edgeBreakupMode !== 'jaggedContour' && parameters.edgeBreakupMode !== 'slashCuts') {
+    throw new RangeError('edgeBreakupMode is invalid.')
+  }
+  if (parameters.fragmentMode !== 'pixelChunks' && parameters.fragmentMode !== 'directionalShards' && parameters.fragmentMode !== 'energySparks') {
+    throw new RangeError('fragmentMode is invalid.')
   }
 }
 

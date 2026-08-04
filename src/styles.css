@@ -190,6 +190,21 @@ h1 { margin-bottom: 8px; font-size: clamp(2rem, 4vw, 3.5rem); letter-spacing: -0
 .field-inputs { display: grid; grid-template-columns: 1fr 76px; align-items: center; gap: 13px; }
 input[type="range"] { min-width: 0; height: 3px; cursor: pointer; accent-color: var(--accent); }
 
+.select-field select {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: 0;
+  color: #e5e8ef;
+  background: #0c0f16;
+  font-size: 0.72rem;
+}
+
+.select-field select:focus-visible { border-color: var(--accent); }
+
 .number-field {
   display: flex;
   align-items: center;

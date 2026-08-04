@@ -26,5 +26,5 @@ export const SLASH_CATEGORIES: readonly SlashCategoryDefinition[] = [
   { id: 'shape', label: 'Shape', description: 'Define the arc silhouette, orientation, and perspective.' },
   { id: 'palette', label: 'Palette', description: 'Build the radial color bands from the inner edge outward.' },
   { id: 'motion', label: 'Motion', description: 'Control timing, trail length, and the direction of the sweep.' },
-  { id: 'breakup', label: 'Breakup', description: 'Add pixel dissolve, chipped edges, and deterministic fragments.' },
+  { id: 'breakup', label: 'Breakup', description: 'Compose dissolve, edge, and fragment modes with deterministic patterns.' },
 ]

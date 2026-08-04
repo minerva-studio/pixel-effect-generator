@@ -27,6 +27,14 @@ interface NumberControlProps {
   readonly onChange: (value: number) => void
 }
 
+interface SelectControlProps<Value extends string> {
+  readonly label: string
+  readonly description: string
+  readonly value: Value
+  readonly options: readonly { readonly value: Value; readonly label: string }[]
+  readonly onChange: (value: Value) => void
+}
+
 /** Renders the active Slash parameter category without owning generator state. */
 export function SlashControls({ category, parameters, onChange }: SlashControlsProps) {
   const update = <Key extends keyof SlashParameters>(key: Key, value: SlashParameters[Key]) => {
@@ -63,13 +71,46 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
       return (
         <div className="control-groups">
           <ControlGroup title="Arc breakup">
-            <NumberControl label="Dissolve" description="Length of the Bayer-dithered transition immediately ahead of the tail." value={parameters.dissolveLength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('dissolveLength', value)} />
-            <NumberControl label="Edge breakup" description="Chance for stable 2×2 chips to be removed from the outer edge." value={parameters.edgeBreakup} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeBreakup', value)} />
-            <NumberControl label="Breakup depth" description="How far edge chips may reach inward while preserving the core arc." value={parameters.edgeDepth} minimum={0.05} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeDepth', value)} />
+            <SelectControl
+              label="Dissolve mode"
+              description="How the trailing edge erodes pixels: ordered dither, clustered noise blocks, or streak-like tears."
+              value={parameters.dissolveMode}
+              options={[
+                { value: 'ordered', label: 'Ordered' },
+                { value: 'clusteredNoise', label: 'Clustered noise' },
+                { value: 'directionalStreaks', label: 'Directional streaks' },
+              ]}
+              onChange={(value) => update('dissolveMode', value)}
+            />
+            <SelectControl
+              label="Edge mode"
+              description="How the outer edge breaks up: 2×2 chips, a jagged contour, or wedge-shaped slash cuts."
+              value={parameters.edgeBreakupMode}
+              options={[
+                { value: 'blockChips', label: 'Block chips' },
+                { value: 'jaggedContour', label: 'Jagged contour' },
+                { value: 'slashCuts', label: 'Slash cuts' },
+              ]}
+              onChange={(value) => update('edgeBreakupMode', value)}
+            />
+            <NumberControl label="Dissolve" description="Length of the dissolution transition immediately ahead of the trailing edge." value={parameters.dissolveLength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('dissolveLength', value)} />
+            <NumberControl label="Edge breakup" description="Intensity of outer-edge removal for the active edge mode." value={parameters.edgeBreakup} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeBreakup', value)} />
+            <NumberControl label="Breakup depth" description="Maximum depth of edge breakup while preserving the core arc." value={parameters.edgeDepth} minimum={0.05} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeDepth', value)} />
           </ControlGroup>
           <ControlGroup title="Fragments">
+            <SelectControl
+              label="Fragment mode"
+              description="How debris is drawn: square chunks, tangent-aligned shards, or fast short-lived sparks."
+              value={parameters.fragmentMode}
+              options={[
+                { value: 'pixelChunks', label: 'Pixel chunks' },
+                { value: 'directionalShards', label: 'Directional shards' },
+                { value: 'energySparks', label: 'Energy sparks' },
+              ]}
+              onChange={(value) => update('fragmentMode', value)}
+            />
             <NumberControl label="Amount" description="Amount of colored debris released as the trailing edge passes." value={parameters.fragmentAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentAmount', value)} />
-            <NumberControl label="Size" description="Maximum square size of an individual fragment." value={parameters.fragmentSize} minimum={1} maximum={3} unit="px" onChange={(value) => update('fragmentSize', value)} />
+            <NumberControl label="Size" description="Maximum chunk width, shard length, or spark trail length for the active fragment mode." value={parameters.fragmentSize} minimum={1} maximum={3} unit="px" onChange={(value) => update('fragmentSize', value)} />
             <NumberControl label="Tangent speed" description="Motion along the direction of the sweep per animation cycle." value={parameters.fragmentTangentSpeed} minimum={0} maximum={32} unit="px" onChange={(value) => update('fragmentTangentSpeed', value)} />
             <NumberControl label="Outward speed" description="Motion away from the slash center per animation cycle." value={parameters.fragmentOutwardSpeed} minimum={0} maximum={24} unit="px" onChange={(value) => update('fragmentOutwardSpeed', value)} />
             <NumberControl label="Lifetime" description="Fraction of the animation for which detached fragments remain alive." value={parameters.fragmentLifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentLifetime', value)} />
@@ -134,6 +175,32 @@ function NumberControl({ label, description, value, minimum, maximum, step = 1, 
           />
           <small>{unit}</small>
         </span>
+      </div>
+    </div>
+  )
+}
+
+/** Renders one compact mode dropdown with the same field layout as sliders. */
+function SelectControl<Value extends string>({ label, description, value, options, onChange }: SelectControlProps<Value>) {
+  return (
+    <div className="parameter-field">
+      <div className="field-copy">
+        <span className="field-title">
+          <label htmlFor={toControlId(label)}>{label}</label>
+          <InfoHint label={label} description={description} />
+        </span>
+      </div>
+      <div className="select-field">
+        <select
+          id={toControlId(label)}
+          aria-label={label}
+          value={value}
+          onChange={(event) => onChange(event.target.value as Value)}
+        >
+          {options.map((option) => (
+            <option value={option.value} key={option.value}>{option.label}</option>
+          ))}
+        </select>
       </div>
     </div>
   )
