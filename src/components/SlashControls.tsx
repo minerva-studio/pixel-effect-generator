@@ -2,6 +2,7 @@ import type { SlashCategory } from '../core/generatorCatalog'
 import {
   hexToRgb,
   insertPaletteColor,
+  MAX_SWEEP_DEGREES,
   removePaletteColor,
   rgbToHex,
   type SlashDirection,
@@ -43,9 +44,9 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
           <NumberControl label="Radius" description="Distance from the origin to the slash's outer edge." value={parameters.radius} minimum={2} maximum={63} unit="px" onChange={(value) => update('radius', value)} />
           <NumberControl label="Thickness" description="Width of the colored arc between its inner and outer edges." value={parameters.thickness} minimum={1} maximum={parameters.radius} unit="px" onChange={(value) => update('thickness', value)} />
           <NumberControl label="Start angle" description="Starting direction in screen space: 0° points right and 90° points down." value={parameters.startAngleDegrees} minimum={-180} maximum={180} unit="°" onChange={(value) => update('startAngleDegrees', value)} />
-          <NumberControl label="Sweep angle" description="Degrees travelled from the start angle in the selected sweep direction." value={parameters.sweepDegrees} minimum={30} maximum={360} unit="°" onChange={(value) => update('sweepDegrees', value)} />
+          <NumberControl label="Sweep angle" description="Degrees travelled from the start angle; values above 360° create a second pass." value={parameters.sweepDegrees} minimum={30} maximum={MAX_SWEEP_DEGREES} unit="°" onChange={(value) => update('sweepDegrees', value)} />
           <NumberControl label="Rotation" description="Rotates the complete local slash path to aim the overall swing in screen space." value={parameters.rotationDegrees} minimum={-180} maximum={180} unit="°" onChange={(value) => update('rotationDegrees', value)} />
-          <NumberControl label="Perspective tilt" description="Compresses the slash plane to create an angled view." value={parameters.tiltDegrees} minimum={0} maximum={75} unit="°" onChange={(value) => update('tiltDegrees', value)} />
+          <NumberControl label="Perspective tilt" description="Compresses the slash plane; 90° produces the thinnest stable pixel projection." value={parameters.tiltDegrees} minimum={0} maximum={90} unit="°" onChange={(value) => update('tiltDegrees', value)} />
         </div>
       )
     case 'palette':

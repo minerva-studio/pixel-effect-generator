@@ -9,6 +9,7 @@ import {
   packHorizontalSheet,
   removePaletteColor,
   renderSlashFrames,
+  visibleDirectedProgress,
   type SlashFrame,
   type SlashParameters,
 } from './slashRenderer'
@@ -94,8 +95,8 @@ describe('renderSlashFrames', () => {
       ...DEFAULT_SLASH_PARAMETERS,
       radius: 63,
       thickness: 63,
-      sweepDegrees: 360,
-      tiltDegrees: 75,
+      sweepDegrees: 720,
+      tiltDegrees: 90,
       frameCount: 24,
       edgeBreakup: 1,
       fragmentAmount: 1,
@@ -104,6 +105,12 @@ describe('renderSlashFrames', () => {
     expect(frames).toHaveLength(24)
     expect(countOpaquePixels(frames[10])).toBeGreaterThan(0)
     expect(countOpaquePixels(frames.at(-1)!)).toBe(0)
+  })
+
+  it('keeps the main arc visible at a 90 degree perspective tilt', () => {
+    const frames = renderSlashFrames({ ...quietParameters(), sweepDegrees: 720, tiltDegrees: 90 })
+
+    expect(countOpaquePixels(frames[3])).toBeGreaterThan(0)
   })
 })
 
@@ -122,6 +129,12 @@ describe('portable helpers', () => {
     expect(new Set(thresholds).size).toBe(16)
     expect(Math.min(...thresholds)).toBeGreaterThan(0)
     expect(Math.max(...thresholds)).toBeLessThan(1)
+  })
+
+  it('resolves repeated spatial angles on later sweep revolutions', () => {
+    const fullCircle = Math.PI * 2
+    expect(visibleDirectedProgress(0.25, fullCircle, fullCircle + 1, fullCircle * 2)).toBeCloseTo(fullCircle + 0.25)
+    expect(visibleDirectedProgress(2, fullCircle, fullCircle + 1, fullCircle * 2)).toBeUndefined()
   })
 
   it('adds and removes palette colors without mutating the source', () => {

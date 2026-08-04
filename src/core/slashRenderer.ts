@@ -3,6 +3,7 @@ export const FRAME_SIZE = 128
 const FULL_CIRCLE_RADIANS = Math.PI * 2
 const MIN_FRAME_COUNT = 5
 const MAX_FRAME_COUNT = 24
+export const MAX_SWEEP_DEGREES = 720
 const MAX_FRAGMENT_COUNT = 24
 const BAYER_4X4 = [
   0, 8, 2, 10,
@@ -235,7 +236,8 @@ function renderSlashFrame(
   const visibleEnd = headProgress * arcRadians
   const arcStart = degreesToRadians(parameters.startAngleDegrees)
   const rotationRadians = degreesToRadians(parameters.rotationDegrees)
-  const inverseTiltScale = 1 / Math.cos(degreesToRadians(parameters.tiltDegrees))
+  const tiltScale = Math.max(Math.cos(degreesToRadians(parameters.tiltDegrees)), 1 / parameters.radius)
+  const inverseTiltScale = 1 / tiltScale
   const innerRadius = parameters.radius - parameters.thickness
   const center = FRAME_SIZE / 2
   const rotationCosine = Math.cos(rotationRadians)
@@ -253,13 +255,11 @@ function renderSlashFrame(
       }
 
       const angle = Math.atan2(localY, localX)
-      const directedProgress = parameters.direction === 'clockwise'
+      const directedOffset = parameters.direction === 'clockwise'
         ? positiveModulo(angle - arcStart, FULL_CIRCLE_RADIANS)
         : positiveModulo(arcStart - angle, FULL_CIRCLE_RADIANS)
-      if (directedProgress > arcRadians) {
-        continue
-      }
-      if (directedProgress < visibleStart || directedProgress > visibleEnd) {
+      const directedProgress = visibleDirectedProgress(directedOffset, visibleStart, visibleEnd, arcRadians)
+      if (directedProgress === undefined) {
         continue
       }
 
@@ -298,7 +298,7 @@ function renderFragments(
   rotationCosine: number,
   rotationSine: number,
 ): void {
-  const tiltScale = Math.cos(degreesToRadians(parameters.tiltDegrees))
+  const tiltScale = Math.max(Math.cos(degreesToRadians(parameters.tiltDegrees)), 1 / parameters.radius)
   const center = FRAME_SIZE / 2
 
   for (const fragment of fragments) {
@@ -356,9 +356,9 @@ function assertValidParameters(parameters: SlashParameters): void {
   assertInRange(parameters.radius, 2, FRAME_SIZE / 2 - 1, 'radius')
   assertInRange(parameters.thickness, 1, parameters.radius, 'thickness')
   assertInRange(parameters.startAngleDegrees, -180, 180, 'startAngleDegrees')
-  assertInRange(parameters.sweepDegrees, 30, 360, 'sweepDegrees')
+  assertInRange(parameters.sweepDegrees, 30, MAX_SWEEP_DEGREES, 'sweepDegrees')
   assertInRange(parameters.rotationDegrees, -180, 180, 'rotationDegrees')
-  assertInRange(parameters.tiltDegrees, 0, 75, 'tiltDegrees')
+  assertInRange(parameters.tiltDegrees, 0, 90, 'tiltDegrees')
   assertInRange(parameters.frameCount, MIN_FRAME_COUNT, MAX_FRAME_COUNT, 'frameCount')
   assertInRange(parameters.sweepSpeed, 0, 1, 'sweepSpeed')
   assertInRange(parameters.trailLength, 0, 1, 'trailLength')
@@ -431,6 +431,18 @@ function degreesToRadians(degrees: number): number {
 
 function positiveModulo(value: number, divisor: number): number {
   return ((value % divisor) + divisor) % divisor
+}
+
+/** Resolves the first visible revolution of one spatial angle in a multi-turn sweep. */
+export function visibleDirectedProgress(
+  directedOffset: number,
+  visibleStart: number,
+  visibleEnd: number,
+  totalSweep: number,
+): number | undefined {
+  const revolution = Math.max(0, Math.ceil((visibleStart - directedOffset) / FULL_CIRCLE_RADIANS))
+  const progress = directedOffset + revolution * FULL_CIRCLE_RADIANS
+  return progress <= Math.min(visibleEnd, totalSweep) ? progress : undefined
 }
 
 function clamp01(value: number): number {
