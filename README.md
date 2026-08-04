@@ -15,4 +15,4 @@ Released under the MIT License by Minerva Game Studio.
 
 ## Generator 01: Slash
 
-The prototype supports a fixed 128×128 canvas, two endpoint colors with a generated middle band, radius, thickness, total arc, rotation, perspective tilt, frame count, live playback, frame scrubbing, and horizontal transparent PNG sprite-sheet export.
+Slash uses a guided four-category parameter menu for shape, palette, motion, and breakup. Breakup settings are grouped by arc breakup, fragments, and deterministic pattern controls. It supports a fixed 128×128 canvas, editable 2–6 color bands, bidirectional sweeps, ordered pixel dissolve, deterministic edge breakup and fragments, live playback, frame scrubbing, and horizontal transparent PNG sprite-sheet export.

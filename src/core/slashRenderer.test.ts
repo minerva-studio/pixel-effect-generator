@@ -2,9 +2,15 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_SLASH_PARAMETERS,
   FRAME_SIZE,
+  bayerThreshold,
+  createXorshift32,
+  generateFragments,
+  insertPaletteColor,
   packHorizontalSheet,
+  removePaletteColor,
   renderSlashFrames,
   type SlashFrame,
+  type SlashParameters,
 } from './slashRenderer'
 
 describe('renderSlashFrames', () => {
@@ -15,50 +21,135 @@ describe('renderSlashFrames', () => {
     expect(first).toHaveLength(DEFAULT_SLASH_PARAMETERS.frameCount)
     expect(first[0].width).toBe(FRAME_SIZE)
     expect(first[0].height).toBe(FRAME_SIZE)
-    expect(first.map((frame) => Array.from(frame.pixels)))
-      .toEqual(second.map((frame) => Array.from(frame.pixels)))
+    expect(frameBytes(first)).toEqual(frameBytes(second))
   })
 
-  it('uses only the three color bands and transparent pixels', () => {
-    const frames = renderSlashFrames(DEFAULT_SLASH_PARAMETERS)
-    const colors = collectColors(frames)
-
-    expect(colors).toEqual(new Set([
-      '0,0,0,0',
-      '255,255,255,255',
-      '154,198,255,255',
-      '52,140,255,255',
-    ]))
+  it('supports two through six palette colors without introducing other RGBA values', () => {
+    for (let colorCount = 2; colorCount <= 6; colorCount += 1) {
+      const palette = Array.from({ length: colorCount }, (_, index) => ({
+        r: 20 + index * 10,
+        g: 40 + index * 10,
+        b: 60 + index * 10,
+      }))
+      const frames = renderSlashFrames({ ...quietParameters(), palette })
+      const allowed = new Set(['0,0,0,0', ...palette.map((color) => `${color.r},${color.g},${color.b},255`)])
+      expect(collectColors(frames)).toEqual(allowed)
+    }
   })
 
-  it('keeps intermediate frames visible and clears the final frame', () => {
-    const frames = renderSlashFrames(DEFAULT_SLASH_PARAMETERS)
+  it('travels from the same start angle in opposite directions', () => {
+    const geometry = { ...quietParameters(), startAngleDegrees: 0, sweepDegrees: 90 }
+    const clockwise = renderSlashFrames({ ...geometry, direction: 'clockwise' })[2]
+    const counterClockwise = renderSlashFrames({ ...geometry, direction: 'counterClockwise' })[2]
 
-    expect(countOpaquePixels(frames[0])).toBeGreaterThan(0)
-    expect(countOpaquePixels(frames[Math.floor(frames.length / 2)])).toBeGreaterThan(0)
+    for (let y = 0; y < FRAME_SIZE; y += 1) {
+      for (let x = 0; x < FRAME_SIZE; x += 1) {
+        expect(pixelAt(clockwise, x, y)).toEqual(pixelAt(counterClockwise, x, FRAME_SIZE - 1 - y))
+      }
+    }
+  })
+
+  it('rotates the complete local sweep without changing its shape', () => {
+    const geometry = { ...quietParameters(), startAngleDegrees: 0, sweepDegrees: 90 }
+    const original = renderSlashFrames({ ...geometry, rotationDegrees: 0 })[2]
+    const rotated = renderSlashFrames({ ...geometry, rotationDegrees: 180 })[2]
+
+    for (let y = 0; y < FRAME_SIZE; y += 1) {
+      for (let x = 0; x < FRAME_SIZE; x += 1) {
+        expect(pixelAt(original, x, y)).toEqual(pixelAt(rotated, FRAME_SIZE - 1 - x, FRAME_SIZE - 1 - y))
+      }
+    }
+  })
+
+  it('changes breakup and fragments with the seed while preserving exact reproduction', () => {
+    const first = renderSlashFrames({ ...DEFAULT_SLASH_PARAMETERS, seed: 100 })
+    const repeated = renderSlashFrames({ ...DEFAULT_SLASH_PARAMETERS, seed: 100 })
+    const changed = renderSlashFrames({ ...DEFAULT_SLASH_PARAMETERS, seed: 101 })
+
+    expect(frameBytes(first)).toEqual(frameBytes(repeated))
+    expect(frameBytes(first)).not.toEqual(frameBytes(changed))
+  })
+
+  it('keeps an identifiable inner body at maximum edge breakup', () => {
+    const intact = renderSlashFrames({ ...quietParameters(), edgeBreakup: 0 })[3]
+    const broken = renderSlashFrames({ ...quietParameters(), edgeBreakup: 1, edgeDepth: 0.5 })[3]
+
+    expect(countOpaquePixels(broken)).toBeGreaterThan(0)
+    expect(countOpaquePixels(broken)).toBeLessThan(countOpaquePixels(intact))
+  })
+
+  it('uses only binary alpha during ordered dissolve', () => {
+    const frames = renderSlashFrames({ ...quietParameters(), dissolveLength: 1 })
+    const alphaValues = new Set<number>()
+    for (const frame of frames) {
+      for (let index = 3; index < frame.pixels.length; index += 4) {
+        alphaValues.add(frame.pixels[index])
+      }
+    }
+    expect(alphaValues).toEqual(new Set([0, 255]))
+  })
+
+  it('handles extreme geometry and clears the final frame', () => {
+    const frames = renderSlashFrames({
+      ...DEFAULT_SLASH_PARAMETERS,
+      radius: 63,
+      thickness: 63,
+      sweepDegrees: 360,
+      tiltDegrees: 75,
+      frameCount: 24,
+      edgeBreakup: 1,
+      fragmentAmount: 1,
+    })
+
+    expect(frames).toHaveLength(24)
+    expect(countOpaquePixels(frames[10])).toBeGreaterThan(0)
     expect(countOpaquePixels(frames.at(-1)!)).toBe(0)
   })
+})
 
-  it('compresses the projected vertical span when tilted', () => {
-    const flat = renderSlashFrames({ ...DEFAULT_SLASH_PARAMETERS, arcDegrees: 360 })[3]
-    const tilted = renderSlashFrames({
-      ...DEFAULT_SLASH_PARAMETERS,
-      arcDegrees: 360,
-      tiltDegrees: 70,
-    })[3]
-
-    expect(opaqueBounds(tilted).height).toBeLessThan(opaqueBounds(flat).height)
+describe('portable helpers', () => {
+  it('produces a stable non-zero xorshift32 sequence even for seed zero', () => {
+    const first = createXorshift32(0)
+    const second = createXorshift32(0)
+    const firstValues = [first(), first(), first(), first()]
+    expect(firstValues).toEqual([second(), second(), second(), second()])
+    expect(firstValues.every((value) => Number.isInteger(value) && value >= 0)).toBe(true)
+    expect(new Set(firstValues).size).toBeGreaterThan(1)
   })
 
-  it('rotates the rendered pixels without changing the contract', () => {
-    const base = renderSlashFrames(DEFAULT_SLASH_PARAMETERS)[2]
-    const rotated = renderSlashFrames({
-      ...DEFAULT_SLASH_PARAMETERS,
-      rotationDegrees: 90,
-    })[2]
+  it('exposes all sixteen Bayer thresholds exactly once', () => {
+    const thresholds = Array.from({ length: 16 }, (_, index) => bayerThreshold(index % 4, Math.floor(index / 4)))
+    expect(new Set(thresholds).size).toBe(16)
+    expect(Math.min(...thresholds)).toBeGreaterThan(0)
+    expect(Math.max(...thresholds)).toBeLessThan(1)
+  })
 
-    expect(Array.from(rotated.pixels)).not.toEqual(Array.from(base.pixels))
-    expect(countOpaquePixels(rotated)).toBeGreaterThan(0)
+  it('adds and removes palette colors without mutating the source', () => {
+    const source = [
+      DEFAULT_SLASH_PARAMETERS.palette[0],
+      DEFAULT_SLASH_PARAMETERS.palette.at(-1)!,
+    ]
+    const inserted = insertPaletteColor(source)
+    const removed = removePaletteColor(inserted, 1)
+
+    expect(source).toHaveLength(2)
+    expect(inserted).toEqual(DEFAULT_SLASH_PARAMETERS.palette)
+    expect(removed).toEqual(source)
+  })
+
+  it('generates bounded fragments with continuous lifetime descriptors', () => {
+    const parameters: SlashParameters = {
+      ...DEFAULT_SLASH_PARAMETERS,
+      fragmentAmount: 1,
+      fragmentSize: 3,
+    }
+    const fragments = generateFragments(parameters)
+
+    expect(fragments).toHaveLength(24)
+    expect(fragments.every((fragment) => fragment.spawnTime >= 0 && fragment.spawnTime <= 0.9)).toBe(true)
+    expect(fragments.every((fragment) => fragment.lifetime > 0 && fragment.size >= 1 && fragment.size <= 3)).toBe(true)
+    expect(generateFragments(parameters)).toEqual(fragments)
+    expect(generateFragments({ ...parameters, seed: parameters.seed + 1 })).not.toEqual(fragments)
   })
 })
 
@@ -74,6 +165,19 @@ describe('packHorizontalSheet', () => {
     }
   })
 })
+
+function quietParameters(): SlashParameters {
+  return {
+    ...DEFAULT_SLASH_PARAMETERS,
+    dissolveLength: 0,
+    edgeBreakup: 0,
+    fragmentAmount: 0,
+  }
+}
+
+function frameBytes(frames: readonly SlashFrame[]): number[][] {
+  return frames.map((frame) => Array.from(frame.pixels))
+}
 
 function collectColors(frames: readonly SlashFrame[]): Set<string> {
   const colors = new Set<string>()
@@ -100,28 +204,9 @@ function countOpaquePixels(frame: SlashFrame): number {
   return count
 }
 
-function opaqueBounds(frame: SlashFrame): { width: number; height: number } {
-  let minimumX = frame.width
-  let maximumX = -1
-  let minimumY = frame.height
-  let maximumY = -1
-
-  for (let y = 0; y < frame.height; y += 1) {
-    for (let x = 0; x < frame.width; x += 1) {
-      if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) {
-        continue
-      }
-      minimumX = Math.min(minimumX, x)
-      maximumX = Math.max(maximumX, x)
-      minimumY = Math.min(minimumY, y)
-      maximumY = Math.max(maximumY, y)
-    }
-  }
-
-  return {
-    width: maximumX - minimumX + 1,
-    height: maximumY - minimumY + 1,
-  }
+function pixelAt(frame: SlashFrame, x: number, y: number): number[] {
+  const index = (y * frame.width + x) * 4
+  return Array.from(frame.pixels.subarray(index, index + 4))
 }
 
 function extractFrame(sheet: SlashFrame, frameIndex: number): number[] {

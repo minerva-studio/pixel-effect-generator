@@ -3,6 +3,13 @@ export const FRAME_SIZE = 128
 const FULL_CIRCLE_RADIANS = Math.PI * 2
 const MIN_FRAME_COUNT = 5
 const MAX_FRAME_COUNT = 24
+const MAX_FRAGMENT_COUNT = 24
+const BAYER_4X4 = [
+  0, 8, 2, 10,
+  12, 4, 14, 6,
+  3, 11, 1, 9,
+  15, 7, 13, 5,
+] as const
 
 export interface RgbColor {
   readonly r: number
@@ -10,15 +17,29 @@ export interface RgbColor {
   readonly b: number
 }
 
+export type SlashDirection = 'clockwise' | 'counterClockwise'
+
 export interface SlashParameters {
-  readonly innerColor: RgbColor
-  readonly outerColor: RgbColor
+  readonly palette: readonly RgbColor[]
   readonly radius: number
   readonly thickness: number
-  readonly arcDegrees: number
+  readonly startAngleDegrees: number
+  readonly sweepDegrees: number
   readonly rotationDegrees: number
   readonly tiltDegrees: number
   readonly frameCount: number
+  readonly direction: SlashDirection
+  readonly sweepSpeed: number
+  readonly trailLength: number
+  readonly dissolveLength: number
+  readonly edgeBreakup: number
+  readonly fragmentAmount: number
+  readonly seed: number
+  readonly edgeDepth: number
+  readonly fragmentSize: number
+  readonly fragmentTangentSpeed: number
+  readonly fragmentOutwardSpeed: number
+  readonly fragmentLifetime: number
 }
 
 export interface SlashFrame {
@@ -27,23 +48,53 @@ export interface SlashFrame {
   readonly pixels: Uint8ClampedArray
 }
 
+export interface FragmentDescriptor {
+  readonly spawnTime: number
+  readonly arcProgress: number
+  readonly radius: number
+  readonly size: number
+  readonly tangentSpeed: number
+  readonly outwardSpeed: number
+  readonly lifetime: number
+  readonly colorIndex: number
+  readonly ditherOffsetX: number
+  readonly ditherOffsetY: number
+}
+
 export const DEFAULT_SLASH_PARAMETERS: SlashParameters = {
-  innerColor: { r: 255, g: 255, b: 255 },
-  outerColor: { r: 52, g: 140, b: 255 },
+  palette: [
+    { r: 255, g: 255, b: 255 },
+    { r: 154, g: 198, b: 255 },
+    { r: 52, g: 140, b: 255 },
+  ],
   radius: 44,
   thickness: 12,
-  arcDegrees: 180,
+  startAngleDegrees: -90,
+  sweepDegrees: 180,
   rotationDegrees: 0,
   tiltDegrees: 0,
   frameCount: 8,
+  direction: 'clockwise',
+  sweepSpeed: 0.5,
+  trailLength: 0.25,
+  dissolveLength: 0.25,
+  edgeBreakup: 0.08,
+  fragmentAmount: 0.2,
+  seed: 1337,
+  edgeDepth: 0.24,
+  fragmentSize: 1,
+  fragmentTangentSpeed: 14,
+  fragmentOutwardSpeed: 7,
+  fragmentLifetime: 0.38,
 }
 
 /** Renders every animation frame into deterministic RGBA pixel buffers. */
 export function renderSlashFrames(parameters: SlashParameters): SlashFrame[] {
   assertValidParameters(parameters)
+  const fragments = generateFragments(parameters)
   return Array.from(
     { length: parameters.frameCount },
-    (_, frameIndex) => renderSlashFrame(parameters, frameIndex),
+    (_, frameIndex) => renderSlashFrame(parameters, fragments, frameIndex),
   )
 }
 
@@ -74,12 +125,83 @@ export function packHorizontalSheet(frames: readonly SlashFrame[]): SlashFrame {
   return { width: sheetWidth, height, pixels }
 }
 
+/** Inserts a generated color before the outermost band without mutating the input. */
+export function insertPaletteColor(palette: readonly RgbColor[]): readonly RgbColor[] {
+  if (palette.length < 2 || palette.length >= 6) {
+    throw new RangeError('Palette must contain between 2 and 5 colors before insertion.')
+  }
+  const insertionIndex = palette.length - 1
+  return [
+    ...palette.slice(0, insertionIndex),
+    mixColor(palette[insertionIndex - 1], palette[insertionIndex]),
+    palette[insertionIndex],
+  ]
+}
+
+/** Removes one color while preserving the renderer's minimum two-band contract. */
+export function removePaletteColor(palette: readonly RgbColor[], index: number): readonly RgbColor[] {
+  if (palette.length <= 2) {
+    throw new RangeError('A slash palette requires at least two colors.')
+  }
+  if (!Number.isInteger(index) || index < 0 || index >= palette.length) {
+    throw new RangeError('Palette index is out of range.')
+  }
+  return palette.filter((_, colorIndex) => colorIndex !== index)
+}
+
+/** Creates a portable xorshift32 source that yields unsigned 32-bit values. */
+export function createXorshift32(seed: number): () => number {
+  let state = seed >>> 0
+  if (state === 0) {
+    state = 0x6d2b79f5
+  }
+  return () => {
+    state ^= state << 13
+    state ^= state >>> 17
+    state ^= state << 5
+    return state >>> 0
+  }
+}
+
+/** Returns the normalized threshold for one cell in the fixed 4x4 Bayer matrix. */
+export function bayerThreshold(x: number, y: number): number {
+  const matrixX = positiveModulo(Math.floor(x), 4)
+  const matrixY = positiveModulo(Math.floor(y), 4)
+  return (BAYER_4X4[matrixY * 4 + matrixX] + 0.5) / 16
+}
+
+/** Builds stable fragment descriptors once so their motion remains continuous across frames. */
+export function generateFragments(parameters: SlashParameters): readonly FragmentDescriptor[] {
+  assertValidParameters(parameters)
+  const count = Math.round(parameters.fragmentAmount * MAX_FRAGMENT_COUNT)
+  const next = createXorshift32(parameters.seed)
+  const random = () => next() / 0x100000000
+  const tailStart = trailStartTime(parameters.trailLength)
+  const outerPaletteStart = Math.floor(parameters.palette.length / 2)
+
+  return Array.from({ length: count }, () => {
+    const spawnTime = lerp(tailStart, 0.9, random())
+    const arcProgress = tailProgressAt(spawnTime, tailStart)
+    return {
+      spawnTime,
+      arcProgress,
+      radius: parameters.radius - random() * parameters.thickness * 0.35,
+      size: 1 + Math.floor(random() * parameters.fragmentSize),
+      tangentSpeed: parameters.fragmentTangentSpeed * lerp(0.7, 1.3, random()),
+      outwardSpeed: parameters.fragmentOutwardSpeed * lerp(0.7, 1.3, random()),
+      lifetime: parameters.fragmentLifetime * lerp(0.75, 1.25, random()),
+      colorIndex: outerPaletteStart + Math.floor(random() * (parameters.palette.length - outerPaletteStart)),
+      ditherOffsetX: Math.floor(random() * 4),
+      ditherOffsetY: Math.floor(random() * 4),
+    }
+  })
+}
+
 /** Converts a CSS hexadecimal color into the renderer's portable RGB contract. */
 export function hexToRgb(hex: string): RgbColor {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) {
     throw new TypeError(`Invalid RGB color: ${hex}`)
   }
-
   return {
     r: Number.parseInt(hex.slice(1, 3), 16),
     g: Number.parseInt(hex.slice(3, 5), 16),
@@ -93,23 +215,28 @@ export function rgbToHex(color: RgbColor): string {
   return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`
 }
 
-function renderSlashFrame(parameters: SlashParameters, frameIndex: number): SlashFrame {
+function renderSlashFrame(
+  parameters: SlashParameters,
+  fragments: readonly FragmentDescriptor[],
+  frameIndex: number,
+): SlashFrame {
   const pixels = new Uint8ClampedArray(FRAME_SIZE * FRAME_SIZE * 4)
   if (frameIndex === parameters.frameCount - 1) {
     return { width: FRAME_SIZE, height: FRAME_SIZE, pixels }
   }
 
   const sampleTime = (frameIndex + 1) / parameters.frameCount
-  const headProgress = easeOutCubic(clamp01(sampleTime / 0.62))
-  const tailProgress = smoothStep(clamp01((sampleTime - 0.18) / 0.82))
-  const arcRadians = degreesToRadians(parameters.arcDegrees)
+  const headEnd = lerp(0.85, 0.35, parameters.sweepSpeed)
+  const tailStart = trailStartTime(parameters.trailLength)
+  const headProgress = easeOutCubic(clamp01(sampleTime / headEnd))
+  const tailProgress = tailProgressAt(sampleTime, tailStart)
+  const arcRadians = degreesToRadians(parameters.sweepDegrees)
   const visibleStart = tailProgress * arcRadians
   const visibleEnd = headProgress * arcRadians
-  const arcStart = -arcRadians / 2
+  const arcStart = degreesToRadians(parameters.startAngleDegrees)
   const rotationRadians = degreesToRadians(parameters.rotationDegrees)
   const inverseTiltScale = 1 / Math.cos(degreesToRadians(parameters.tiltDegrees))
   const innerRadius = parameters.radius - parameters.thickness
-  const middleColor = mixColor(parameters.innerColor, parameters.outerColor)
   const center = FRAME_SIZE / 2
   const rotationCosine = Math.cos(rotationRadians)
   const rotationSine = Math.sin(rotationRadians)
@@ -118,8 +245,6 @@ function renderSlashFrame(parameters: SlashParameters, frameIndex: number): Slas
     for (let x = 0; x < FRAME_SIZE; x += 1) {
       const screenX = x + 0.5 - center
       const screenY = y + 0.5 - center
-
-      // Undo the screen rotation first, then undo the perspective compression.
       const localX = screenX * rotationCosine + screenY * rotationSine
       const localY = (-screenX * rotationSine + screenY * rotationCosine) * inverseTiltScale
       const radius = Math.sqrt(localX * localX + localY * localY)
@@ -128,39 +253,129 @@ function renderSlashFrame(parameters: SlashParameters, frameIndex: number): Slas
       }
 
       const angle = Math.atan2(localY, localX)
-      const angularProgress = positiveModulo(angle - arcStart, FULL_CIRCLE_RADIANS)
-      if (angularProgress < visibleStart || angularProgress > visibleEnd || angularProgress > arcRadians) {
+      const directedProgress = parameters.direction === 'clockwise'
+        ? positiveModulo(angle - arcStart, FULL_CIRCLE_RADIANS)
+        : positiveModulo(arcStart - angle, FULL_CIRCLE_RADIANS)
+      if (directedProgress > arcRadians) {
+        continue
+      }
+      if (directedProgress < visibleStart || directedProgress > visibleEnd) {
         continue
       }
 
+      const distanceFromTail = directedProgress - visibleStart
+      const dissolveSpan = arcRadians * parameters.dissolveLength
+      if (dissolveSpan > 0 && distanceFromTail < dissolveSpan) {
+        const survival = distanceFromTail / dissolveSpan
+        if (survival < bayerThreshold(x, y)) {
+          continue
+        }
+      }
+
       const radialProgress = (radius - innerRadius) / parameters.thickness
-      const color = radialProgress < 1 / 3
-        ? parameters.innerColor
-        : radialProgress < 2 / 3
-          ? middleColor
-          : parameters.outerColor
-      const pixelIndex = (y * FRAME_SIZE + x) * 4
-      pixels[pixelIndex] = color.r
-      pixels[pixelIndex + 1] = color.g
-      pixels[pixelIndex + 2] = color.b
-      pixels[pixelIndex + 3] = 255
+      if (radialProgress >= 1 - parameters.edgeDepth) {
+        const arcCell = Math.floor(directedProgress * parameters.radius / 2)
+        const radialCell = Math.floor((radius - innerRadius) / 2)
+        if (hashUnit(parameters.seed, arcCell, radialCell) < parameters.edgeBreakup) {
+          continue
+        }
+      }
+
+      writePixel(pixels, x, y, parameters.palette[colorBandIndex(radialProgress, parameters.palette.length)])
     }
   }
 
+  renderFragments(pixels, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
   return { width: FRAME_SIZE, height: FRAME_SIZE, pixels }
 }
 
+function renderFragments(
+  pixels: Uint8ClampedArray,
+  parameters: SlashParameters,
+  fragments: readonly FragmentDescriptor[],
+  sampleTime: number,
+  arcStart: number,
+  rotationCosine: number,
+  rotationSine: number,
+): void {
+  const tiltScale = Math.cos(degreesToRadians(parameters.tiltDegrees))
+  const center = FRAME_SIZE / 2
+
+  for (const fragment of fragments) {
+    const age = sampleTime - fragment.spawnTime
+    if (age < 0 || age > fragment.lifetime) {
+      continue
+    }
+
+    const angle = parameters.direction === 'clockwise'
+      ? arcStart + fragment.arcProgress * degreesToRadians(parameters.sweepDegrees)
+      : arcStart - fragment.arcProgress * degreesToRadians(parameters.sweepDegrees)
+    const directionSign = parameters.direction === 'clockwise' ? 1 : -1
+    const normalX = Math.cos(angle)
+    const normalY = Math.sin(angle)
+    const tangentX = -normalY * directionSign
+    const tangentY = normalX * directionSign
+    const localX = normalX * fragment.radius
+      + tangentX * fragment.tangentSpeed * age
+      + normalX * fragment.outwardSpeed * age
+    const localY = (normalY * fragment.radius
+      + tangentY * fragment.tangentSpeed * age
+      + normalY * fragment.outwardSpeed * age) * tiltScale
+    const screenX = Math.round(center + localX * rotationCosine - localY * rotationSine)
+    const screenY = Math.round(center + localX * rotationSine + localY * rotationCosine)
+    const survival = 1 - age / fragment.lifetime
+    const color = parameters.palette[fragment.colorIndex]
+
+    for (let offsetY = 0; offsetY < fragment.size; offsetY += 1) {
+      for (let offsetX = 0; offsetX < fragment.size; offsetX += 1) {
+        if (survival < bayerThreshold(offsetX + fragment.ditherOffsetX, offsetY + fragment.ditherOffsetY)) {
+          continue
+        }
+        writePixel(pixels, screenX + offsetX, screenY + offsetY, color)
+      }
+    }
+  }
+}
+
+function writePixel(pixels: Uint8ClampedArray, x: number, y: number, color: RgbColor): void {
+  if (x < 0 || x >= FRAME_SIZE || y < 0 || y >= FRAME_SIZE) {
+    return
+  }
+  const pixelIndex = (y * FRAME_SIZE + x) * 4
+  pixels[pixelIndex] = color.r
+  pixels[pixelIndex + 1] = color.g
+  pixels[pixelIndex + 2] = color.b
+  pixels[pixelIndex + 3] = 255
+}
+
 function assertValidParameters(parameters: SlashParameters): void {
-  assertValidColor(parameters.innerColor, 'innerColor')
-  assertValidColor(parameters.outerColor, 'outerColor')
+  if (parameters.palette.length < 2 || parameters.palette.length > 6) {
+    throw new RangeError('palette must contain between 2 and 6 colors.')
+  }
+  parameters.palette.forEach((color, index) => assertValidColor(color, `palette[${index}]`))
   assertInRange(parameters.radius, 2, FRAME_SIZE / 2 - 1, 'radius')
   assertInRange(parameters.thickness, 1, parameters.radius, 'thickness')
-  assertInRange(parameters.arcDegrees, 30, 360, 'arcDegrees')
+  assertInRange(parameters.startAngleDegrees, -180, 180, 'startAngleDegrees')
+  assertInRange(parameters.sweepDegrees, 30, 360, 'sweepDegrees')
   assertInRange(parameters.rotationDegrees, -180, 180, 'rotationDegrees')
   assertInRange(parameters.tiltDegrees, 0, 75, 'tiltDegrees')
   assertInRange(parameters.frameCount, MIN_FRAME_COUNT, MAX_FRAME_COUNT, 'frameCount')
-  if (!Number.isInteger(parameters.frameCount)) {
-    throw new RangeError('frameCount must be an integer.')
+  assertInRange(parameters.sweepSpeed, 0, 1, 'sweepSpeed')
+  assertInRange(parameters.trailLength, 0, 1, 'trailLength')
+  assertInRange(parameters.dissolveLength, 0, 1, 'dissolveLength')
+  assertInRange(parameters.edgeBreakup, 0, 1, 'edgeBreakup')
+  assertInRange(parameters.fragmentAmount, 0, 1, 'fragmentAmount')
+  assertInRange(parameters.seed, 0, 0xffffffff, 'seed')
+  assertInRange(parameters.edgeDepth, 0.05, 0.5, 'edgeDepth')
+  assertInRange(parameters.fragmentSize, 1, 3, 'fragmentSize')
+  assertInRange(parameters.fragmentTangentSpeed, 0, 32, 'fragmentTangentSpeed')
+  assertInRange(parameters.fragmentOutwardSpeed, 0, 24, 'fragmentOutwardSpeed')
+  assertInRange(parameters.fragmentLifetime, 0.1, 1, 'fragmentLifetime')
+  if (!Number.isInteger(parameters.frameCount) || !Number.isInteger(parameters.seed) || !Number.isInteger(parameters.fragmentSize)) {
+    throw new RangeError('frameCount, seed, and fragmentSize must be integers.')
+  }
+  if (parameters.direction !== 'clockwise' && parameters.direction !== 'counterClockwise') {
+    throw new RangeError('direction is invalid.')
   }
 }
 
@@ -179,12 +394,31 @@ function assertInRange(value: number, minimum: number, maximum: number, name: st
   }
 }
 
+function colorBandIndex(radialProgress: number, colorCount: number): number {
+  return Math.min(colorCount - 1, Math.floor(radialProgress * colorCount))
+}
+
 function mixColor(first: RgbColor, second: RgbColor): RgbColor {
   return {
     r: Math.round((first.r + second.r) / 2),
     g: Math.round((first.g + second.g) / 2),
     b: Math.round((first.b + second.b) / 2),
   }
+}
+
+function hashUnit(seed: number, x: number, y: number): number {
+  let value = (seed ^ Math.imul(x, 0x45d9f3b) ^ Math.imul(y, 0x119de1f3)) >>> 0
+  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b)
+  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b)
+  return ((value ^ (value >>> 16)) >>> 0) / 0x100000000
+}
+
+function trailStartTime(trailLength: number): number {
+  return lerp(0.05, 0.55, trailLength)
+}
+
+function tailProgressAt(time: number, tailStart: number): number {
+  return smoothStep(clamp01((time - tailStart) / (1 - tailStart)))
 }
 
 function toHex(channel: number): string {
@@ -201,6 +435,10 @@ function positiveModulo(value: number, divisor: number): number {
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value))
+}
+
+function lerp(start: number, end: number, progress: number): number {
+  return start + (end - start) * progress
 }
 
 function easeOutCubic(value: number): number {
