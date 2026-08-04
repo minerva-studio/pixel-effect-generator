@@ -1,38 +1,15 @@
-import type { SlashCategory } from '../core/generatorCatalog'
-import {
-  hexToRgb,
-  insertPaletteColor,
-  MAX_SWEEP_DEGREES,
-  removePaletteColor,
-  rgbToHex,
-  type SlashDirection,
-  type SlashParameters,
-} from '../core/slashRenderer'
+import { useId, type ReactNode } from 'react'
+import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
+import { hexToRgb, rgbToHex } from '../../shared/pixel/color'
+import { insertPaletteColor, removePaletteColor } from './palette'
+import { MAX_SWEEP_DEGREES } from './model'
+import type { SlashCategory } from './module'
+import type { SlashDirection, SlashParameters } from './model'
 
 interface SlashControlsProps {
   readonly category: SlashCategory
   readonly parameters: SlashParameters
   readonly onChange: (parameters: SlashParameters) => void
-}
-
-interface NumberControlProps {
-  readonly label: string
-  readonly description: string
-  readonly value: number
-  readonly minimum: number
-  readonly maximum: number
-  readonly step?: number
-  readonly scale?: number
-  readonly unit?: string
-  readonly onChange: (value: number) => void
-}
-
-interface SelectControlProps<Value extends string> {
-  readonly label: string
-  readonly description: string
-  readonly value: Value
-  readonly options: readonly { readonly value: Value; readonly label: string }[]
-  readonly onChange: (value: Value) => void
 }
 
 /** Renders the active Slash parameter category without owning generator state. */
@@ -110,7 +87,7 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
               onChange={(value) => update('fragmentMode', value)}
             />
             <NumberControl label="Amount" description="Amount of colored debris released as the trailing edge passes." value={parameters.fragmentAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentAmount', value)} />
-            <NumberControl label="Size" description="Maximum chunk width, shard length, or spark trail length for the active fragment mode." value={parameters.fragmentSize} minimum={1} maximum={3} unit="px" onChange={(value) => update('fragmentSize', value)} />
+            <NumberControl label="Size" description="Maximum chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentSize} minimum={1} maximum={3} unit="px" onChange={(value) => update('fragmentSize', value)} />
             <NumberControl label="Tangent speed" description="Motion along the direction of the sweep per animation cycle." value={parameters.fragmentTangentSpeed} minimum={0} maximum={32} unit="px" onChange={(value) => update('fragmentTangentSpeed', value)} />
             <NumberControl label="Outward speed" description="Motion away from the slash center per animation cycle." value={parameters.fragmentOutwardSpeed} minimum={0} maximum={24} unit="px" onChange={(value) => update('fragmentOutwardSpeed', value)} />
             <NumberControl label="Lifetime" description="Fraction of the animation for which detached fragments remain alive." value={parameters.fragmentLifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentLifetime', value)} />
@@ -124,7 +101,7 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
 }
 
 /** Groups parameters by the visual system they directly control. */
-function ControlGroup({ title, children }: { readonly title: string; readonly children: React.ReactNode }) {
+function ControlGroup({ title, children }: { readonly title: string; readonly children: ReactNode }) {
   return (
     <section className="control-group">
       <h4>{title}</h4>
@@ -133,81 +110,9 @@ function ControlGroup({ title, children }: { readonly title: string; readonly ch
   )
 }
 
-/** Renders one scaled numeric parameter with synchronized slider and number input. */
-function NumberControl({ label, description, value, minimum, maximum, step = 1, scale = 1, unit = '', onChange }: NumberControlProps) {
-  const displayedValue = normalizeDisplayValue(value * scale, step * scale)
-  const displayedMinimum = minimum * scale
-  const displayedMaximum = maximum * scale
-  const displayedStep = step * scale
-  const updateDisplayedValue = (nextValue: number) => {
-    const clamped = Math.min(displayedMaximum, Math.max(displayedMinimum, nextValue))
-    onChange(clamped / scale)
-  }
-
-  return (
-    <div className="parameter-field">
-      <div className="field-copy">
-        <span className="field-title">
-          <label htmlFor={`${toControlId(label)}-range`}>{label}</label>
-          <InfoHint label={label} description={description} />
-        </span>
-      </div>
-      <div className="field-inputs">
-        <input
-          id={`${toControlId(label)}-range`}
-          aria-label={label}
-          type="range"
-          min={displayedMinimum}
-          max={displayedMaximum}
-          step={displayedStep}
-          value={displayedValue}
-          onChange={(event) => updateDisplayedValue(Number(event.target.value))}
-        />
-        <span className="number-field">
-          <input
-            aria-label={`${label} value`}
-            type="number"
-            min={displayedMinimum}
-            max={displayedMaximum}
-            step={displayedStep}
-            value={displayedValue}
-            onChange={(event) => updateDisplayedValue(Number(event.target.value))}
-          />
-          <small>{unit}</small>
-        </span>
-      </div>
-    </div>
-  )
-}
-
-/** Renders one compact mode dropdown with the same field layout as sliders. */
-function SelectControl<Value extends string>({ label, description, value, options, onChange }: SelectControlProps<Value>) {
-  return (
-    <div className="parameter-field">
-      <div className="field-copy">
-        <span className="field-title">
-          <label htmlFor={toControlId(label)}>{label}</label>
-          <InfoHint label={label} description={description} />
-        </span>
-      </div>
-      <div className="select-field">
-        <select
-          id={toControlId(label)}
-          aria-label={label}
-          value={value}
-          onChange={(event) => onChange(event.target.value as Value)}
-        >
-          {options.map((option) => (
-            <option value={option.value} key={option.value}>{option.label}</option>
-          ))}
-        </select>
-      </div>
-    </div>
-  )
-}
-
 /** Renders the ordered inner-to-outer palette editor. */
 function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'category'>) {
+  const hintId = useId()
   const updateColor = (index: number, color: string) => {
     const palette = parameters.palette.map((current, colorIndex) => colorIndex === index ? hexToRgb(color) : current)
     onChange({ ...parameters, palette })
@@ -217,7 +122,7 @@ function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'categ
     <div className="palette-editor">
       <div className="palette-guide">
         <span>Inner edge</span>
-        <InfoHint label="Palette order" description="Bands are sampled directly on the pixel grid. No blended colors are introduced." />
+        <InfoHint label="Palette order" description="Bands are sampled directly on the pixel grid. No blended colors are introduced." hintId={hintId} />
         <span>Outer edge</span>
       </div>
       <div className="palette-list">
@@ -252,12 +157,13 @@ function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'categ
 
 /** Renders the two explicit temporal sweep directions. */
 function DirectionControl({ value, onChange }: { readonly value: SlashDirection; readonly onChange: (value: SlashDirection) => void }) {
+  const hintId = useId()
   return (
     <div className="parameter-field">
       <div className="field-copy">
         <span className="field-title">
           <span className="field-label">Sweep direction</span>
-          <InfoHint label="Sweep direction" description="Changes temporal travel along the same arc without flipping the rendered image." />
+          <InfoHint label="Sweep direction" description="Changes temporal travel along the same arc without flipping the rendered image." hintId={hintId} />
         </span>
       </div>
       <div className="segmented-control" role="group" aria-label="Sweep direction">
@@ -284,6 +190,8 @@ function DirectionControl({ value, onChange }: { readonly value: SlashDirection;
 
 /** Renders the reproducible seed field and a cryptographically sourced randomize action. */
 function SeedControl({ value, onChange }: { readonly value: number; readonly onChange: (value: number) => void }) {
+  const seedId = useId()
+  const hintId = useId()
   const randomize = () => {
     const nextSeed = crypto.getRandomValues(new Uint32Array(1))[0]
     onChange(nextSeed)
@@ -293,31 +201,16 @@ function SeedControl({ value, onChange }: { readonly value: number; readonly onC
     <div className="parameter-field">
       <div className="field-copy">
         <span className="field-title">
-          <label htmlFor="slash-seed">Random seed</label>
-          <InfoHint label="Random seed" description="Re-enter the same unsigned 32-bit value to reproduce breakup exactly." />
+          <label htmlFor={seedId}>Random seed</label>
+          <InfoHint label="Random seed" description="Re-enter the same unsigned 32-bit value to reproduce breakup exactly." hintId={hintId} />
         </span>
       </div>
       <div className="seed-inputs">
-        <input id="slash-seed" type="number" min="0" max="4294967295" step="1" value={value} onChange={(event) => onChange(clampSeed(Number(event.target.value)))} />
+        <input id={seedId} type="number" min="0" max="4294967295" step="1" value={value} onChange={(event) => onChange(clampSeed(Number(event.target.value)))} />
         <button className="secondary-button" type="button" onClick={randomize}>Randomize</button>
       </div>
     </div>
   )
-}
-
-/** Reveals compact field guidance on hover, focus, or touch focus. */
-function InfoHint({ label, description }: { readonly label: string; readonly description: string }) {
-  return (
-    <span className="info-hint">
-      <button type="button" aria-label={`About ${label}`} aria-describedby={`${toControlId(label)}-hint`}>i</button>
-      <span className="info-tooltip" id={`${toControlId(label)}-hint`} role="tooltip">{description}</span>
-    </span>
-  )
-}
-
-function normalizeDisplayValue(value: number, step: number): number {
-  const decimals = Math.max(0, Math.ceil(-Math.log10(step)))
-  return Number(value.toFixed(decimals))
 }
 
 function clampSeed(value: number): number {
@@ -325,8 +218,4 @@ function clampSeed(value: number): number {
     return 0
   }
   return Math.min(0xffffffff, Math.max(0, Math.round(value)))
-}
-
-function toControlId(label: string): string {
-  return `slash-${label.toLowerCase().replaceAll(' ', '-')}`
 }

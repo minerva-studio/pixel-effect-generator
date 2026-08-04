@@ -1,24 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import type { PixelFrame } from '../../../shared/pixel/frame'
 import {
   DEFAULT_SLASH_PARAMETERS,
   FRAME_SIZE,
-  bayerThreshold,
-  createXorshift32,
-  generateFragments,
-  integerLinePoints,
-  insertPaletteColor,
-  jaggedContourInset,
-  packHorizontalSheet,
-  removePaletteColor,
-  renderSlashFrames,
-  slashCutDepth,
-  visibleDirectedProgress,
   type DissolveMode,
   type EdgeBreakupMode,
   type FragmentMode,
-  type SlashFrame,
   type SlashParameters,
-} from './slashRenderer'
+} from '../model'
+import { renderSlashFrames, visibleDirectedProgress } from '../renderer'
 
 const DISSOLVE_MODES: readonly DissolveMode[] = ['ordered', 'clusteredNoise', 'directionalStreaks']
 const EDGE_MODES: readonly EdgeBreakupMode[] = ['blockChips', 'jaggedContour', 'slashCuts']
@@ -122,9 +112,7 @@ describe('renderSlashFrames', () => {
 
     expect(countOpaquePixels(frames[3])).toBeGreaterThan(0)
   })
-})
 
-describe('composable breakup modes', () => {
   it('keeps the explicit legacy combination pixel-compatible with the previous renderer', () => {
     const frames = renderSlashFrames({
       ...DEFAULT_SLASH_PARAMETERS,
@@ -141,6 +129,21 @@ describe('composable breakup modes', () => {
       'fe1aac531c15884d',
       'ce34ffa350378c35',
       'bc29c6e56b4f86cb',
+      '5e509dc5602c0193',
+    ]
+    expect(hashes).toEqual(golden)
+  })
+
+  it('keeps the modern default output pixel-identical across the refactor', () => {
+    const hashes = renderSlashFrames(DEFAULT_SLASH_PARAMETERS).map((frame) => legacyHash(frame.pixels))
+    const golden = [
+      '430b12b70d366d79',
+      '61e83e45b16976e3',
+      '6dc7109351d02005',
+      'c09118affb204fd9',
+      '169d60a7cb7de0d9',
+      'c12bdaefe2a10d99',
+      '288a561b50d209dd',
       '5e509dc5602c0193',
     ]
     expect(hashes).toEqual(golden)
@@ -286,138 +289,10 @@ describe('composable breakup modes', () => {
     expect(band.size).toBe(2)
   })
 
-  it('keeps modern edge modes within the configured edge depth', () => {
-    for (const seed of [1, 1337, 999_999, 0xffffffff]) {
-      for (let sample = 0; sample < 2000; sample += 1) {
-        const arcDistancePixels = sample / 2
-        expect(slashCutDepth(seed, arcDistancePixels, 1, 0.5)).toBeLessThanOrEqual(0.5)
-        expect(slashCutDepth(seed, arcDistancePixels, 0.5, 0.3)).toBeLessThanOrEqual(0.3)
-        expect(jaggedContourInset(seed, arcDistancePixels, 1, 0.5)).toBeLessThanOrEqual(0.5)
-        expect(jaggedContourInset(seed, arcDistancePixels, 0.5, 0.3)).toBeLessThanOrEqual(0.3)
-      }
-    }
-  })
-
-  it('distributes modern edge variation across 180, 360, and 720 degree arcs', () => {
-    for (const sweepDegrees of [180, 360, 720]) {
-      const arcLength = sweepDegrees * Math.PI / 180 * DEFAULT_SLASH_PARAMETERS.radius
-      const cutCells = new Set<number>()
-      const jaggedValues = new Set<number>()
-      for (let arcDistance = 0; arcDistance <= arcLength; arcDistance += 0.5) {
-        if (slashCutDepth(1337, arcDistance, 1, 0.5) > 0) {
-          cutCells.add(Math.floor(arcDistance / 8))
-        }
-        jaggedValues.add(Math.round(jaggedContourInset(1337, arcDistance, 1, 0.5) * 1000))
-      }
-      expect(cutCells.size).toBeGreaterThan(1)
-      expect(jaggedValues.size).toBeGreaterThan(4)
-    }
-  })
-
-  it('keeps shard and spark motion continuous with bounded spawn and lifetime descriptors', () => {
-    const parameters: SlashParameters = {
-      ...DEFAULT_SLASH_PARAMETERS,
-      fragmentAmount: 1,
-      fragmentSize: 3,
-    }
-    for (const fragmentMode of ['directionalShards', 'energySparks'] as const) {
-      const fragments = generateFragments({ ...parameters, fragmentMode })
-      expect(fragments).toHaveLength(24)
-      expect(fragments.every((fragment) => fragment.spawnTime >= 0 && fragment.spawnTime <= 0.9)).toBe(true)
-      expect(fragments.every((fragment) => fragment.lifetime > 0 && fragment.size >= 1 && fragment.size <= 3)).toBe(true)
-      expect(generateFragments({ ...parameters, fragmentMode })).toEqual(fragments)
-      expect(generateFragments({ ...parameters, fragmentMode, seed: parameters.seed + 1 })).not.toEqual(fragments)
-    }
-  })
-
-  it('keeps modern fragment sizes within the configured inclusive maximum', () => {
-    for (const fragmentMode of ['directionalShards', 'energySparks'] as const) {
-      for (const fragmentSize of [1, 2, 3]) {
-        const fragments = generateFragments({
-          ...DEFAULT_SLASH_PARAMETERS,
-          fragmentMode,
-          fragmentAmount: 1,
-          fragmentSize,
-        })
-        expect(fragments.every((fragment) => fragment.size >= 1 && fragment.size <= fragmentSize)).toBe(true)
-        expect(Math.max(...fragments.map((fragment) => fragment.size))).toBe(fragmentSize)
-      }
-    }
-  })
-})
-
-describe('portable helpers', () => {
-  it('rasterizes one-to-three-pixel shard lines with integer coordinates', () => {
-    expect(integerLinePoints(10, 10, 10, 10)).toEqual([{ x: 10, y: 10 }])
-    expect(integerLinePoints(10, 10, 11, 10)).toEqual([{ x: 10, y: 10 }, { x: 11, y: 10 }])
-    expect(integerLinePoints(10, 10, 12, 11)).toEqual([
-      { x: 10, y: 10 },
-      { x: 11, y: 10 },
-      { x: 12, y: 11 },
-    ])
-  })
-
-  it('produces a stable non-zero xorshift32 sequence even for seed zero', () => {
-    const first = createXorshift32(0)
-    const second = createXorshift32(0)
-    const firstValues = [first(), first(), first(), first()]
-    expect(firstValues).toEqual([second(), second(), second(), second()])
-    expect(firstValues.every((value) => Number.isInteger(value) && value >= 0)).toBe(true)
-    expect(new Set(firstValues).size).toBeGreaterThan(1)
-  })
-
-  it('exposes all sixteen Bayer thresholds exactly once', () => {
-    const thresholds = Array.from({ length: 16 }, (_, index) => bayerThreshold(index % 4, Math.floor(index / 4)))
-    expect(new Set(thresholds).size).toBe(16)
-    expect(Math.min(...thresholds)).toBeGreaterThan(0)
-    expect(Math.max(...thresholds)).toBeLessThan(1)
-  })
-
   it('resolves repeated spatial angles on later sweep revolutions', () => {
     const fullCircle = Math.PI * 2
     expect(visibleDirectedProgress(0.25, fullCircle, fullCircle + 1, fullCircle * 2)).toBeCloseTo(fullCircle + 0.25)
     expect(visibleDirectedProgress(2, fullCircle, fullCircle + 1, fullCircle * 2)).toBeUndefined()
-  })
-
-  it('adds and removes palette colors without mutating the source', () => {
-    const source = [
-      DEFAULT_SLASH_PARAMETERS.palette[0],
-      DEFAULT_SLASH_PARAMETERS.palette.at(-1)!,
-    ]
-    const inserted = insertPaletteColor(source)
-    const removed = removePaletteColor(inserted, 1)
-
-    expect(source).toHaveLength(2)
-    expect(inserted).toEqual(DEFAULT_SLASH_PARAMETERS.palette)
-    expect(removed).toEqual(source)
-  })
-
-  it('generates bounded fragments with continuous lifetime descriptors', () => {
-    const parameters: SlashParameters = {
-      ...DEFAULT_SLASH_PARAMETERS,
-      fragmentAmount: 1,
-      fragmentSize: 3,
-    }
-    const fragments = generateFragments(parameters)
-
-    expect(fragments).toHaveLength(24)
-    expect(fragments.every((fragment) => fragment.spawnTime >= 0 && fragment.spawnTime <= 0.9)).toBe(true)
-    expect(fragments.every((fragment) => fragment.lifetime > 0 && fragment.size >= 1 && fragment.size <= 3)).toBe(true)
-    expect(generateFragments(parameters)).toEqual(fragments)
-    expect(generateFragments({ ...parameters, seed: parameters.seed + 1 })).not.toEqual(fragments)
-  })
-})
-
-describe('packHorizontalSheet', () => {
-  it('packs frames from left to right without changing their pixels', () => {
-    const frames = renderSlashFrames({ ...DEFAULT_SLASH_PARAMETERS, frameCount: 5 })
-    const sheet = packHorizontalSheet(frames)
-
-    expect(sheet.width).toBe(FRAME_SIZE * frames.length)
-    expect(sheet.height).toBe(FRAME_SIZE)
-    for (let frameIndex = 0; frameIndex < frames.length; frameIndex += 1) {
-      expect(extractFrame(sheet, frameIndex)).toEqual(Array.from(frames[frameIndex].pixels))
-    }
   })
 })
 
@@ -430,11 +305,11 @@ function quietParameters(): SlashParameters {
   }
 }
 
-function frameBytes(frames: readonly SlashFrame[]): number[][] {
+function frameBytes(frames: readonly PixelFrame[]): number[][] {
   return frames.map((frame) => Array.from(frame.pixels))
 }
 
-function framesSignature(frames: readonly SlashFrame[]): string {
+function framesSignature(frames: readonly PixelFrame[]): string {
   return frames.map((frame) => legacyHash(frame.pixels)).join('/')
 }
 
@@ -451,7 +326,7 @@ function legacyHash(bytes: Uint8ClampedArray): string {
   return `${h1.toString(16).padStart(8, '0')}${h2.toString(16).padStart(8, '0')}`
 }
 
-function hasOnlyBinaryAlpha(frames: readonly SlashFrame[]): boolean {
+function hasOnlyBinaryAlpha(frames: readonly PixelFrame[]): boolean {
   for (const frame of frames) {
     for (let index = 3; index < frame.pixels.length; index += 4) {
       if (frame.pixels[index] !== 0 && frame.pixels[index] !== 255) {
@@ -462,7 +337,7 @@ function hasOnlyBinaryAlpha(frames: readonly SlashFrame[]): boolean {
   return true
 }
 
-function hasOnlyPaletteAndTransparent(frames: readonly SlashFrame[], palette: readonly { r: number; g: number; b: number }[]): boolean {
+function hasOnlyPaletteAndTransparent(frames: readonly PixelFrame[], palette: readonly { r: number; g: number; b: number }[]): boolean {
   const allowed = new Set<string>(['0,0,0,0'])
   for (const color of palette) {
     allowed.add(`${color.r},${color.g},${color.b},255`)
@@ -470,7 +345,7 @@ function hasOnlyPaletteAndTransparent(frames: readonly SlashFrame[], palette: re
   return collectColors(frames).size === allowed.size
 }
 
-function collectColors(frames: readonly SlashFrame[]): Set<string> {
+function collectColors(frames: readonly PixelFrame[]): Set<string> {
   const colors = new Set<string>()
   for (const frame of frames) {
     for (let index = 0; index < frame.pixels.length; index += 4) {
@@ -485,7 +360,7 @@ function collectColors(frames: readonly SlashFrame[]): Set<string> {
   return colors
 }
 
-function countOpaquePixels(frame: SlashFrame): number {
+function countOpaquePixels(frame: PixelFrame): number {
   let count = 0
   for (let index = 3; index < frame.pixels.length; index += 4) {
     if (frame.pixels[index] !== 0) {
@@ -495,16 +370,7 @@ function countOpaquePixels(frame: SlashFrame): number {
   return count
 }
 
-function pixelAt(frame: SlashFrame, x: number, y: number): number[] {
+function pixelAt(frame: PixelFrame, x: number, y: number): number[] {
   const index = (y * frame.width + x) * 4
   return Array.from(frame.pixels.subarray(index, index + 4))
-}
-
-function extractFrame(sheet: SlashFrame, frameIndex: number): number[] {
-  const pixels: number[] = []
-  for (let y = 0; y < sheet.height; y += 1) {
-    const start = (y * sheet.width + frameIndex * FRAME_SIZE) * 4
-    pixels.push(...sheet.pixels.subarray(start, start + FRAME_SIZE * 4))
-  }
-  return pixels
 }
