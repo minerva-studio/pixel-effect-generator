@@ -87,9 +87,16 @@
 .preview-seed-control label { color: var(--muted); font-size: 0.68rem; font-weight: 700; }
 .preview-seed-control .seed-inputs { grid-template-columns: minmax(0, 1fr) auto; }
 .icon-button { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-high); }
-.export-row { gap: 20px; padding: 17px 22px 20px; border-top: 1px solid var(--border); }
-.export-row div { display: grid; gap: 5px; }
+.export-block { border-top: 1px solid var(--border); }
+.export-row { gap: 20px; padding: 16px 22px; flex-wrap: wrap; }
+.export-row + .export-row { border-top: 1px solid var(--border); }
+.export-row > div { display: grid; gap: 5px; }
+.export-row .export-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
 .export-row strong { font-size: 0.8rem; }
 .export-row span { color: var(--muted); font-size: 0.7rem; }
+.loop-toggle { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 0.72rem; }
+.loop-toggle input { accent-color: var(--accent); }
+.export-error { margin: 0; padding: 0 22px 14px; color: #ff9d9d; font-size: 0.72rem; }
 .primary-button { padding: 11px 17px; border-radius: 9px; color: #0c1120; background: linear-gradient(135deg, #aebeff, #7798ff); font-size: 0.76rem; font-weight: 800; box-shadow: 0 8px 24px rgba(92, 124, 240, 0.24); }
 .primary-button:hover { filter: brightness(1.08); }
+.primary-button:disabled { cursor: default; filter: none; opacity: 0.55; }

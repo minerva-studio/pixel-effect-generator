@@ -34,6 +34,13 @@ describe('translation resources', () => {
     expect(translate(messagesForLocale('zh-CN'), 'slash.canvas.presetSquare', { width: 64, height: 64 })).toBe('方形 64×64')
   })
 
+  it('builds animated export file names with fps in both languages', () => {
+    expect(translate(en, 'export.gifFileName', { name: 'Slash', width: 128, height: 128, frameCount: 8, fps: 12 })).toBe('pixel-Slash-128x128-8-frames-12fps.gif')
+    expect(translate(en, 'export.apngFileName', { name: 'Slash', width: 128, height: 128, frameCount: 8, fps: 12 })).toBe('pixel-Slash-128x128-8-frames-12fps-animated.png')
+    expect(translate(messagesForLocale('zh-CN'), 'export.gifFileName', { name: '斩击', width: 128, height: 128, frameCount: 8, fps: 12 })).toBe('pixel-斩击-128x128-8-帧-12fps.gif')
+    expect(translate(messagesForLocale('zh-CN'), 'export.apngFileName', { name: '斩击', width: 128, height: 128, frameCount: 8, fps: 12 })).toBe('pixel-斩击-128x128-8-帧-12fps-animated.png')
+  })
+
   it('falls back to English for keys missing from the current locale', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const incomplete = { app: { title: '自定义标题' } } as unknown as MessageTree

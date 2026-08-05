@@ -114,6 +114,16 @@ const enTree = {
   },
   export: {
     fileName: 'pixel-{name}-{width}x{height}-{frameCount}-frames.png',
+    animatedTitle: 'Animated image',
+    animatedDescription: '{width} × {height} px · {frameCount} frames · {fps} FPS',
+    loop: 'Loop',
+    loopLabel: 'Loop animation',
+    gifButton: 'Export GIF',
+    apngButton: 'Export APNG',
+    encoding: 'Encoding…',
+    error: 'Export failed. Please try again.',
+    gifFileName: 'pixel-{name}-{width}x{height}-{frameCount}-frames-{fps}fps.gif',
+    apngFileName: 'pixel-{name}-{width}x{height}-{frameCount}-frames-{fps}fps-animated.png',
   },
 } as const
 
@@ -254,6 +264,16 @@ export const zhCN: MessageTree = {
   },
   export: {
     fileName: 'pixel-{name}-{width}x{height}-{frameCount}-帧.png',
+    animatedTitle: '动图',
+    animatedDescription: '{width} × {height} px · {frameCount} 帧 · {fps} FPS',
+    loop: '循环',
+    loopLabel: '循环动画',
+    gifButton: '导出 GIF',
+    apngButton: '导出 APNG',
+    encoding: '编码中…',
+    error: '导出失败，请重试。',
+    gifFileName: 'pixel-{name}-{width}x{height}-{frameCount}-帧-{fps}fps.gif',
+    apngFileName: 'pixel-{name}-{width}x{height}-{frameCount}-帧-{fps}fps-animated.png',
   },
 }
 
@@ -273,6 +293,9 @@ export interface MessageParams {
   'slash.canvas.presetSquare': { width: number; height: number }
   'slash.canvas.presetHorizontal': { width: number; height: number }
   'export.fileName': { name: string; width: number; height: number; frameCount: number }
+  'export.animatedDescription': { width: number; height: number; frameCount: number; fps: number }
+  'export.gifFileName': { name: string; width: number; height: number; frameCount: number; fps: number }
+  'export.apngFileName': { name: string; width: number; height: number; frameCount: number; fps: number }
 }
 
 /** Parameter type for one key; keys without named parameters accept none. */

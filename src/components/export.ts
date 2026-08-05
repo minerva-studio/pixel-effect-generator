@@ -13,6 +13,13 @@ export function exportHorizontalSpriteSheet(frames: readonly PixelFrame[], fileN
   }, 'image/png')
 }
 
+/** Starts a local browser download of already-encoded animation bytes. */
+export function downloadBytes(bytes: Uint8Array, fileName: string, mime: string): void {
+  const copy = new Uint8Array(bytes.byteLength)
+  copy.set(bytes)
+  downloadBlob(new Blob([copy], { type: mime }), fileName)
+}
+
 /** Draws one already-rasterized RGBA frame without invoking Canvas geometry. */
 export function drawFrame(canvas: HTMLCanvasElement, frame: PixelFrame): void {
   canvas.width = frame.width
