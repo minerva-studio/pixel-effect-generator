@@ -1,4 +1,4 @@
-import { useReducer } from 'react'
+import { useEffect, useId, useMemo, useReducer, useRef, type RefObject } from 'react'
 import type { RenderedFrameSet } from '../generators/contract'
 import { useI18n } from '../i18n/I18nProvider'
 import type { MessageKey, TranslateFunction } from '../i18n/messages'
@@ -8,9 +8,10 @@ import {
   type AnimationFormat,
   type AnimationResult,
 } from '../shared/pixel/animation'
-import { chooseCompactColumns, packSpriteSheet, type SpriteSheetLayout } from '../shared/pixel/atlas'
+import { chooseCompactColumns, packSpriteSheet, type PackedSpriteSheet, type SpriteSheetLayout } from '../shared/pixel/atlas'
 import type { PixelFrame } from '../shared/pixel/frame'
 import { encodePng } from '../shared/pixel/png'
+import { resolvePreviewSize } from '../shared/preview/zoom'
 import type {
   EffectProjectV1,
   ExportError,
@@ -20,7 +21,7 @@ import type {
 import { normalizeGuid, randomGuid } from '../shared/unity/guid'
 import { UNITY_MAX_ATLAS_SIZE } from '../shared/unity/textureSize'
 import { buildFrameZip, buildUnityZip, type FrameZipInput, type UnityZipInput } from '../shared/zip/zip'
-import { downloadBytes, exportHorizontalSpriteSheet } from './export'
+import { downloadBytes, drawFrame, exportHorizontalSpriteSheet } from './export'
 import type { FileOperationController, WorkspaceFileTask } from './fileOperations'
 import type { UnityExportSettingsState } from './unitySettings'
 
@@ -31,6 +32,7 @@ export const ZIP_MIME = 'application/zip'
 export type ExportCategory = 'spriteSheet' | 'animation' | 'frameZip'
 
 export type SpriteTarget = 'png' | 'unity'
+export type AtlasZoom = 'fit' | 1 | 2 | 4
 
 /** Local UI state of the export panel; never shared with the generator session. */
 export interface ExportPanelState {
@@ -39,6 +41,8 @@ export interface ExportPanelState {
   readonly spriteTarget: SpriteTarget
   readonly animationFormat: AnimationFormat
   readonly loop: boolean
+  readonly atlasPreviewOpen: boolean
+  readonly atlasZoom: AtlasZoom
   readonly categoryErrors: Readonly<Partial<Record<ExportCategory, string>>>
 }
 
@@ -49,6 +53,8 @@ export type ExportPanelAction =
   | { readonly type: 'setSpriteTarget'; readonly target: SpriteTarget }
   | { readonly type: 'setAnimationFormat'; readonly format: AnimationFormat }
   | { readonly type: 'toggleLoop'; readonly checked: boolean }
+  | { readonly type: 'toggleAtlasPreview' }
+  | { readonly type: 'setAtlasZoom'; readonly zoom: AtlasZoom }
   | { readonly type: 'categoryError'; readonly category: ExportCategory; readonly message: string }
   | { readonly type: 'clearCategoryError'; readonly category: ExportCategory }
 
@@ -60,6 +66,8 @@ export function createInitialExportPanelState(): ExportPanelState {
     spriteTarget: 'png',
     animationFormat: 'gif',
     loop: true,
+    atlasPreviewOpen: false,
+    atlasZoom: 'fit',
     categoryErrors: {},
   }
 }
@@ -77,6 +85,10 @@ export function exportPanelReducer(state: ExportPanelState, action: ExportPanelA
       return { ...state, animationFormat: action.format }
     case 'toggleLoop':
       return { ...state, loop: action.checked }
+    case 'toggleAtlasPreview':
+      return { ...state, atlasPreviewOpen: !state.atlasPreviewOpen }
+    case 'setAtlasZoom':
+      return { ...state, atlasZoom: action.zoom }
     case 'categoryError':
       return {
         ...state,
@@ -99,6 +111,11 @@ export interface ExportDependencies {
   readonly buildFrameZip: (input: FrameZipInput) => Uint8Array
   readonly buildUnityZip: (input: UnityZipInput) => Uint8Array
   readonly randomGuid: () => string
+  readonly packSpriteSheet: (
+    frames: readonly PixelFrame[],
+    layout: SpriteSheetLayout,
+    namePrefix: string,
+  ) => PackedSpriteSheet
 }
 
 const EXPORT_DEPENDENCIES: ExportDependencies = {
@@ -109,6 +126,7 @@ const EXPORT_DEPENDENCIES: ExportDependencies = {
   buildFrameZip,
   buildUnityZip,
   randomGuid,
+  packSpriteSheet,
 }
 
 /** Runs one sprite-sheet export against the current frame set. */
@@ -288,6 +306,9 @@ interface ExportPanelViewProps {
   readonly unitySettings: UnityExportSettingsState
   readonly normalizedGuid: string
   readonly activeTask: WorkspaceFileTask | null
+  readonly packed: PackedSpriteSheet | null
+  readonly atlasCanvasRef: RefObject<HTMLCanvasElement | null>
+  readonly atlasPreviewId: string
   readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
   readonly onSelectCategory: (category: ExportCategory) => void
   readonly onSetLayout: (layout: SpriteSheetLayout) => void
@@ -298,6 +319,8 @@ interface ExportPanelViewProps {
   readonly onExportUnity: () => void
   readonly onExportAnimation: () => void
   readonly onExportFrameZip: () => void
+  readonly onToggleAtlasPreview: () => void
+  readonly onSetAtlasZoom: (zoom: AtlasZoom) => void
 }
 
 /** Presentational export panel; rendering depends only on state and props. */
@@ -307,6 +330,9 @@ export function ExportPanelView({
   unitySettings,
   normalizedGuid,
   activeTask,
+  packed,
+  atlasCanvasRef,
+  atlasPreviewId,
   onUnitySettingsChange,
   onSelectCategory,
   onSetLayout,
@@ -317,6 +343,8 @@ export function ExportPanelView({
   onExportUnity,
   onExportAnimation,
   onExportFrameZip,
+  onToggleAtlasPreview,
+  onSetAtlasZoom,
 }: ExportPanelViewProps) {
   const { t } = useI18n()
   const busy = activeTask !== null
@@ -436,6 +464,83 @@ export function ExportPanelView({
                   : t('export.spriteSheet.exportPng')}
             </button>
           </div>
+          <div className="atlas-preview">
+            <button
+              className="foldout-toggle"
+              type="button"
+              aria-expanded={state.atlasPreviewOpen}
+              aria-controls={atlasPreviewId}
+              onClick={onToggleAtlasPreview}
+            >
+              <span>{t('export.atlasPreview.toggle')}</span>
+              <span className="foldout-chevron" aria-hidden="true">{state.atlasPreviewOpen ? '▾' : '▸'}</span>
+            </button>
+            {state.atlasPreviewOpen && packed ? (
+              <div className="atlas-preview-body" id={atlasPreviewId}>
+                <div className="atlas-preview-head">
+                  <p className="export-card-meta">{t('export.atlasPreview.meta', {
+                    width: packed.frame.width,
+                    height: packed.frame.height,
+                    layout: state.spriteLayout === 'horizontal'
+                      ? t('export.atlasPreview.layoutHorizontal')
+                      : t('export.atlasPreview.layoutCompact'),
+                  })}</p>
+                  <label className="preview-zoom">
+                    <span>{t('export.atlasPreview.zoomLabel')}</span>
+                    <select
+                      aria-label={t('export.atlasPreview.zoomLabel')}
+                      value={state.atlasZoom}
+                      onChange={(event) => onSetAtlasZoom(event.target.value as AtlasZoom)}
+                    >
+                      <option value="fit">{t('export.atlasPreview.zoomFit')}</option>
+                      <option value={1}>{t('export.atlasPreview.zoomOption', { zoom: 1 })}</option>
+                      <option value={2}>{t('export.atlasPreview.zoomOption', { zoom: 2 })}</option>
+                      <option value={4}>{t('export.atlasPreview.zoomOption', { zoom: 4 })}</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="atlas-preview-stage">
+                  <div
+                    className={state.atlasZoom === 'fit' ? 'atlas-preview-wrap fit' : 'atlas-preview-wrap'}
+                    style={{
+                      width: resolvePreviewSize(state.atlasZoom, packed.frame.width, packed.frame.height, 640, 420).width,
+                      height: resolvePreviewSize(state.atlasZoom, packed.frame.width, packed.frame.height, 640, 420).height,
+                    }}
+                  >
+                    <canvas ref={atlasCanvasRef} className="pixel-canvas" aria-label={t('export.atlasPreview.canvasLabel')} />
+                    <div className="atlas-frame-overlay" aria-hidden="true">
+                      {Array.from({ length: Math.max(0, packed.columns - 1) }, (_, index) => (
+                        <span
+                          className="atlas-grid-line vertical"
+                          key={`v${index}`}
+                          style={{ left: `${((index + 1) / packed.columns) * 100}%` }}
+                        />
+                      ))}
+                      {Array.from({ length: Math.max(0, packed.rows - 1) }, (_, index) => (
+                        <span
+                          className="atlas-grid-line horizontal"
+                          key={`h${index}`}
+                          style={{ top: `${((index + 1) / packed.rows) * 100}%` }}
+                        />
+                      ))}
+                      {packed.sprites.map((sprite) => (
+                        <span
+                          className="atlas-frame-label"
+                          key={sprite.name}
+                          style={{
+                            left: `${(sprite.x / packed.frame.width) * 100}%`,
+                            top: `${(sprite.y / packed.frame.height) * 100}%`,
+                          }}
+                        >
+                          {String(sprite.index).padStart(2, '0')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -545,7 +650,23 @@ export function ExportPanel({
 }: ExportPanelProps) {
   const { t } = useI18n()
   const [state, dispatch] = useReducer(exportPanelReducer, undefined, createInitialExportPanelState)
+  const atlasCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const atlasPreviewId = useId()
   const frames = frameSet.read()
+  const packed = useMemo(() => {
+    if (!state.atlasPreviewOpen) {
+      return null
+    }
+    return dependencies.packSpriteSheet(frames, state.spriteLayout, generatorId)
+  }, [state.atlasPreviewOpen, state.spriteLayout, frames, generatorId, dependencies])
+
+  useEffect(() => {
+    const canvas = atlasCanvasRef.current
+    if (canvas && packed) {
+      drawFrame(canvas, packed.frame)
+    }
+  }, [packed])
+
   const metadata: ExportPanelMetadata = {
     width: frames[0]?.width ?? 0,
     height: frames[0]?.height ?? 0,
@@ -722,6 +843,9 @@ export function ExportPanel({
       unitySettings={unitySettings}
       normalizedGuid={normalizedGuid}
       activeTask={fileOperations.activeTask}
+      packed={packed}
+      atlasCanvasRef={atlasCanvasRef}
+      atlasPreviewId={atlasPreviewId}
       onUnitySettingsChange={onUnitySettingsChange}
       onSelectCategory={(category) => dispatch({ type: 'selectCategory', category })}
       onSetLayout={(layout) => dispatch({ type: 'setSpriteLayout', layout })}
@@ -736,6 +860,8 @@ export function ExportPanel({
       onExportUnity={handleExportUnity}
       onExportAnimation={() => handleAnimationExport(state.animationFormat)}
       onExportFrameZip={handleExportFrameZip}
+      onToggleAtlasPreview={() => dispatch({ type: 'toggleAtlasPreview' })}
+      onSetAtlasZoom={(zoom) => dispatch({ type: 'setAtlasZoom', zoom })}
     />
   )
 }

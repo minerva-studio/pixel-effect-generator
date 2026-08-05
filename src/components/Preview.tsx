@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef, type ReactNode } from 'react'
 import type { RenderedFrameSet } from '../generators/contract'
 import { useI18n } from '../i18n/I18nProvider'
 import { drawFrame } from './export'
+import { PREVIEW_ZOOM_OPTIONS, type PreviewZoom } from '../shared/preview/zoom'
 
 const PREVIEW_FPS_OPTIONS = [6, 8, 12, 18, 24] as const
 
@@ -20,6 +21,8 @@ interface PreviewProps {
   readonly onPlaying: (isPlaying: boolean) => void
   readonly onPreviewFps: (previewFps: number) => void
   readonly onFrameCount: (frameCount: number) => void
+  readonly zoom: PreviewZoom
+  readonly onZoomChange: (zoom: PreviewZoom) => void
   readonly tools?: ReactNode
 }
 
@@ -43,6 +46,8 @@ export function Preview({
   onPlaying,
   onPreviewFps,
   onFrameCount,
+  zoom,
+  onZoomChange,
   tools,
 }: PreviewProps) {
   const { t } = useI18n()
@@ -76,17 +81,35 @@ export function Preview({
           <p className="section-label">{t('preview.livePreview')}</p>
           <h2>{previewTitle}</h2>
         </div>
-        <span className="frame-counter">{String(frameIndex + 1).padStart(2, '0')} / {String(frameCount).padStart(2, '0')}</span>
+        <div className="preview-heading-tools">
+          <label className="preview-zoom">
+            <span>{t('preview.zoom')}</span>
+            <select
+              aria-label={t('preview.zoom')}
+              value={zoom}
+              onChange={(event) => onZoomChange(event.target.value as PreviewZoom)}
+            >
+              {PREVIEW_ZOOM_OPTIONS.map((option) => (
+                <option value={option} key={option}>
+                  {option === 'fit' ? t('preview.zoomFit') : t('preview.zoomOption', { zoom: option })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="frame-counter">{String(frameIndex + 1).padStart(2, '0')} / {String(frameCount).padStart(2, '0')}</span>
+        </div>
       </div>
 
-      <div className="preview-stage">
+      <div className={zoom === 'fit' ? 'preview-stage' : 'preview-stage zoomed'}>
         <div
-          className="canvas-wrap"
-          style={{
-            aspectRatio: `${frameWidth} / ${frameHeight}`,
-            width: frameWidth >= frameHeight ? 'min(512px, calc(100% - 36px))' : 'auto',
-            height: frameWidth < frameHeight ? 'min(470px, calc(100vh - 260px))' : 'auto',
-          }}
+          className={zoom === 'fit' ? 'canvas-wrap' : 'canvas-wrap zoomed'}
+          style={zoom === 'fit'
+            ? {
+                aspectRatio: `${frameWidth} / ${frameHeight}`,
+                width: frameWidth >= frameHeight ? 'min(512px, calc(100% - 36px))' : 'auto',
+                height: frameWidth < frameHeight ? 'min(470px, calc(100vh - 260px))' : 'auto',
+              }
+            : { width: frameWidth * zoom, height: frameHeight * zoom }}
         >
           <canvas ref={previewCanvas} className="pixel-canvas" aria-label={t('preview.canvasLabel')} />
           <div className="origin-mark" aria-hidden="true" />

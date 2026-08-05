@@ -1,5 +1,18 @@
 .preview-panel { display: flex; flex-direction: column; min-height: 720px; }
 .preview-heading { padding: 22px 24px 17px; }
+.preview-heading-tools { display: flex; align-items: center; gap: 12px; }
+.preview-zoom { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 0.68rem; font-weight: 700; }
+.preview-zoom select {
+  height: 31px;
+  padding: 0 8px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  outline: 0;
+  color: #e5e8ef;
+  background: #0c0f16;
+  font: 0.7rem ui-monospace, SFMono-Regular, Menlo, monospace;
+}
 .frame-counter { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.76rem; }
 
 .preview-stage {
@@ -15,6 +28,8 @@
   background-size: 16px 16px;
 }
 
+.preview-stage.zoomed { display: flex; overflow: auto; }
+
 .canvas-wrap {
   position: relative;
   display: grid;
@@ -24,7 +39,9 @@
   background: rgba(4, 6, 10, 0.35);
   overflow: hidden;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.025), 0 24px 60px rgba(0, 0, 0, 0.35);
+  margin: auto;
 }
+.canvas-wrap.zoomed { max-width: none; }
 .pixel-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 .origin-mark { position: absolute; inset: 50% auto auto 50%; width: 5px; height: 5px; pointer-events: none; border: 1px solid rgba(255,255,255,0.35); transform: translate(-50%, -50%); }
 .playback { display: grid; align-items: stretch; justify-content: stretch; gap: 12px; padding: 15px 22px; }
@@ -150,6 +167,61 @@
 .loop-toggle { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.72rem; }
 .loop-toggle input { width: auto; accent-color: var(--accent); }
 .export-file-input { display: none; }
+.atlas-preview { display: grid; gap: 0; min-width: 0; }
+.foldout-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: #d6dae5;
+  background: rgba(17, 20, 29, 0.6);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-align: left;
+}
+.foldout-toggle:hover { border-color: rgba(122, 156, 255, 0.35); }
+.foldout-chevron { color: var(--muted); font-size: 0.65rem; }
+.atlas-preview-body {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 9px 9px;
+  background: rgba(11, 14, 21, 0.55);
+}
+.atlas-preview-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.atlas-preview-stage {
+  overflow: auto;
+  max-height: 420px;
+  border: 1px solid #2b3243;
+  border-radius: 8px;
+  background-color: #0b0e15;
+  background-image: linear-gradient(45deg, #141822 25%, transparent 25%), linear-gradient(-45deg, #141822 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #141822 75%), linear-gradient(-45deg, transparent 75%, #141822 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}
+.atlas-preview-wrap { position: relative; margin: auto; }
+.atlas-preview-wrap.fit { max-width: 100%; max-height: 100%; }
+.atlas-frame-overlay { position: absolute; inset: 0; pointer-events: none; }
+.atlas-grid-line { position: absolute; background: rgba(255, 255, 255, 0.28); }
+.atlas-grid-line.vertical { top: 0; bottom: 0; width: 1px; }
+.atlas-grid-line.horizontal { left: 0; right: 0; height: 1px; }
+.atlas-frame-label {
+  position: absolute;
+  padding: 1px 3px;
+  border-radius: 3px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  font: 700 9px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  transform: translate(2px, 2px);
+}
 .primary-button { padding: 11px 17px; border-radius: 9px; color: #0c1120; background: linear-gradient(135deg, #aebeff, #7798ff); font-size: 0.76rem; font-weight: 800; box-shadow: 0 8px 24px rgba(92, 124, 240, 0.24); }
 .primary-button:hover { filter: brightness(1.08); }
 .primary-button:disabled { cursor: default; filter: none; opacity: 0.55; }

@@ -106,6 +106,12 @@ describe('GeneratorWorkspace integration', () => {
     expect(markup).toContain('>Project</span>')
   })
 
+  it('renders the preset toolbar for generators with preset capability', () => {
+    const markup = workspaceMarkup('slash')
+    expect(markup).toContain('class="preset-bar"')
+    expect(markup).toContain('Clean Arc')
+  })
+
   it('renders the Project menu in Simplified Chinese', () => {
     const markup = workspaceMarkup('slash', 'zh-CN')
     expect(markup).toContain('>项目</span>')
@@ -115,6 +121,7 @@ describe('GeneratorWorkspace integration', () => {
     const markup = workspaceMarkup('blip')
     expect(markup).not.toContain('project-menu')
     expect(markup).not.toContain('>Project<')
+    expect(markup).not.toContain('preset-bar')
   })
 
   it('keeps the Export panel first category as Sprite Sheet', () => {

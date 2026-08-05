@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import type { FrameSize, PixelFrame } from '../shared/pixel/frame'
-import type { GeneratorProjectCodec } from '../shared/project/types'
+import type { GeneratorProjectCodec, JsonValue } from '../shared/project/types'
 
 /** Navigation metadata for one registered generator with a literal id. */
 export interface GeneratorDefinition<Id extends string> {
@@ -15,6 +15,31 @@ export interface GeneratorCategory<Category extends string> {
   readonly id: Category
   readonly label: string
   readonly description: string
+}
+
+/** One read-only built-in effect preset. */
+export interface GeneratorPreset {
+  readonly id: string
+  readonly name: string
+  readonly description: string
+  readonly payload: JsonValue
+}
+
+/** Validation result for one preset payload before it is applied. */
+export type PresetValidationResult =
+  | { readonly ok: true; readonly payload: JsonValue }
+  | { readonly ok: false; readonly error: string }
+
+/**
+ * Optional per-generator preset capability. Captures the effect-defining
+ * parameters (excluding canvas size and frame count), applies a payload onto
+ * the current parameters, and re-validates the result.
+ */
+export interface GeneratorPresetCapability<Parameters> {
+  readonly builtIns: readonly GeneratorPreset[]
+  capture(parameters: Parameters): JsonValue
+  apply(parameters: Parameters, payload: JsonValue): Parameters
+  validate(payload: unknown): PresetValidationResult
 }
 
 /** Holds the current rendered frames without exposing large pixel buffers to React state inspection. */
@@ -42,6 +67,8 @@ export interface GeneratorModule<Id extends string, Parameters, Category extends
   readonly defaultParameters: Parameters
   /** Optional project persistence codec; without it the Project tab is hidden. */
   readonly projectCodec?: GeneratorProjectCodec<Parameters>
+  /** Optional effect presets; without it the preset toolbar is hidden. */
+  readonly presetCapability?: GeneratorPresetCapability<Parameters>
   readonly render: (parameters: Parameters) => readonly PixelFrame[]
   readonly readFrameCount: (parameters: Parameters) => number
   readonly writeFrameCount: (parameters: Parameters, frameCount: number) => Parameters

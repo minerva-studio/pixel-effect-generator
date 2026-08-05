@@ -74,6 +74,21 @@ describe('translation resources', () => {
       .toBe('Unity 图集为 3072 × 128 px；Unity 6 每边上限为 16384 px。')
   })
 
+  it('interpolates zoom and atlas preview labels in both languages', () => {
+    expect(translate(en, 'preview.zoomOption', { zoom: 2 })).toBe('2×')
+    expect(translate(messagesForLocale('zh-CN'), 'preview.zoomOption', { zoom: 2 })).toBe('2×')
+    expect(translate(en, 'export.atlasPreview.meta', { width: 3072, height: 128, layout: 'Horizontal' }))
+      .toBe('3072 × 128 px · Horizontal')
+    expect(translate(messagesForLocale('zh-CN'), 'export.atlasPreview.meta', { width: 384, height: 384, layout: '紧凑网格' }))
+      .toBe('384 × 384 px · 紧凑网格')
+  })
+
+  it('keeps preset labels and slash preset names available', () => {
+    expect(translate(en, 'presets.saveAs')).toBe('Save as…')
+    expect(translate(en, 'slash.presets.fullCircle.name')).toBe('Full Circle')
+    expect(translate(messagesForLocale('zh-CN'), 'slash.presets.fullCircle.description')).toBe('完整的 360° 环形扫击。')
+  })
+
   it('falls back to English for keys missing from the current locale', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const incomplete = { app: { title: '自定义标题' } } as unknown as MessageTree

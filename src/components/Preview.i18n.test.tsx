@@ -33,6 +33,8 @@ function previewMarkup(locale: 'en' | 'zh-CN'): string {
         onPlaying={() => undefined}
         onPreviewFps={() => undefined}
         onFrameCount={() => undefined}
+        zoom="fit"
+        onZoomChange={() => undefined}
       />
     </I18nProvider>,
   )
@@ -43,6 +45,10 @@ describe('Preview localized markup', () => {
     const markup = previewMarkup('en')
     expect(markup).toContain('LIVE PREVIEW')
     expect(markup).toContain('aria-label="Animated pixel effect preview"')
+    expect(markup).toContain('aria-label="Zoom"')
+    expect(markup).toContain('Fit')
+    expect(markup).toContain('1×')
+    expect(markup).toContain('8×')
     expect(markup).toContain('aria-label="Play animation"')
     expect(markup).toContain('aria-label="Current frame"')
     expect(markup).toContain('Total frames')

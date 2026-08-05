@@ -56,6 +56,72 @@
 .project-menu-status { margin: 6px 2px 2px; color: var(--success); font-size: 0.68rem; }
 .project-menu-error { margin: 6px 2px 2px; color: #ff9d9d; font-size: 0.68rem; }
 .project-file-input { display: none; }
+.preset-bar { position: relative; display: grid; gap: 8px; padding: 12px 22px; border-top: 1px solid var(--border); }
+.preset-bar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.preset-select {
+  min-width: 150px;
+  max-width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: 0;
+  color: #e5e8ef;
+  background: #0c0f16;
+  font-size: 0.72rem;
+}
+.preset-modified { color: var(--accent-bright); font-size: 0.66rem; font-weight: 700; white-space: nowrap; }
+.preset-description { margin: 0; color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
+.preset-error { margin: 0; color: #ff9d9d; font-size: 0.68rem; }
+.preset-warning { margin: 0; color: #ffd28a; font-size: 0.68rem; }
+.preset-hint { margin: 0; color: var(--muted); font-size: 0.68rem; }
+.preset-save-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.preset-save-row input {
+  min-width: 0;
+  flex: 1 1 160px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: 0;
+  color: white;
+  background: #0c0f16;
+  font-size: 0.72rem;
+}
+.preset-manage { position: relative; min-width: 0; }
+.preset-manage-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  display: grid;
+  gap: 4px;
+  min-width: 240px;
+  max-width: calc(100vw - 32px);
+  max-height: min(320px, 60vh);
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid #3b4355;
+  border-radius: 10px;
+  background: #11151e;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+.preset-manage-item { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.preset-manage-item input {
+  min-width: 0;
+  flex: 1;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: white;
+  background: #0c0f16;
+  font-size: 0.7rem;
+}
+.preset-manage-name { flex: 1; min-width: 0; overflow: hidden; color: #d6dae5; font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
+.text-button.danger { color: #ff9d9d; }
+.preset-manage-empty { margin: 0; padding: 6px 4px; color: var(--muted); font-size: 0.68rem; }
 
 .category-tabs {
   display: grid;

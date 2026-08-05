@@ -31,6 +31,36 @@ const enTree = {
     playbackFps: 'Playback FPS',
     fpsPreview: '{fps} FPS preview',
     generatorTools: 'Generator preview tools',
+    zoom: 'Zoom',
+    zoomFit: 'Fit',
+    zoomOption: '{zoom}×',
+  },
+  presets: {
+    selectLabel: 'Effect preset',
+    placeholder: 'Presets…',
+    builtInGroup: 'Built-in',
+    customGroup: 'Custom',
+    modified: 'Modified',
+    saveAs: 'Save as…',
+    update: 'Update',
+    manage: 'Manage',
+    manageDialogLabel: 'Manage presets',
+    saveNameLabel: 'Preset name',
+    saveConfirm: 'Save',
+    cancel: 'Cancel',
+    confirm: 'OK',
+    rename: 'Rename',
+    delete: 'Delete',
+    confirmDelete: 'Confirm delete?',
+    noCustom: 'No custom presets yet.',
+    warning: 'Local preset data was unreadable and was ignored.',
+    storageHint: 'Custom presets need browser storage; built-in presets still work.',
+    errors: {
+      nameLength: 'Preset name must be 1–40 characters.',
+      limit: 'Maximum 32 custom presets per generator.',
+      storageUnavailable: 'Browser storage is unavailable.',
+      invalidPreset: 'This preset could not be applied.',
+    },
   },
   controls: {
     about: 'About {label}',
@@ -40,6 +70,13 @@ const enTree = {
     name: 'Slash',
     description: 'Animated weapon trails and sweeping attack arcs.',
     previewTitle: 'Sweep study',
+    presets: {
+      cleanArc: { name: 'Clean Arc', description: 'A crisp, low-breakup base slash.' },
+      heavyCleave: { name: 'Heavy Cleave', description: 'A thick arc with a long, heavy trail.' },
+      energySweep: { name: 'Energy Sweep', description: 'A bright palette with fast energy sparks.' },
+      shatteredEdge: { name: 'Shattered Edge', description: 'A heavily broken edge with directional shards.' },
+      fullCircle: { name: 'Full Circle', description: 'A complete 360-degree ring sweep.' },
+    },
     categories: {
       shape: { label: 'Shape', description: 'Define the arc silhouette, orientation, and perspective.' },
       palette: { label: 'Palette', description: 'Build the radial color bands from the inner edge outward.' },
@@ -171,6 +208,16 @@ const enTree = {
       exportGif: 'Export GIF',
       exportApng: 'Export APNG',
     },
+    atlasPreview: {
+      toggle: 'Sprite sheet preview',
+      meta: '{width} × {height} px · {layout}',
+      layoutHorizontal: 'Horizontal',
+      layoutCompact: 'Compact grid',
+      zoomLabel: 'Preview zoom',
+      zoomFit: 'Fit',
+      zoomOption: '{zoom}×',
+      canvasLabel: 'Packed sprite sheet preview',
+    },
     frameZip: {
       summary: '{frameCount} frames · {width} × {height} px · {fps} FPS',
       includesManifest: 'Includes manifest.json for frame metadata.',
@@ -251,6 +298,36 @@ export const zhCN: MessageTree = {
     playbackFps: '播放帧率',
     fpsPreview: '{fps} FPS 预览',
     generatorTools: '生成器预览工具',
+    zoom: '缩放',
+    zoomFit: '适应',
+    zoomOption: '{zoom}×',
+  },
+  presets: {
+    selectLabel: '效果预设',
+    placeholder: '预设…',
+    builtInGroup: '内置',
+    customGroup: '自定义',
+    modified: '已修改',
+    saveAs: '另存为…',
+    update: '更新',
+    manage: '管理',
+    manageDialogLabel: '管理预设',
+    saveNameLabel: '预设名称',
+    saveConfirm: '保存',
+    cancel: '取消',
+    confirm: '确定',
+    rename: '重命名',
+    delete: '删除',
+    confirmDelete: '确认删除？',
+    noCustom: '暂无自定义预设。',
+    warning: '本地预设数据无法读取，已忽略。',
+    storageHint: '自定义预设需要浏览器存储；内置预设仍可用。',
+    errors: {
+      nameLength: '预设名称需为 1–40 个字符。',
+      limit: '每个生成器最多 32 个自定义预设。',
+      storageUnavailable: '浏览器存储不可用。',
+      invalidPreset: '该预设无法应用。',
+    },
   },
   controls: {
     about: '关于 {label}',
@@ -260,6 +337,13 @@ export const zhCN: MessageTree = {
     name: '斩击',
     description: '动态武器拖尾与横扫攻击弧线。',
     previewTitle: '扫掠效果',
+    presets: {
+      cleanArc: { name: '干净弧光', description: '清晰、低破碎的基础刀光。' },
+      heavyCleave: { name: '重斩', description: '较厚、拖尾较长的重击弧线。' },
+      energySweep: { name: '能量横扫', description: '鲜亮色板与快速能量火花。' },
+      shatteredEdge: { name: '碎裂边缘', description: '明显破口与定向碎片。' },
+      fullCircle: { name: '整圆', description: '完整的 360° 环形扫击。' },
+    },
     categories: {
       shape: { label: '形状', description: '定义弧线的轮廓、朝向与透视。' },
       palette: { label: '调色板', description: '从内缘向外构建径向色带。' },
@@ -391,6 +475,16 @@ export const zhCN: MessageTree = {
       exportGif: '导出 GIF',
       exportApng: '导出 APNG',
     },
+    atlasPreview: {
+      toggle: '精灵图预览',
+      meta: '{width} × {height} px · {layout}',
+      layoutHorizontal: '横向',
+      layoutCompact: '紧凑网格',
+      zoomLabel: '预览缩放',
+      zoomFit: '适应',
+      zoomOption: '{zoom}×',
+      canvasLabel: '打包精灵图预览',
+    },
     frameZip: {
       summary: '{frameCount} 帧 · {width} × {height} px · {fps} FPS',
       includesManifest: '包含 manifest.json 帧元数据。',
@@ -432,6 +526,7 @@ export interface MessageParams {
   'export.animation.summary': { width: number; height: number; frameCount: number; fps: number }
   'export.frameZip.summary': { frameCount: number; width: number; height: number; fps: number }
   'preview.fpsPreview': { fps: number }
+  'preview.zoomOption': { zoom: number }
   'controls.about': { label: string }
   'controls.value': { label: string }
   'slash.palette.band': { index: number }
@@ -446,6 +541,8 @@ export interface MessageParams {
   'export.fileNames.unityZip': { name: string; width: number; height: number; frameCount: number; layout: string }
   'export.fileNames.unityImage': { name: string; width: number; height: number; frameCount: number; layout: string }
   'export.fileNames.folder': { name: string; width: number; height: number; frameCount: number; layout: string }
+  'export.atlasPreview.meta': { width: number; height: number; layout: string }
+  'export.atlasPreview.zoomOption': { zoom: number }
   'export.gifFileName': { name: string; width: number; height: number; frameCount: number; fps: number }
   'export.apngFileName': { name: string; width: number; height: number; frameCount: number; fps: number }
 }
@@ -517,6 +614,12 @@ export interface CategoryDisplayKeys {
   readonly description: MessageKey
 }
 
+/** Stable translation keys for one generator preset name and description. */
+export interface PresetDisplayKeys {
+  readonly name: MessageKey
+  readonly description: MessageKey
+}
+
 const GENERATOR_DISPLAY_KEYS: Readonly<Record<string, GeneratorDisplayKeys>> = {
   slash: {
     name: 'slash.name',
@@ -535,6 +638,16 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
   },
 }
 
+const PRESET_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, PresetDisplayKeys>>>> = {
+  slash: {
+    cleanArc: { name: 'slash.presets.cleanArc.name', description: 'slash.presets.cleanArc.description' },
+    heavyCleave: { name: 'slash.presets.heavyCleave.name', description: 'slash.presets.heavyCleave.description' },
+    energySweep: { name: 'slash.presets.energySweep.name', description: 'slash.presets.energySweep.description' },
+    shatteredEdge: { name: 'slash.presets.shatteredEdge.name', description: 'slash.presets.shatteredEdge.description' },
+    fullCircle: { name: 'slash.presets.fullCircle.name', description: 'slash.presets.fullCircle.description' },
+  },
+}
+
 /** Returns translated display keys for a generator id, or undefined to keep the definition fallback. */
 export function generatorDisplayKeys(generatorId: string): GeneratorDisplayKeys | undefined {
   return GENERATOR_DISPLAY_KEYS[generatorId]
@@ -543,4 +656,9 @@ export function generatorDisplayKeys(generatorId: string): GeneratorDisplayKeys 
 /** Returns translated display keys for one category of a generator id, or undefined for the fallback. */
 export function categoryDisplayKeys(generatorId: string, categoryId: string): CategoryDisplayKeys | undefined {
   return CATEGORY_DISPLAY_KEYS[generatorId]?.[categoryId]
+}
+
+/** Returns translated display keys for one preset id, or undefined. */
+export function presetDisplayKeys(generatorId: string, presetId: string): PresetDisplayKeys | undefined {
+  return PRESET_DISPLAY_KEYS[generatorId]?.[presetId]
 }

@@ -5,6 +5,7 @@ import { I18nProvider } from '../i18n/I18nProvider'
 import { DEFAULT_SLASH_PARAMETERS } from '../generators/slash/model'
 import { slashProjectCodec } from '../generators/slash/project'
 import type { PixelFrame } from '../shared/pixel/frame'
+import { packSpriteSheet } from '../shared/pixel/atlas'
 import type { WorkspaceFileTask } from './fileOperations'
 import type { UnityExportSettingsState } from './unitySettings'
 import {
@@ -163,6 +164,8 @@ describe('export panel state', () => {
       spriteTarget: 'png',
       animationFormat: 'gif',
       loop: true,
+      atlasPreviewOpen: false,
+      atlasZoom: 'fit',
       categoryErrors: {},
     })
   })
@@ -190,24 +193,21 @@ describe('export panel state', () => {
     state = exportPanelReducer(state, { type: 'clearCategoryError', category: 'spriteSheet' })
     expect(state.categoryErrors.spriteSheet).toBeUndefined()
   })
+
+  it('toggles the atlas preview and its zoom independently', () => {
+    let state = exportPanelReducer(createInitialExportPanelState(), { type: 'toggleAtlasPreview' })
+    expect(state.atlasPreviewOpen).toBe(true)
+    state = exportPanelReducer(state, { type: 'setAtlasZoom', zoom: 2 })
+    expect(state.atlasZoom).toBe(2)
+    state = exportPanelReducer(state, { type: 'toggleAtlasPreview' })
+    expect(state.atlasPreviewOpen).toBe(false)
+    expect(state.atlasZoom).toBe(2)
+  })
 })
 
 describe('export panel actions', () => {
   const frames = [sampleFrame(128, 128, 255), sampleFrame(128, 128, 0)]
   const frameSet = new RenderedFrameSet(frames)
-
-  function dependencies(overrides: Partial<ExportDependencies> = {}): ExportDependencies {
-    return {
-      downloadSpriteSheet: vi.fn(),
-      encodeAnimation: vi.fn(),
-      downloadBytes: vi.fn(),
-      encodePng: vi.fn((frame: PixelFrame) => new Uint8Array([frame.width])),
-      buildFrameZip: vi.fn(() => new Uint8Array([1, 2, 3])),
-      buildUnityZip: vi.fn(() => new Uint8Array([4, 5, 6])),
-      randomGuid: vi.fn(() => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
-      ...overrides,
-    }
-  }
 
   it('exports a horizontal sprite sheet exactly once with the current frames', () => {
     const downloadSpriteSheet = vi.fn()
@@ -397,6 +397,7 @@ describe('ExportPanelView states', () => {
     locale: 'en' | 'zh-CN' = 'en',
     activeTask: WorkspaceFileTask | null = null,
     unitySettings: UnityExportSettingsState = defaultUnitySettings,
+    packed: ReturnType<typeof packSpriteSheet> | null = null,
   ): string {
     vi.stubGlobal('navigator', locale === 'zh-CN' ? { language: 'zh-CN' } : undefined)
     return renderToStaticMarkup(
@@ -407,6 +408,9 @@ describe('ExportPanelView states', () => {
           unitySettings={unitySettings}
           normalizedGuid={unitySettings.stableGuid.trim() === '' ? '' : unitySettings.stableGuid.replace(/-/g, '').toLowerCase()}
           activeTask={activeTask}
+          packed={packed}
+          atlasCanvasRef={{ current: null }}
+          atlasPreviewId="atlas-preview"
           onUnitySettingsChange={noop}
           onSelectCategory={noop}
           onSetLayout={noop}
@@ -417,6 +421,8 @@ describe('ExportPanelView states', () => {
           onExportUnity={noop}
           onExportAnimation={noop}
           onExportFrameZip={noop}
+          onToggleAtlasPreview={noop}
+          onSetAtlasZoom={noop}
         />
       </I18nProvider>,
     )
@@ -487,4 +493,69 @@ describe('ExportPanelView states', () => {
     expect(markup).toContain('animation failed')
     expect(markup).not.toContain('sheet failed')
   })
+
+  it('renders the atlas preview foldout closed with ARIA wiring', () => {
+    const markup = viewMarkup(createInitialExportPanelState())
+    expect(markup).toContain('Sprite sheet preview')
+    expect(markup).toContain('aria-expanded="false"')
+    expect(markup).toContain('aria-controls="atlas-preview"')
+    expect(markup).not.toContain('id="atlas-preview"')
+  })
+
+  it('renders packed atlas, frame labels, and zoom when open', () => {
+    const frames = [sampleFrame(16, 16, 255), sampleFrame(16, 16, 0)]
+    const packed = packSpriteSheet(frames, 'compact', 'slash')
+    const markup = viewMarkup(
+      { ...createInitialExportPanelState(), atlasPreviewOpen: true, atlasZoom: 'fit', spriteLayout: 'compact' },
+      'en',
+      null,
+      defaultUnitySettings,
+      packed,
+    )
+    expect(markup).toContain('aria-expanded="true"')
+    expect(markup).toContain('id="atlas-preview"')
+    expect(markup).toContain('16 × 32 px · Compact grid')
+    expect(markup).toContain('aria-label="Packed sprite sheet preview"')
+    expect(markup).toContain('Fit')
+    expect(markup).toContain('>1×</option>')
+    expect(markup).toContain('>2×</option>')
+    expect(markup).toContain('>4×</option>')
+  })
 })
+
+describe('ExportPanel atlas packing', () => {
+  it('does not pack the atlas while the foldout is closed', () => {
+    const packSpriteSheetSpy = vi.fn()
+    vi.stubGlobal('navigator', undefined)
+    const markup = renderToStaticMarkup(
+      <I18nProvider>
+        <ExportPanel
+          frameSet={sampleFrameSet()}
+          previewFps={12}
+          generatorId="slash"
+          generatorName="Slash"
+          unitySettings={defaultUnitySettings}
+          onUnitySettingsChange={vi.fn()}
+          fileOperations={fileOperations()}
+          dependencies={dependencies({ packSpriteSheet: packSpriteSheetSpy })}
+        />
+      </I18nProvider>,
+    )
+    expect(markup).toContain('Sprite sheet preview')
+    expect(packSpriteSheetSpy).not.toHaveBeenCalled()
+  })
+})
+
+function dependencies(overrides: Partial<ExportDependencies> = {}): ExportDependencies {
+  return {
+    downloadSpriteSheet: vi.fn(),
+    encodeAnimation: vi.fn(),
+    downloadBytes: vi.fn(),
+    encodePng: vi.fn((frame: PixelFrame) => new Uint8Array([frame.width])),
+    buildFrameZip: vi.fn(() => new Uint8Array([1, 2, 3])),
+    buildUnityZip: vi.fn(() => new Uint8Array([4, 5, 6])),
+    randomGuid: vi.fn(() => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+    packSpriteSheet: vi.fn(),
+    ...overrides,
+  }
+}

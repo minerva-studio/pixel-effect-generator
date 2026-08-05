@@ -138,7 +138,7 @@ export const slashProjectCodec: GeneratorProjectCodec<SlashParameters> = {
   parse: parseSlashParameters,
 }
 
-function readPalette(value: unknown): RgbColor[] {
+export function readPalette(value: unknown): RgbColor[] {
   if (!Array.isArray(value) || value.length < 2 || value.length > 6) {
     throw new RangeError('palette must be an array of 2 to 6 colors.')
   }
@@ -154,7 +154,7 @@ function readPalette(value: unknown): RgbColor[] {
   })
 }
 
-function readInteger(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number): number {
+export function readInteger(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number): number {
   const value = record[key]
   if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum) {
     throw new RangeError(`${key} must be an integer between ${minimum} and ${maximum}.`)
@@ -162,7 +162,7 @@ function readInteger(record: Readonly<Record<string, unknown>>, key: string, min
   return value
 }
 
-function readNumber(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number): number {
+export function readNumber(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number): number {
   const value = record[key]
   if (typeof value !== 'number' || !Number.isFinite(value) || value < minimum || value > maximum) {
     throw new RangeError(`${key} must be a number between ${minimum} and ${maximum}.`)
@@ -170,7 +170,7 @@ function readNumber(record: Readonly<Record<string, unknown>>, key: string, mini
   return value
 }
 
-function readEnum<Value extends string>(
+export function readEnum<Value extends string>(
   record: Readonly<Record<string, unknown>>,
   key: string,
   allowed: readonly Value[],

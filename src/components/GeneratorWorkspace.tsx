@@ -15,9 +15,11 @@ import {
 import { useI18n } from '../i18n/I18nProvider'
 import { buildProjectDocument } from '../shared/project/document'
 import type { GeneratorProjectCodec, ProjectExportSettings } from '../shared/project/types'
+import type { PreviewZoom } from '../shared/preview/zoom'
 import { ExportPanel } from './ExportPanel'
 import { useFileOperationController } from './fileOperations'
 import { Preview } from './Preview'
+import { PresetBar } from './PresetBar'
 import { ProjectMenu } from './ProjectMenu'
 import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
 import { DEFAULT_UNITY_EXPORT_SETTINGS, type UnityExportSettingsState } from './unitySettings'
@@ -75,6 +77,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
   const BoundWorkspace = ({ session, selectedGeneratorId, onSelectGenerator, onSessionAction, onReset }: RegisteredWorkspaceProps) => {
     const { t, locale } = useI18n()
     const [unitySettings, setUnitySettings] = useState<UnityExportSettingsState>(DEFAULT_UNITY_EXPORT_SETTINGS)
+    const [previewZoom, setPreviewZoom] = useState<PreviewZoom>('fit')
     const fileOperations = useFileOperationController()
     const dispatch = (action: GeneratorSessionAction<Parameters, Category>) => {
       onSessionAction({
@@ -136,6 +139,14 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
         fileOperations={fileOperations}
       />
     ) : undefined
+    const presetBar = module.presetCapability ? (
+      <PresetBar
+        capability={module.presetCapability}
+        generatorId={module.definition.id}
+        parameters={typedSession.parameters}
+        onApply={dispatchParameters}
+      />
+    ) : undefined
 
     useEffect(() => {
       if (typedSession.frameIndex >= frameCount) {
@@ -152,6 +163,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           generatorName={generatorName}
           category={activeCategory}
           projectMenu={projectMenu}
+          presetBar={presetBar}
           onReset={onReset}
           onParameters={dispatchParameters}
           onCategory={(nextCategory) => dispatch({ type: 'category', category: nextCategory })}
@@ -170,6 +182,8 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           onFrameIndex={(frameIndex) => dispatch({ type: 'frame', frameIndex })}
           onPlaying={(isPlaying) => dispatch({ type: 'play', isPlaying })}
           onPreviewFps={(previewFps) => dispatch({ type: 'fps', previewFps })}
+          zoom={previewZoom}
+          onZoomChange={setPreviewZoom}
           onFrameCount={(frameCount) => dispatchParameters(
             module.writeFrameCount(typedSession.parameters, frameCount),
           )}
@@ -246,6 +260,7 @@ function ControlsPanel<Parameters, Category extends string>({
   generatorName,
   category,
   projectMenu,
+  presetBar,
   onReset,
   onParameters,
   onCategory,
@@ -255,6 +270,7 @@ function ControlsPanel<Parameters, Category extends string>({
   readonly generatorName: string
   readonly category: { readonly id: Category; readonly label: string; readonly description: string }
   readonly projectMenu?: ReactNode
+  readonly presetBar?: ReactNode
   readonly onReset: () => void
   readonly onParameters: (parameters: Parameters) => void
   readonly onCategory: (category: Category) => void
@@ -274,6 +290,8 @@ function ControlsPanel<Parameters, Category extends string>({
           <button className="text-button" type="button" onClick={onReset}>{t('workspace.reset')}</button>
         </div>
       </div>
+
+      {presetBar}
 
       <div className="category-tabs" role="tablist" aria-label={t('workspace.categoryTabsLabel', { name: generatorName })}>
         {module.categories.map((entry) => {

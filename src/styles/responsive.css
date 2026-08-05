@@ -37,6 +37,15 @@
   .hero { align-items: flex-start; gap: 20px; }
   .status-chip { display: none; }
   .project-menu-button, .project-menu-item { min-height: 44px; }
+  .preset-bar .secondary-button, .preset-bar-row > button { min-height: 44px; }
+  .preset-manage { position: static; }
+  .preset-manage-panel {
+    left: 8px;
+    right: 8px;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+  }
   .controls-heading, .category-content { padding-left: 17px; padding-right: 17px; }
   .parameter-field { grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
   .field-inputs { grid-template-columns: 1fr 70px; gap: 9px; }
