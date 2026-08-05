@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import type { FrameSize, PixelFrame } from '../shared/pixel/frame'
+import type { GeneratorProjectCodec } from '../shared/project/types'
 
 /** Navigation metadata for one registered generator with a literal id. */
 export interface GeneratorDefinition<Id extends string> {
@@ -39,6 +40,8 @@ export interface GeneratorModule<Id extends string, Parameters, Category extends
   readonly definition: GeneratorDefinition<Id>
   readonly categories: readonly GeneratorCategory<Category>[]
   readonly defaultParameters: Parameters
+  /** Optional project persistence codec; without it the Project tab is hidden. */
+  readonly projectCodec?: GeneratorProjectCodec<Parameters>
   readonly render: (parameters: Parameters) => readonly PixelFrame[]
   readonly readFrameCount: (parameters: Parameters) => number
   readonly writeFrameCount: (parameters: Parameters, frameCount: number) => Parameters
@@ -79,6 +82,13 @@ export interface GeneratorSession<Parameters, Category extends string> {
 /** Discriminated session updates dispatched from generic workspace components. */
 export type GeneratorSessionAction<Parameters, Category extends string> =
   | { readonly type: 'parameters'; readonly parameters: Parameters; readonly frames: RenderedFrameSet }
+  | {
+      readonly type: 'importProject'
+      readonly parameters: Parameters
+      readonly frames: RenderedFrameSet
+      readonly previewFps: number
+      readonly frameIndex: 0
+    }
   | { readonly type: 'category'; readonly category: Category }
   | { readonly type: 'frame'; readonly frameIndex: number }
   | { readonly type: 'play'; readonly isPlaying: boolean }
@@ -151,6 +161,25 @@ export function createRenderedParametersAction<Parameters, Category extends stri
   }
 }
 
+/**
+ * Renders an imported parameter snapshot exactly once and builds the atomic
+ * session action. Throws when the renderer rejects the parameters so callers
+ * can keep the previous session untouched.
+ */
+export function createImportedProjectAction<Parameters, Category extends string>(
+  module: GeneratorModule<string, Parameters, Category>,
+  parameters: Parameters,
+  previewFps: number,
+): GeneratorSessionAction<Parameters, Category> {
+  return {
+    type: 'importProject',
+    parameters,
+    frames: new RenderedFrameSet(module.render(parameters)),
+    previewFps,
+    frameIndex: 0,
+  }
+}
+
 /** Validates that an action matches the target session's typed shape. */
 export function reduceSession<Parameters, Category extends string>(
   session: GeneratorSession<Parameters, Category>,
@@ -159,6 +188,14 @@ export function reduceSession<Parameters, Category extends string>(
   switch (action.type) {
     case 'parameters':
       return { ...session, parameters: action.parameters, frames: action.frames }
+    case 'importProject':
+      return {
+        ...session,
+        parameters: action.parameters,
+        frames: action.frames,
+        previewFps: action.previewFps,
+        frameIndex: action.frameIndex,
+      }
     case 'category':
       return { ...session, activeCategory: action.category }
     case 'frame':

@@ -3,6 +3,7 @@ import { defineGenerator, registerGenerator } from '../registry'
 import { SlashControls, SlashPreviewTools } from './controls'
 import { MIN_CANVAS_SIZE, MAX_CANVAS_SIZE, DEFAULT_SLASH_PARAMETERS, MAX_FRAME_COUNT, MIN_FRAME_COUNT, resizeSlashCanvas, type SlashParameters } from './model'
 import { renderSlashFrames } from './renderer'
+import { slashProjectCodec } from './project'
 
 export type SlashCategory = 'shape' | 'palette' | 'motion' | 'breakup' | 'fragments'
 
@@ -24,6 +25,7 @@ export const slashModule = defineGenerator({
   },
   categories: SLASH_CATEGORIES,
   defaultParameters: DEFAULT_SLASH_PARAMETERS,
+  projectCodec: slashProjectCodec,
   render: renderSlashFrames,
   readFrameCount: (parameters) => parameters.frameCount,
   readFrameSize: (parameters) => ({ width: parameters.canvasWidth, height: parameters.canvasHeight }),

@@ -9,12 +9,17 @@ import {
 } from '../registry'
 import { blipGenerator, blipModule } from './blipFixture'
 import { slashModule } from '../slash/module'
+import { slashProjectCodec } from '../slash/project'
 import type { SlashParameters } from '../slash/model'
 import { packHorizontalSheet } from '../../shared/pixel/spritesheet'
 
 const dualRegistry = createGeneratorRegistry([blipGenerator, GENERATOR_REGISTRY.get('slash')] as const)
 
 describe('generator registry', () => {
+  it('registers the slash project codec on its module', () => {
+    expect(slashModule.projectCodec).toBe(slashProjectCodec)
+  })
+
   it('registers unique ids and indexes while preserving order', () => {
     expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash'])
     expect(dualRegistry.registrations.map((registration) => registration.id)).toEqual(['blip', 'slash'])

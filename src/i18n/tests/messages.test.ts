@@ -41,6 +41,32 @@ describe('translation resources', () => {
     expect(translate(messagesForLocale('zh-CN'), 'export.apngFileName', { name: '斩击', width: 128, height: 128, frameCount: 8, fps: 12 })).toBe('pixel-斩击-128x128-8-帧-12fps-animated.png')
   })
 
+  it('interpolates project, ZIP, and Unity file names with generator ids', () => {
+    const params = { name: 'slash', width: 128, height: 128, frameCount: 8 }
+    expect(translate(en, 'export.fileNames.project', params)).toBe('pixel-slash-128x128-8-frames.json')
+    expect(translate(en, 'export.fileNames.compactPng', params)).toBe('pixel-slash-128x128-8-frames-compact.png')
+    expect(translate(en, 'export.fileNames.frameZip', params)).toBe('pixel-slash-128x128-8-frames.zip')
+    expect(translate(en, 'export.fileNames.unityZip', { ...params, layout: 'compact' })).toBe('pixel-slash-128x128-8-frames-compact-unity6.zip')
+    expect(translate(messagesForLocale('zh-CN'), 'export.fileNames.project', params)).toBe('pixel-slash-128x128-8-帧.json')
+  })
+
+  it('interpolates export category summaries in both languages', () => {
+    const summary = { name: 'Slash', width: 256, height: 128, frameCount: 8, fps: 12 }
+    expect(translate(en, 'export.project.summary', summary)).toBe('Slash · 256 × 128 · 8 frames · 12 FPS')
+    expect(translate(en, 'export.frameZip.summary', { frameCount: 8, width: 256, height: 128, fps: 12 }))
+      .toBe('8 frames · 256 × 128 px · 12 FPS')
+    expect(translate(messagesForLocale('zh-CN'), 'export.frameZip.summary', { frameCount: 8, width: 256, height: 128, fps: 12 }))
+      .toBe('8 帧 · 256 × 128 px · 12 FPS')
+  })
+
+  it('interpolates the Unity atlas size error in both languages', () => {
+    const params = { width: 3072, height: 128 }
+    expect(translate(en, 'export.errors.unityAtlasTooLarge', params))
+      .toBe('The Unity atlas is 3072 × 128 px; Unity 6 supports up to 16384 px per side.')
+    expect(translate(messagesForLocale('zh-CN'), 'export.errors.unityAtlasTooLarge', params))
+      .toBe('Unity 图集为 3072 × 128 px；Unity 6 每边上限为 16384 px。')
+  })
+
   it('falls back to English for keys missing from the current locale', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const incomplete = { app: { title: '自定义标题' } } as unknown as MessageTree

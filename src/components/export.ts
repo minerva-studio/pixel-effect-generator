@@ -20,6 +20,11 @@ export function downloadBytes(bytes: Uint8Array, fileName: string, mime: string)
   downloadBlob(new Blob([copy], { type: mime }), fileName)
 }
 
+/** Starts a local browser download of plain text content. */
+export function downloadText(text: string, fileName: string, mime: string): void {
+  downloadBlob(new Blob([text], { type: mime }), fileName)
+}
+
 /** Draws one already-rasterized RGBA frame without invoking Canvas geometry. */
 export function drawFrame(canvas: HTMLCanvasElement, frame: PixelFrame): void {
   canvas.width = frame.width

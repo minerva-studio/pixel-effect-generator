@@ -6,14 +6,16 @@ import type {
   RegisteredGeneratorAction,
   RegisteredGeneratorSession,
 } from '../generators/contract'
-import { createRenderedParametersAction } from '../generators/contract'
+import { createImportedProjectAction, createRenderedParametersAction } from '../generators/contract'
 import { GENERATOR_CATALOG } from '../generators/registry'
 import {
   categoryDisplayKeys,
   generatorDisplayKeys,
 } from '../i18n/messages'
 import { useI18n } from '../i18n/I18nProvider'
-import { ExportPanel } from './ExportPanel'
+import { buildProjectDocument } from '../shared/project/document'
+import type { GeneratorProjectCodec, ProjectExportSettings } from '../shared/project/types'
+import { ExportPanel, type ImportProjectHandler, type ProjectExportBridge } from './ExportPanel'
 import { Preview } from './Preview'
 
 interface RegisteredWorkspaceProps {
@@ -71,6 +73,32 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
       label: categoryKeys ? t(categoryKeys.label) : category.label,
       description: categoryKeys ? t(categoryKeys.description) : category.description,
     }
+    const projectCodec = module.projectCodec
+    const importProject: ImportProjectHandler = ({ parameters, fps }) => {
+      try {
+        const action = createImportedProjectAction(module, parameters as Parameters, fps)
+        onSessionAction({
+          generatorId: module.definition.id,
+          action: action as GeneratorSessionAction<unknown, string>,
+        })
+        return { ok: true }
+      } catch (error) {
+        return {
+          ok: false,
+          error: { code: 'RENDER_FAILED', detail: describeError(error) },
+        }
+      }
+    }
+    const projectBridge: ProjectExportBridge | undefined = projectCodec ? {
+      codec: projectCodec as unknown as GeneratorProjectCodec<unknown>,
+      buildDocument: (settings: ProjectExportSettings) => buildProjectDocument(
+        projectCodec as unknown as GeneratorProjectCodec<unknown>,
+        typedSession.parameters,
+        typedSession.previewFps,
+        settings,
+      ),
+      importProject,
+    } : undefined
 
     useEffect(() => {
       if (typedSession.frameIndex >= frameCount) {
@@ -114,13 +142,19 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
         <ExportPanel
           frameSet={typedSession.frames}
           previewFps={typedSession.previewFps}
+          generatorId={module.definition.id}
           generatorName={generatorName}
+          projectBridge={projectBridge}
         />
       </section>
     )
   }
 
   return BoundWorkspace
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 /** Navigation sidebar listing every registered generator. */

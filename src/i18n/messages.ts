@@ -116,15 +116,76 @@ const enTree = {
     sectionLabel: 'EXPORT',
     title: 'Export frames',
     summary: '{width} × {height} canvas · {frameCount} frames · {fps} FPS',
-    spriteSheetTitle: 'Sprite sheet',
-    animatedTitle: 'Animated image',
-    animatedDescription: '{width} × {height} px · {frameCount} frames · {fps} FPS',
-    loop: 'Loop',
-    loopLabel: 'Loop animation',
-    gifButton: 'Export GIF',
-    apngButton: 'Export APNG',
+    tabsLabel: 'Export categories',
+    tabs: {
+      project: 'Project',
+      spriteSheet: 'Sprite Sheet',
+      animation: 'Animation',
+      frameZip: 'Frame ZIP',
+    },
+    project: {
+      summary: '{name} · {width} × {height} · {frameCount} frames · {fps} FPS',
+      save: 'Save JSON',
+      load: 'Load JSON',
+      fileLabel: 'Project JSON file',
+      imported: 'Project imported successfully.',
+    },
+    spriteSheet: {
+      layout: 'Layout',
+      horizontal: 'Horizontal',
+      compactGrid: 'Compact grid',
+      target: 'Target',
+      pngTarget: 'PNG',
+      unityTarget: 'Unity 6 package',
+      expectedSize: '{width} × {height} px',
+      exportPng: 'Export PNG',
+      exportUnityZip: 'Export Unity ZIP',
+      pixelsPerUnit: 'Pixels Per Unit',
+      stableGuid: 'Stable GUID',
+      stableGuidPlaceholder: 'Optional GUID…',
+      stableGuidValue: 'Normalized GUID: {guid}',
+      unityHint: 'Fill in a GUID to keep exports stable; leave empty to generate a new one each export.',
+    },
+    animation: {
+      format: 'Format',
+      loop: 'Loop',
+      loopLabel: 'Loop animation',
+      gif: 'GIF',
+      apng: 'APNG',
+      summary: '{width} × {height} px · {frameCount} frames · {fps} FPS',
+      exportGif: 'Export GIF',
+      exportApng: 'Export APNG',
+    },
+    frameZip: {
+      summary: '{frameCount} frames · {width} × {height} px · {fps} FPS',
+      includesManifest: 'Includes manifest.json for frame metadata.',
+      exportButton: 'Export Frame ZIP',
+    },
+    preparing: 'Preparing…',
     encoding: 'Encoding…',
-    error: 'Export failed. Please try again.',
+    errors: {
+      projectFileUnreadable: 'Could not read the selected file.',
+      invalidJson: 'The file is not valid JSON.',
+      unsupportedSchema: 'This is not a Pixel Effect project.',
+      unsupportedVersion: 'This project version is not supported.',
+      wrongGenerator: 'This project was saved for a different generator.',
+      invalidParameters: 'The project parameters are invalid.',
+      invalidFps: 'The playback FPS is not supported.',
+      invalidPpu: 'Pixels Per Unit must be an integer from 1 to 1024.',
+      invalidGuid: 'Stable GUID must be empty or a valid GUID.',
+      unityAtlasTooLarge: 'The Unity atlas is {width} × {height} px; Unity 6 supports up to 16384 px per side.',
+      renderFailed: 'The project could not be rendered.',
+      exportFailed: 'Export failed. Please try again.',
+    },
+    fileNames: {
+      project: 'pixel-{name}-{width}x{height}-{frameCount}-frames.json',
+      compactPng: 'pixel-{name}-{width}x{height}-{frameCount}-frames-compact.png',
+      frameZip: 'pixel-{name}-{width}x{height}-{frameCount}-frames.zip',
+      folderSequence: 'pixel-{name}-{width}x{height}-{frameCount}-frames',
+      unityZip: 'pixel-{name}-{width}x{height}-{frameCount}-frames-{layout}-unity6.zip',
+      unityImage: 'pixel-{name}-{width}x{height}-{frameCount}-frames-{layout}.png',
+      folder: 'pixel-{name}-{width}x{height}-{frameCount}-frames-{layout}-unity6',
+    },
     gifFileName: 'pixel-{name}-{width}x{height}-{frameCount}-frames-{fps}fps.gif',
     apngFileName: 'pixel-{name}-{width}x{height}-{frameCount}-frames-{fps}fps-animated.png',
   },
@@ -269,15 +330,76 @@ export const zhCN: MessageTree = {
     sectionLabel: '导出',
     title: '导出帧',
     summary: '{width} × {height} 画布 · {frameCount} 帧 · {fps} FPS',
-    spriteSheetTitle: '精灵图',
-    animatedTitle: '动图',
-    animatedDescription: '{width} × {height} px · {frameCount} 帧 · {fps} FPS',
-    loop: '循环',
-    loopLabel: '循环动画',
-    gifButton: '导出 GIF',
-    apngButton: '导出 APNG',
+    tabsLabel: '导出分类',
+    tabs: {
+      project: '项目',
+      spriteSheet: '精灵图',
+      animation: '动图',
+      frameZip: '逐帧 ZIP',
+    },
+    project: {
+      summary: '{name} · {width} × {height} · {frameCount} 帧 · {fps} FPS',
+      save: '保存 JSON',
+      load: '加载 JSON',
+      fileLabel: '项目 JSON 文件',
+      imported: '项目导入成功。',
+    },
+    spriteSheet: {
+      layout: '布局',
+      horizontal: '横向',
+      compactGrid: '紧凑网格',
+      target: '目标',
+      pngTarget: 'PNG',
+      unityTarget: 'Unity 6 素材包',
+      expectedSize: '{width} × {height} px',
+      exportPng: '导出 PNG',
+      exportUnityZip: '导出 Unity ZIP',
+      pixelsPerUnit: '每单位像素',
+      stableGuid: '固定 GUID',
+      stableGuidPlaceholder: '可选 GUID…',
+      stableGuidValue: '规范化 GUID：{guid}',
+      unityHint: '填写 GUID 可让导出保持稳定；留空时每次导出生成新 GUID。',
+    },
+    animation: {
+      format: '格式',
+      loop: '循环',
+      loopLabel: '循环动画',
+      gif: 'GIF',
+      apng: 'APNG',
+      summary: '{width} × {height} px · {frameCount} 帧 · {fps} FPS',
+      exportGif: '导出 GIF',
+      exportApng: '导出 APNG',
+    },
+    frameZip: {
+      summary: '{frameCount} 帧 · {width} × {height} px · {fps} FPS',
+      includesManifest: '包含 manifest.json 帧元数据。',
+      exportButton: '导出逐帧 ZIP',
+    },
+    preparing: '准备中…',
     encoding: '编码中…',
-    error: '导出失败，请重试。',
+    errors: {
+      projectFileUnreadable: '无法读取所选文件。',
+      invalidJson: '文件不是有效的 JSON。',
+      unsupportedSchema: '这不是像素特效项目。',
+      unsupportedVersion: '不支持此项目版本。',
+      wrongGenerator: '此项目保存自其他生成器。',
+      invalidParameters: '项目参数无效。',
+      invalidFps: '不支持的播放帧率。',
+      invalidPpu: '每单位像素必须为 1 到 1024 的整数。',
+      invalidGuid: '固定 GUID 必须为空或有效 GUID。',
+      unityAtlasTooLarge: 'Unity 图集为 {width} × {height} px；Unity 6 每边上限为 16384 px。',
+      renderFailed: '项目无法渲染。',
+      exportFailed: '导出失败，请重试。',
+    },
+    fileNames: {
+      project: 'pixel-{name}-{width}x{height}-{frameCount}-帧.json',
+      compactPng: 'pixel-{name}-{width}x{height}-{frameCount}-帧-compact.png',
+      frameZip: 'pixel-{name}-{width}x{height}-{frameCount}-帧.zip',
+      folderSequence: 'pixel-{name}-{width}x{height}-{frameCount}-帧',
+      unityZip: 'pixel-{name}-{width}x{height}-{frameCount}-帧-{layout}-unity6.zip',
+      unityImage: 'pixel-{name}-{width}x{height}-{frameCount}-帧-{layout}.png',
+      folder: 'pixel-{name}-{width}x{height}-{frameCount}-帧-{layout}-unity6',
+    },
     gifFileName: 'pixel-{name}-{width}x{height}-{frameCount}-帧-{fps}fps.gif',
     apngFileName: 'pixel-{name}-{width}x{height}-{frameCount}-帧-{fps}fps-animated.png',
   },
@@ -292,6 +414,12 @@ export interface MessageParams {
   'workspace.categoryControls': { label: string }
   'workspace.exportDimensions': { width: number; height: number }
   'export.summary': { width: number; height: number; frameCount: number; fps: number }
+  'export.project.summary': { name: string; width: number; height: number; frameCount: number; fps: number }
+  'export.spriteSheet.expectedSize': { width: number; height: number }
+  'export.spriteSheet.stableGuidValue': { guid: string }
+  'export.errors.unityAtlasTooLarge': { width: number; height: number }
+  'export.animation.summary': { width: number; height: number; frameCount: number; fps: number }
+  'export.frameZip.summary': { frameCount: number; width: number; height: number; fps: number }
   'preview.fpsPreview': { fps: number }
   'controls.about': { label: string }
   'controls.value': { label: string }
@@ -300,7 +428,13 @@ export interface MessageParams {
   'slash.canvas.presetSquare': { width: number; height: number }
   'slash.canvas.presetHorizontal': { width: number; height: number }
   'export.fileName': { name: string; width: number; height: number; frameCount: number }
-  'export.animatedDescription': { width: number; height: number; frameCount: number; fps: number }
+  'export.fileNames.project': { name: string; width: number; height: number; frameCount: number }
+  'export.fileNames.compactPng': { name: string; width: number; height: number; frameCount: number }
+  'export.fileNames.frameZip': { name: string; width: number; height: number; frameCount: number }
+  'export.fileNames.folderSequence': { name: string; width: number; height: number; frameCount: number }
+  'export.fileNames.unityZip': { name: string; width: number; height: number; frameCount: number; layout: string }
+  'export.fileNames.unityImage': { name: string; width: number; height: number; frameCount: number; layout: string }
+  'export.fileNames.folder': { name: string; width: number; height: number; frameCount: number; layout: string }
   'export.gifFileName': { name: string; width: number; height: number; frameCount: number; fps: number }
   'export.apngFileName': { name: string; width: number; height: number; frameCount: number; fps: number }
 }

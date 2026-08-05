@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   createDefaultSession,
+  createImportedProjectAction,
   createRenderedParametersAction,
   RenderedFrameSet,
   reduceSession,
@@ -105,6 +106,48 @@ describe('session reducer', () => {
     const module = sampleModule(() => { throw failure })
 
     expect(() => createRenderedParametersAction(module, { value: 2, frameCount: 8 })).toThrow(failure)
+  })
+})
+
+describe('project import action', () => {
+  it('renders imported parameters exactly once and resets the frame index', () => {
+    const render = vi.fn((parameters: SampleParameters) => [sampleFrame(parameters.value)])
+    const module = sampleModule(render)
+
+    const action = createImportedProjectAction(module, { value: 7, frameCount: 5 }, 18)
+    expect(render).toHaveBeenCalledTimes(1)
+    expect(action.type).toBe('importProject')
+    if (action.type === 'importProject') {
+      expect(action.parameters).toEqual({ value: 7, frameCount: 5 })
+      expect(action.frames.read()).toBe(render.mock.results[0].value)
+      expect(action.previewFps).toBe(18)
+      expect(action.frameIndex).toBe(0)
+    }
+  })
+
+  it('atomically replaces parameters, frames, FPS, and frame index while preserving play and category', () => {
+    const nextFrames = new RenderedFrameSet([sampleFrame(7)])
+    const updated = reduceSession(sampleSession(), {
+      type: 'importProject',
+      parameters: { value: 7, frameCount: 5 },
+      frames: nextFrames,
+      previewFps: 18,
+      frameIndex: 0,
+    })
+
+    expect(updated.parameters).toEqual({ value: 7, frameCount: 5 })
+    expect(updated.frames).toBe(nextFrames)
+    expect(updated.previewFps).toBe(18)
+    expect(updated.frameIndex).toBe(0)
+    expect(updated.isPlaying).toBe(true)
+    expect(updated.activeCategory).toBe('shape')
+  })
+
+  it('does not return an action when rendering fails', () => {
+    const failure = new Error('render failed')
+    const module = sampleModule(() => { throw failure })
+
+    expect(() => createImportedProjectAction(module, { value: 2, frameCount: 8 }, 12)).toThrow(failure)
   })
 })
 
