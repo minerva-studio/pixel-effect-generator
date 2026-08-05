@@ -9,6 +9,7 @@ import {
 } from '../registry'
 import { blipGenerator, blipModule } from './blipFixture'
 import { slashModule } from '../slash/module'
+import { explosionModule } from '../explosion/module'
 import { slashProjectCodec } from '../slash/project'
 import type { SlashParameters } from '../slash/model'
 import { packHorizontalSheet } from '../../shared/pixel/spritesheet'
@@ -21,7 +22,7 @@ describe('generator registry', () => {
   })
 
   it('registers unique ids and indexes while preserving order', () => {
-    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash'])
+    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion'])
     expect(dualRegistry.registrations.map((registration) => registration.id)).toEqual(['blip', 'slash'])
     expect(dualRegistry.definitions.map((definition) => definition.id)).toEqual(['blip', 'slash'])
     expect(() => createGeneratorRegistry([GENERATOR_REGISTRY.get('slash'), blipGenerator] as const)).not.toThrow()
@@ -30,7 +31,9 @@ describe('generator registry', () => {
 
   it('infers GeneratorId as the literal registered ids, not string', () => {
     const id: GeneratorId = 'slash'
+    const secondId: GeneratorId = 'explosion'
     expect(id).toBe('slash')
+    expect(secondId).toBe('explosion')
     // @ts-expect-error - only registered literal ids are valid
     const invalid: GeneratorId = 'blip'
     expect(typeof invalid).toBe('string')
@@ -42,6 +45,13 @@ describe('generator registry', () => {
     // @ts-expect-error - slash parameters are not blip parameters
     const _blipFromSlash: Parameters<typeof blipModule.render>[0] = slashModule.defaultParameters
     expect(slashModule.render(slashModule.defaultParameters)).toHaveLength(8)
+  })
+
+  it('registers the experimental explosion without project or preset capabilities', () => {
+    expect(explosionModule.definition.index).toBe(2)
+    expect(explosionModule.projectCodec).toBeUndefined()
+    expect(explosionModule.presetCapability).toBeUndefined()
+    expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(10)
   })
 })
 

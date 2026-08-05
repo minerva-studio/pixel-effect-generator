@@ -185,6 +185,52 @@ const enTree = {
       presetCustom: 'Custom',
     },
   },
+  explosion: {
+    name: 'Explosion',
+    description: 'Layered pixel explosions and converging energy effects.',
+    previewTitle: 'Radial burst study',
+    categories: {
+      shape: { label: 'Shape', description: 'Compose the body, flash core, and shockwave.' },
+      palette: { label: 'Palette', description: 'Order discrete colors from the hot core to the dark edge.' },
+      motion: { label: 'Motion', description: 'Control expansion, convergence, timing, and dissolve.' },
+      fragments: { label: 'Fragments', description: 'Scatter or gather deterministic pixel debris.' },
+    },
+    controls: {
+      mode: { label: 'Effect mode', description: 'Use dedicated timing for an outward explosion or inward implosion.' },
+      radius: { label: 'Radius', description: 'Maximum radius of the centered layered effect.' },
+      bodyStrength: { label: 'Body strength', description: 'Density of the main colored burst body; zero disables it.' },
+      irregularity: { label: 'Irregularity', description: 'Amount of deterministic contour variation and edge breakup.' },
+      coreRadius: { label: 'Flash core', description: 'Radius of the hot flash; zero disables the core.' },
+      shockwaveWidth: { label: 'Shockwave width', description: 'Pixel width of the radial ring; zero disables it.' },
+      expansionSpeed: { label: 'Radial speed', description: 'Shapes how quickly the body expands or converges.' },
+      coreDuration: { label: 'Core duration', description: 'Fraction of the animation occupied by the flash core.' },
+      shockwaveSpeed: { label: 'Shockwave speed', description: 'Shapes how quickly the shockwave crosses its path.' },
+      dissolveStart: { label: 'Dissolve start', description: 'Point at which the main body begins losing pixels.' },
+      fragmentAmount: { label: 'Amount', description: 'Number of deterministic fragments; zero disables them.' },
+      fragmentMinSize: { label: 'Minimum size', description: 'Smallest square fragment size.' },
+      fragmentMaxSize: { label: 'Maximum size', description: 'Largest square fragment size.' },
+      fragmentRadialSpeed: { label: 'Radial distance', description: 'Distance fragments travel away from or toward the center.' },
+      fragmentTangentialJitter: { label: 'Tangential drift', description: 'Sideways deviation from each fragment radial path.' },
+      fragmentLifetime: { label: 'Lifetime', description: 'Fraction of the animation in which fragments participate.' },
+      seed: { label: 'Random seed', description: 'Unsigned 32-bit value used to reproduce the same effect.' },
+    },
+    options: { explosion: 'Explosion', implosion: 'Implosion' },
+    palette: {
+      hotCore: 'Hot core',
+      outerEdge: 'Dark edge',
+      band: 'Explosion palette band {index}',
+      removeBand: 'Remove explosion palette band {index}',
+      remove: 'Remove',
+      addColorBand: 'Add color band',
+    },
+    canvas: {
+      width: 'Canvas width',
+      widthDescription: 'Frame width in whole pixels; resizing scales the effect.',
+      height: 'Canvas height',
+      heightDescription: 'Frame height in whole pixels; resizing scales the effect.',
+    },
+    seed: { randomize: 'Randomize' },
+  },
   project: {
     menu: 'Project',
     open: 'Open project…',
@@ -502,6 +548,52 @@ export const zhCN: MessageTree = {
       presetCustom: '自定义',
     },
   },
+  explosion: {
+    name: '爆炸与内聚',
+    description: '分层像素爆炸与能量汇聚效果。',
+    previewTitle: '径向爆发实验',
+    categories: {
+      shape: { label: '造型', description: '组合爆体、闪核与冲击环。' },
+      palette: { label: '调色板', description: '从白热点到暗色外缘排列离散颜色。' },
+      motion: { label: '运动', description: '控制扩张、内聚、时序与消散。' },
+      fragments: { label: '碎片', description: '散射或汇聚可复现的像素碎片。' },
+    },
+    controls: {
+      mode: { label: '效果模式', description: '使用专门时序生成向外爆炸或向内聚合。' },
+      radius: { label: '半径', description: '居中分层效果的最大半径。' },
+      bodyStrength: { label: '爆体强度', description: '主体彩色爆体的密度；设为零可关闭。' },
+      irregularity: { label: '不规则度', description: '确定性轮廓变化与边缘破碎的程度。' },
+      coreRadius: { label: '闪核半径', description: '高亮闪核的半径；设为零可关闭。' },
+      shockwaveWidth: { label: '冲击环宽度', description: '径向冲击环的像素宽度；设为零可关闭。' },
+      expansionSpeed: { label: '径向速度', description: '调整爆体扩张或内聚的速度曲线。' },
+      coreDuration: { label: '闪核时长', description: '闪核占据整个动画的时间比例。' },
+      shockwaveSpeed: { label: '冲击环速度', description: '调整冲击环走完整条路径的速度曲线。' },
+      dissolveStart: { label: '消散起点', description: '主体爆体开始丢失像素的时间点。' },
+      fragmentAmount: { label: '碎片数量', description: '确定性碎片数量；设为零可关闭。' },
+      fragmentMinSize: { label: '最小尺寸', description: '最小方块碎片的边长。' },
+      fragmentMaxSize: { label: '最大尺寸', description: '最大方块碎片的边长。' },
+      fragmentRadialSpeed: { label: '径向距离', description: '碎片向外飞散或向内汇入的距离。' },
+      fragmentTangentialJitter: { label: '切向漂移', description: '碎片偏离径向路径的横向距离。' },
+      fragmentLifetime: { label: '存活时间', description: '碎片参与动画的时间比例。' },
+      seed: { label: '随机种子', description: '用于精确复现同一效果的无符号 32 位数值。' },
+    },
+    options: { explosion: '爆炸', implosion: '内聚' },
+    palette: {
+      hotCore: '白热点',
+      outerEdge: '暗色外缘',
+      band: '爆炸色带 {index}',
+      removeBand: '删除爆炸色带 {index}',
+      remove: '删除',
+      addColorBand: '添加色带',
+    },
+    canvas: {
+      width: '画布宽度',
+      widthDescription: '以整数像素设置帧宽度；调整时同步缩放效果。',
+      height: '画布高度',
+      heightDescription: '以整数像素设置帧高度；调整时同步缩放效果。',
+    },
+    seed: { randomize: '随机化' },
+  },
   project: {
     menu: '项目',
     open: '打开项目…',
@@ -631,6 +723,8 @@ export interface MessageParams {
   'controls.value': { label: string }
   'slash.palette.band': { index: number }
   'slash.palette.removeBand': { index: number }
+  'explosion.palette.band': { index: number }
+  'explosion.palette.removeBand': { index: number }
   'slash.canvas.presetSquare': { width: number; height: number }
   'slash.canvas.presetHorizontal': { width: number; height: number }
   'export.fileName': { name: string; width: number; height: number; frameCount: number }
@@ -726,6 +820,11 @@ const GENERATOR_DISPLAY_KEYS: Readonly<Record<string, GeneratorDisplayKeys>> = {
     description: 'slash.description',
     previewTitle: 'slash.previewTitle',
   },
+  explosion: {
+    name: 'explosion.name',
+    description: 'explosion.description',
+    previewTitle: 'explosion.previewTitle',
+  },
 }
 
 const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, CategoryDisplayKeys>>>> = {
@@ -735,6 +834,12 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
     motion: { label: 'slash.categories.motion.label', description: 'slash.categories.motion.description' },
     fragments: { label: 'slash.categories.fragments.label', description: 'slash.categories.fragments.description' },
     breakup: { label: 'slash.categories.breakup.label', description: 'slash.categories.breakup.description' },
+  },
+  explosion: {
+    shape: { label: 'explosion.categories.shape.label', description: 'explosion.categories.shape.description' },
+    palette: { label: 'explosion.categories.palette.label', description: 'explosion.categories.palette.description' },
+    motion: { label: 'explosion.categories.motion.label', description: 'explosion.categories.motion.description' },
+    fragments: { label: 'explosion.categories.fragments.label', description: 'explosion.categories.fragments.description' },
   },
 }
 

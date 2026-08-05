@@ -150,7 +150,7 @@ function useGeneratorSessions() {
   const [unitySettings, setUnitySettings] = useState<UnityExportSettingsState>(DEFAULT_UNITY_EXPORT_SETTINGS)
   const fileOperations = useFileOperationController()
 
-  const activeGenerator = GENERATOR_REGISTRY.get(selectedGeneratorId)
+  const activeGenerator = GENERATOR_REGISTRY.getRegistered(selectedGeneratorId)
   const activeSession = sessions[selectedGeneratorId]
   const activeSize = activeSessionSize(activeSession)
 

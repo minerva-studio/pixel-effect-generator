@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import { slashGenerator } from './slash/module'
+import { explosionGenerator } from './explosion/module'
 import type {
   GeneratorDefinition,
   GeneratorModule,
@@ -98,6 +99,7 @@ export function createGeneratorRegistry<Registrations extends readonly Registere
   readonly record: RegisteredGeneratorById<Registrations>
   readonly definitions: readonly GeneratorDefinition<Registrations[number]['id']>[]
   readonly get: <Id extends Registrations[number]['id']>(id: Id) => RegisteredGeneratorById<Registrations>[Id]
+  readonly getRegistered: (id: Registrations[number]['id']) => RegisteredGenerator<string>
 } {
   const ids = registrations.map((registration) => registration.id)
   const indexes = registrations.map((registration) => registration.index)
@@ -119,6 +121,7 @@ export function createGeneratorRegistry<Registrations extends readonly Registere
       description: registration.description,
     })),
     get: (id) => record[id],
+    getRegistered: (id) => record[id] as RegisteredGenerator<string>,
   }
 }
 
@@ -151,8 +154,8 @@ function registrationsOf<Registrations extends readonly RegisteredGenerator<stri
   return registry.registrations
 }
 
-/** Central production registry; only Slash is user-visible today. */
-export const GENERATOR_REGISTRY = createGeneratorRegistry([slashGenerator])
+/** Central production registry in navigation order. */
+export const GENERATOR_REGISTRY = createGeneratorRegistry([slashGenerator, explosionGenerator] as const)
 
 export type GeneratorId = (typeof GENERATOR_REGISTRY)['registrations'][number]['id']
 

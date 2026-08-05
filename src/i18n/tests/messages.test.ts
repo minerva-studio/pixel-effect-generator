@@ -112,6 +112,8 @@ describe('translation resources', () => {
     expect(generatorDisplayKeys('missing')).toBeUndefined()
     expect(categoryDisplayKeys('slash', 'breakup')?.label).toBe('slash.categories.breakup.label')
     expect(categoryDisplayKeys('slash', 'missing')).toBeUndefined()
+    expect(generatorDisplayKeys('explosion')?.name).toBe('explosion.name')
+    expect(categoryDisplayKeys('explosion', 'fragments')?.label).toBe('explosion.categories.fragments.label')
     expect(categoryDisplayKeys('missing', 'shape')).toBeUndefined()
   })
 })
