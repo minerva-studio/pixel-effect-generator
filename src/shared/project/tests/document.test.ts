@@ -84,6 +84,15 @@ describe('serializeProjectDocument', () => {
     const second = serializeProjectDocument(codec, { radius: 44 }, 12, { pixelsPerUnit: 100, guid: 'b93362e4a2b3bc240b452b57b97a4147' })
     expect(first).toBe(second)
   })
+
+  it('serialized baselines only change for persistent project fields', () => {
+    const settings = { pixelsPerUnit: 100, guid: null }
+    const base = serializeProjectDocument(codec, { radius: 44 }, 12, settings)
+    expect(serializeProjectDocument(codec, { radius: 44 }, 12, settings)).toBe(base)
+    expect(serializeProjectDocument(codec, { radius: 45 }, 12, settings)).not.toBe(base)
+    expect(serializeProjectDocument(codec, { radius: 44 }, 24, settings)).not.toBe(base)
+    expect(serializeProjectDocument(codec, { radius: 44 }, 12, { pixelsPerUnit: 64, guid: null })).not.toBe(base)
+  })
 })
 
 describe('parseProjectDocument', () => {

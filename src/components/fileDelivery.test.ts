@@ -1,12 +1,32 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { DesktopFileApi } from '../electron/desktopApi'
+import type { DesktopAppApi } from '../electron/desktopApi'
 import { createFileDelivery } from './fileDelivery'
 
-function desktopApi(overrides: Partial<DesktopFileApi> = {}): DesktopFileApi {
+function desktopApi(overrides: Partial<DesktopAppApi> = {}): DesktopAppApi {
   return {
     isDesktop: true,
     saveFile: vi.fn(async () => ({ status: 'saved' as const })),
-    openProject: vi.fn(async () => ({ status: 'cancelled' as const })),
+    window: {
+      minimize: vi.fn(async () => undefined),
+      toggleMaximize: vi.fn(async () => undefined),
+      toggleFullScreen: vi.fn(async () => undefined),
+      requestClose: vi.fn(async () => undefined),
+      isMaximized: vi.fn(async () => false),
+      onMaximizedChanged: vi.fn(() => () => undefined),
+    },
+    project: {
+      open: vi.fn(async () => ({ status: 'cancelled' as const })),
+      openRecent: vi.fn(async () => ({ status: 'cancelled' as const })),
+      confirmOpen: vi.fn(async () => undefined),
+      save: vi.fn(async () => ({ status: 'cancelled' as const })),
+      saveAs: vi.fn(async () => ({ status: 'cancelled' as const })),
+      recent: vi.fn(async () => []),
+      clearRecent: vi.fn(async () => undefined),
+      setDirty: vi.fn(async () => undefined),
+      confirmUnsaved: vi.fn(async () => 'cancel' as const),
+      onMenuAction: vi.fn(() => () => undefined),
+      onSaveRequested: vi.fn(() => () => undefined),
+    },
     ...overrides,
   }
 }
@@ -36,7 +56,10 @@ describe('createFileDelivery', () => {
 
   it('passes through desktop project open results', async () => {
     const api = desktopApi({
-      openProject: vi.fn(async () => ({ status: 'opened' as const, name: 'a.json', text: '{}' })),
+      project: {
+        ...desktopApi().project,
+        open: vi.fn(async () => ({ status: 'opened' as const, id: 'token', name: 'a.json', text: '{}' })),
+      },
     })
     const delivery = createFileDelivery(api)
     expect(await delivery.openProjectText()).toEqual({ status: 'opened', name: 'a.json', text: '{}' })

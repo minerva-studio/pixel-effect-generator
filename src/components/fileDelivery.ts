@@ -1,4 +1,4 @@
-import type { DesktopFileApi, DesktopSaveKind } from '../electron/desktopApi'
+import type { DesktopAppApi, DesktopSaveKind } from '../electron/desktopApi'
 import { downloadBytes, downloadText } from './export'
 
 /** User-facing result of one save operation. */
@@ -31,7 +31,7 @@ const MIME_BY_KIND: Readonly<Record<DesktopSaveKind, string>> = {
 }
 
 /** Builds the delivery for the current runtime environment. */
-export function createFileDelivery(desktopApi: DesktopFileApi | undefined): FileDelivery {
+export function createFileDelivery(desktopApi: DesktopAppApi | undefined): FileDelivery {
   if (desktopApi !== undefined) {
     return {
       isDesktop: true,
@@ -44,7 +44,13 @@ export function createFileDelivery(desktopApi: DesktopFileApi | undefined): File
         const result = await desktopApi.saveFile({ kind, suggestedName, bytes })
         return result.status === 'saved' ? 'saved' : 'cancelled'
       },
-      openProjectText: () => desktopApi.openProject(),
+      openProjectText: async () => {
+        const result = await desktopApi.project.open()
+        if (result.status === 'opened') {
+          return { status: 'opened', name: result.name, text: result.text }
+        }
+        return { status: 'cancelled' }
+      },
     }
   }
   return {
@@ -62,7 +68,7 @@ export function createFileDelivery(desktopApi: DesktopFileApi | undefined): File
 }
 
 /** Reads the desktop bridge safely; undefined in browsers and tests. */
-export function getDesktopFileApi(): DesktopFileApi | undefined {
+export function getDesktopFileApi(): DesktopAppApi | undefined {
   if (typeof window === 'undefined') {
     return undefined
   }

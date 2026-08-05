@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROJECT_MAX_BYTES, SAVE_SPECS, parseSaveRequest, sanitizeSuggestedName } from '../fileRules'
+import { PROJECT_MAX_BYTES, SAVE_SPECS, enforceExtension, parseSaveRequest, sanitizeSuggestedName } from '../fileRules'
 
 describe('sanitizeSuggestedName', () => {
   it('strips directory parts from suggested names', () => {
@@ -18,6 +18,12 @@ describe('sanitizeSuggestedName', () => {
     expect(SAVE_SPECS['project-json'].extension).toBe('.json')
     expect(SAVE_SPECS['unity-zip'].extension).toBe('.zip')
     expect(SAVE_SPECS.apng.extension).toBe('.png')
+  })
+
+  it('forces the expected extension on final save paths', () => {
+    expect(enforceExtension('C:\\Users\\me\\project', '.json')).toBe('C:\\Users\\me\\project.json')
+    expect(enforceExtension('C:\\Users\\me\\project.json', '.json')).toBe('C:\\Users\\me\\project.json')
+    expect(enforceExtension('C:\\Users\\me\\clip.GIF', '.gif')).toBe('C:\\Users\\me\\clip.GIF')
   })
 })
 

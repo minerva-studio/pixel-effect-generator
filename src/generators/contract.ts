@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react'
 import type { FrameSize, PixelFrame } from '../shared/pixel/frame'
 import type { GeneratorProjectCodec, JsonValue } from '../shared/project/types'
+import type { FileOperationController } from '../components/fileOperations'
+import type { UnityExportSettingsState } from '../components/unitySettings'
 
 /** Navigation metadata for one registered generator with a literal id. */
 export interface GeneratorDefinition<Id extends string> {
@@ -143,9 +145,13 @@ export interface RegisteredGenerator<Id extends string> {
   readonly name: string
   readonly description: string
   readonly previewTitle: string
+  /** Opaque project codec; undefined for generators without project support. */
+  readonly projectCodec?: GeneratorProjectCodec<unknown>
   readonly minimumFrameCount: number
   readonly maximumFrameCount: number
   createSession(previewFps: number): RegisteredGeneratorSession<Id>
+  /** Renders imported parameters exactly once and returns the opaque action. */
+  createImportedAction(parameters: unknown, previewFps: number): RegisteredGeneratorAction<Id>
   reduceSession(
     session: RegisteredGeneratorSession<Id>,
     action: RegisteredGeneratorAction<Id>,
@@ -158,6 +164,9 @@ export interface RegisteredGenerator<Id extends string> {
     readonly onSelectGenerator: (id: string) => void
     readonly onSessionAction: (action: RegisteredGeneratorAction<string>) => void
     readonly onReset: () => void
+    readonly unitySettings: UnityExportSettingsState
+    readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
+    readonly fileOperations: FileOperationController
   }>
 }
 

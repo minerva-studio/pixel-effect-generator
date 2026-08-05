@@ -34,6 +34,11 @@ export function sanitizeSuggestedName(name: string, extension: string): string {
   return cleaned.endsWith(extension) ? cleaned : `${cleaned}${extension}`
 }
 
+/** Forces the expected extension on a final save path. */
+export function enforceExtension(filePath: string, extension: string): string {
+  return filePath.toLowerCase().endsWith(extension.toLowerCase()) ? filePath : `${filePath}${extension}`
+}
+
 /** Validates one save request; unknown kinds and bad shapes are rejected. */
 export function parseSaveRequest(
   request: unknown,

@@ -7,12 +7,15 @@ import { I18nProvider } from '../i18n/I18nProvider'
 import { slashGenerator } from '../generators/slash/module'
 import { blipGenerator, blipModule } from '../generators/tests/blipFixture'
 import type { RegisteredGeneratorAction } from '../generators/contract'
+import { DEFAULT_UNITY_EXPORT_SETTINGS } from './unitySettings'
+import { createFileOperationLock } from './fileOperations'
 
 function workspaceMarkup(generatorId: 'slash' | 'blip', locale: 'en' | 'zh-CN' = 'en'): string {
   vi.stubGlobal('navigator', locale === 'zh-CN' ? { language: 'zh-CN' } : undefined)
   const generator = generatorId === 'slash' ? slashGenerator : blipGenerator
   const Workspace = generator.Workspace
   const session = generator.createSession(12)
+  const lock = createFileOperationLock()
   return renderToStaticMarkup(
     <I18nProvider>
       <Workspace
@@ -21,6 +24,13 @@ function workspaceMarkup(generatorId: 'slash' | 'blip', locale: 'en' | 'zh-CN' =
         onSelectGenerator={() => undefined}
         onSessionAction={() => undefined}
         onReset={() => undefined}
+        unitySettings={DEFAULT_UNITY_EXPORT_SETTINGS}
+        onUnitySettingsChange={() => undefined}
+        fileOperations={{
+          activeTask: lock.current,
+          tryStart: (task) => lock.tryStart(task),
+          finish: (task) => lock.finish(task),
+        }}
       />
     </I18nProvider>,
   )
@@ -135,6 +145,7 @@ describe('GeneratorWorkspace integration', () => {
   it('creates typed workspaces for modules without codecs through the registry path', () => {
     const Workspace = createGeneratorWorkspace(blipModule, {} as never)
     const session = blipGenerator.createSession(12)
+    const lock = createFileOperationLock()
     const markup = renderToStaticMarkup(
       <I18nProvider>
         <Workspace
@@ -143,6 +154,13 @@ describe('GeneratorWorkspace integration', () => {
           onSelectGenerator={() => undefined}
           onSessionAction={() => undefined}
           onReset={() => undefined}
+          unitySettings={DEFAULT_UNITY_EXPORT_SETTINGS}
+          onUnitySettingsChange={() => undefined}
+          fileOperations={{
+            activeTask: lock.current,
+            tryStart: (task) => lock.tryStart(task),
+            finish: (task) => lock.finish(task),
+          }}
         />
       </I18nProvider>,
     )

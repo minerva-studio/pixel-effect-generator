@@ -13,6 +13,7 @@ import { normalizeGuid } from '../shared/unity/guid'
 import { createFileDelivery, getDesktopFileApi, type FileDelivery } from './fileDelivery'
 import type { FileOperationController } from './fileOperations'
 import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
+import { useToast } from './toast/ToastProvider'
 import type { UnityExportSettingsState } from './unitySettings'
 
 /** Local UI state of the Project menu; never shared with the generator session. */
@@ -109,7 +110,12 @@ export function importProjectFromText(
   text: string,
   codec: GeneratorProjectCodec<unknown>,
   importProject: (project: ParsedProjectImport) => ProjectImportResult,
-): { readonly ok: true; readonly exportSettings: ProjectExportSettings } | { readonly ok: false; readonly error: ExportError } {
+): {
+  readonly ok: true
+  readonly parameters: unknown
+  readonly fps: number
+  readonly exportSettings: ProjectExportSettings
+} | { readonly ok: false; readonly error: ExportError } {
   let value: unknown
   try {
     value = JSON.parse(text)
@@ -128,7 +134,12 @@ export function importProjectFromText(
   if (!rendered.ok) {
     return { ok: false, error: rendered.error }
   }
-  return { ok: true, exportSettings: parsed.project.exportSettings }
+  return {
+    ok: true,
+    parameters: parsed.project.project.parameters,
+    fps: parsed.project.fps,
+    exportSettings: parsed.project.exportSettings,
+  }
 }
 
 interface ProjectMenuProps {
@@ -187,10 +198,12 @@ export function ProjectMenuView({
       {state.open ? (
         <div className="project-menu-panel" id={menuId} role="menu" aria-label={t('project.menu')}>
           <button className="project-menu-item" type="button" role="menuitem" disabled={busy} onClick={onOpenClick}>
-            {opening ? t('project.opening') : t('project.open')}
+            {opening ? <span className="button-spinner" aria-hidden="true" /> : null}
+            <span>{opening ? t('project.opening') : t('project.open')}</span>
           </button>
           <button className="project-menu-item" type="button" role="menuitem" disabled={busy} onClick={onSave}>
-            {saving ? t('project.saving') : t('project.save')}
+            {saving ? <span className="button-spinner" aria-hidden="true" /> : null}
+            <span>{saving ? t('project.saving') : t('project.save')}</span>
           </button>
           <input
             ref={fileInputRef}
@@ -230,6 +243,7 @@ export function ProjectMenu({
   dependencies = PROJECT_MENU_DEPENDENCIES,
 }: ProjectMenuProps) {
   const { t } = useI18n()
+  const toast = useToast()
   const [state, dispatch] = useReducer(projectMenuReducer, undefined, createInitialProjectMenuState)
   const menuId = useId()
   const buttonRef = useRef<HTMLButtonElement | null>(null)
@@ -267,12 +281,19 @@ export function ProjectMenu({
       return
     }
     dispatch({ type: 'operationStarted' })
+    const pendingId = toast.show('pending', t('export.toasts.savingProject'))
     try {
       const result = await runProjectSave(bridge, unitySettings, fileName, dependencies)
-      if (!result.ok) {
+      toast.dismiss(pendingId)
+      if (result.ok) {
+        toast.show('success', t('desktop.toasts.savedProject'))
+      } else {
         dispatch({ type: 'operationFailed', message: projectErrorMessage(t, result.error.code) })
+        toast.show('error', projectErrorMessage(t, result.error.code))
       }
     } catch {
+      toast.dismiss(pendingId)
+      toast.show('error', projectErrorMessage(t, 'DOWNLOAD_FAILED'))
       dispatch({ type: 'operationFailed', message: projectErrorMessage(t, 'DOWNLOAD_FAILED') })
     } finally {
       fileOperations.finish('projectSave')

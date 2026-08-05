@@ -24,6 +24,7 @@ import { buildFrameZip, buildUnityZip, type FrameZipInput, type UnityZipInput } 
 import { drawFrame, exportHorizontalSpriteSheet } from './export'
 import { createFileDelivery, getDesktopFileApi, type FileDelivery } from './fileDelivery'
 import type { FileOperationController, WorkspaceFileTask } from './fileOperations'
+import { useToast } from './toast/ToastProvider'
 import type { UnityExportSettingsState } from './unitySettings'
 
 export const PNG_MIME = 'image/png'
@@ -459,11 +460,16 @@ export function ExportPanelView({
           ) : null}
           <div className="export-category-actions">
             <button className="primary-button" type="button" disabled={busy} onClick={state.spriteTarget === 'unity' ? onExportUnity : onExportSpriteSheet}>
-              {activeTask === 'spriteSheet' || activeTask === 'unityPackage'
-                ? preparing
-                : state.spriteTarget === 'unity'
-                  ? t('export.spriteSheet.exportUnityZip')
-                  : t('export.spriteSheet.exportPng')}
+              {activeTask === 'spriteSheet' || activeTask === 'unityPackage' ? (
+                <span className="button-spinner" aria-hidden="true" />
+              ) : null}
+              <span>
+                {activeTask === 'spriteSheet' || activeTask === 'unityPackage'
+                  ? preparing
+                  : state.spriteTarget === 'unity'
+                    ? t('export.spriteSheet.exportUnityZip')
+                    : t('export.spriteSheet.exportPng')}
+              </span>
             </button>
           </div>
           <div className="atlas-preview">
@@ -586,11 +592,16 @@ export function ExportPanelView({
               disabled={busy}
               onClick={onExportAnimation}
             >
-              {activeTask === state.animationFormat
-                ? encoding
-                : state.animationFormat === 'gif'
-                  ? t('export.animation.exportGif')
-                  : t('export.animation.exportApng')}
+              {activeTask === state.animationFormat ? (
+                <span className="button-spinner" aria-hidden="true" />
+              ) : null}
+              <span>
+                {activeTask === state.animationFormat
+                  ? encoding
+                  : state.animationFormat === 'gif'
+                    ? t('export.animation.exportGif')
+                    : t('export.animation.exportApng')}
+              </span>
             </button>
           </div>
         </div>
@@ -610,7 +621,8 @@ export function ExportPanelView({
           ) : null}
           <div className="export-category-actions">
             <button className="primary-button" type="button" disabled={busy} onClick={onExportFrameZip}>
-              {activeTask === 'frameZip' ? preparing : t('export.frameZip.exportButton')}
+              {activeTask === 'frameZip' ? <span className="button-spinner" aria-hidden="true" /> : null}
+              <span>{activeTask === 'frameZip' ? preparing : t('export.frameZip.exportButton')}</span>
             </button>
           </div>
         </div>
@@ -651,6 +663,7 @@ export function ExportPanel({
   dependencies = EXPORT_DEPENDENCIES,
 }: ExportPanelProps) {
   const { t } = useI18n()
+  const toast = useToast()
   const [state, dispatch] = useReducer(exportPanelReducer, undefined, createInitialExportPanelState)
   const atlasCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const atlasPreviewId = useId()
@@ -755,6 +768,8 @@ export function ExportPanel({
       return
     }
     dispatch({ type: 'clearCategoryError', category })
+    const toastKeys = exportToastKeys(task)
+    const pendingId = toastKeys === null ? null : toast.show('pending', t(toastKeys.pending))
     try {
       let succeeded = false
       try {
@@ -762,8 +777,14 @@ export function ExportPanel({
       } catch {
         succeeded = false
       }
+      if (pendingId !== null) {
+        toast.dismiss(pendingId)
+      }
       if (!succeeded) {
         dispatch({ type: 'categoryError', category, message: t('export.errors.exportFailed') })
+        toast.show('error', t('export.errors.exportFailed'))
+      } else if (toastKeys !== null) {
+        toast.show('success', t(toastKeys.success))
       }
     } finally {
       fileOperations.finish(task)
@@ -914,4 +935,24 @@ function clearCategoryError(
 /** Copies a typed array into an exact-sized ArrayBuffer for IPC and Blobs. */
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
+}
+
+/** Pending and success toast keys for each export task. */
+function exportToastKeys(
+  task: WorkspaceFileTask,
+): { readonly pending: MessageKey; readonly success: MessageKey } | null {
+  switch (task) {
+    case 'spriteSheet':
+      return { pending: 'export.toasts.exportingPng', success: 'export.toasts.exportedPng' }
+    case 'unityPackage':
+      return { pending: 'export.toasts.exportingUnityZip', success: 'export.toasts.exportedUnityZip' }
+    case 'gif':
+      return { pending: 'export.toasts.exportingGif', success: 'export.toasts.exportedGif' }
+    case 'apng':
+      return { pending: 'export.toasts.exportingApng', success: 'export.toasts.exportedApng' }
+    case 'frameZip':
+      return { pending: 'export.toasts.exportingFrameZip', success: 'export.toasts.exportedFrameZip' }
+    default:
+      return null
+  }
 }

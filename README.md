@@ -74,6 +74,10 @@ Notes:
 - In the desktop app every export and Project open uses the native Windows
   file dialog; in the browser the existing download links and hidden file
   inputs are used unchanged.
+- Desktop shortcuts: `Ctrl+N` new project, `Ctrl+O` open, `Ctrl+S` save,
+  `Ctrl+Shift+S` save as, `Space` play/pause (when not focused in a control),
+  `F11` full screen, `Escape` closes menus or exits full screen, and the File
+  menu in the custom title bar tracks the current project and unsaved state.
 
 Publishing:
 

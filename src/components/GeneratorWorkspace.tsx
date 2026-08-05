@@ -13,16 +13,17 @@ import {
   generatorDisplayKeys,
 } from '../i18n/messages'
 import { useI18n } from '../i18n/I18nProvider'
+import { useDesktopApp } from './desktop/DesktopProvider'
 import { buildProjectDocument } from '../shared/project/document'
 import type { GeneratorProjectCodec, ProjectExportSettings } from '../shared/project/types'
 import type { PreviewZoom } from '../shared/preview/zoom'
 import { ExportPanel } from './ExportPanel'
-import { useFileOperationController } from './fileOperations'
+import type { FileOperationController } from './fileOperations'
 import { Preview } from './Preview'
 import { PresetBar } from './PresetBar'
 import { ProjectMenu } from './ProjectMenu'
 import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
-import { DEFAULT_UNITY_EXPORT_SETTINGS, type UnityExportSettingsState } from './unitySettings'
+import type { UnityExportSettingsState } from './unitySettings'
 
 /**
  * Creates the workspace import handler. The full session action is built
@@ -61,6 +62,9 @@ interface RegisteredWorkspaceProps {
   readonly onSelectGenerator: (id: string) => void
   readonly onSessionAction: (action: RegisteredGeneratorAction<string>) => void
   readonly onReset: () => void
+  readonly unitySettings: UnityExportSettingsState
+  readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
+  readonly fileOperations: FileOperationController
 }
 
 /**
@@ -74,11 +78,19 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
 ): ComponentType<RegisteredWorkspaceProps> {
   type Session = GeneratorSession<Parameters, Category>
 
-  const BoundWorkspace = ({ session, selectedGeneratorId, onSelectGenerator, onSessionAction, onReset }: RegisteredWorkspaceProps) => {
+  const BoundWorkspace = ({
+    session,
+    selectedGeneratorId,
+    onSelectGenerator,
+    onSessionAction,
+    onReset,
+    unitySettings,
+    onUnitySettingsChange,
+    fileOperations,
+  }: RegisteredWorkspaceProps) => {
     const { t, locale } = useI18n()
-    const [unitySettings, setUnitySettings] = useState<UnityExportSettingsState>(DEFAULT_UNITY_EXPORT_SETTINGS)
+    const isDesktop = useDesktopApp() !== null
     const [previewZoom, setPreviewZoom] = useState<PreviewZoom>('fit')
-    const fileOperations = useFileOperationController()
     const dispatch = (action: GeneratorSessionAction<Parameters, Category>) => {
       onSessionAction({
         generatorId: module.definition.id,
@@ -114,7 +126,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
       description: categoryKeys ? t(categoryKeys.description) : category.description,
     }
     const projectCodec = module.projectCodec
-    const importProject = createProjectImportHandler(module, onSessionAction, setUnitySettings)
+    const importProject = createProjectImportHandler(module, onSessionAction, onUnitySettingsChange)
     const projectBridge: ProjectBridge | undefined = projectCodec ? {
       codec: projectCodec as unknown as GeneratorProjectCodec<unknown>,
       buildDocument: (settings: ProjectExportSettings) => buildProjectDocument(
@@ -131,7 +143,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
       height: frameHeight,
       frameCount,
     }) : undefined
-    const projectMenu = projectBridge && projectFileName ? (
+    const projectMenu = projectBridge && projectFileName && !isDesktop ? (
       <ProjectMenu
         bridge={projectBridge}
         fileName={projectFileName}
@@ -197,7 +209,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           generatorId={module.definition.id}
           generatorName={generatorName}
           unitySettings={unitySettings}
-          onUnitySettingsChange={setUnitySettings}
+          onUnitySettingsChange={onUnitySettingsChange}
           fileOperations={fileOperations}
           buildProjectDocument={projectBridge?.buildDocument}
         />

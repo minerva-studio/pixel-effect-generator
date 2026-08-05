@@ -17,6 +17,7 @@ describe('App localized markup', () => {
     )
     expect(markup).toContain('PIXEL EFFECT TOOLKIT')
     expect(markup).toContain('Pixel Effect Generator')
+    expect(markup).not.toContain('desktop-titlebar')
     expect(markup).toContain('aria-label="Interface language"')
     expect(markup).toContain('128 × 128 RGBA')
     expect(markup).toContain('Effect generators')

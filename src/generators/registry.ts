@@ -9,7 +9,11 @@ import type {
   RegisteredGeneratorSession,
   RegisteredGenerator,
 } from './contract'
+import type { GeneratorProjectCodec } from '../shared/project/types'
+import type { FileOperationController } from '../components/fileOperations'
+import type { UnityExportSettingsState } from '../components/unitySettings'
 import { createDefaultSession, reduceSession } from './contract'
+import { createImportedProjectAction } from './contract'
 
 /** Type-preserving module factory; keeps literal ids like 'slash'. */
 export function defineGenerator<Id extends string, Parameters, Category extends string>(
@@ -33,6 +37,9 @@ export function registerGenerator<Id extends string, Parameters, Category extend
     readonly onSelectGenerator: (id: string) => void
     readonly onSessionAction: (action: RegisteredGeneratorAction<string>) => void
     readonly onReset: () => void
+    readonly unitySettings: UnityExportSettingsState
+    readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
+    readonly fileOperations: FileOperationController
   }>,
 ): RegisteredGenerator<Id> {
   type Session = GeneratorSession<Parameters, Category>
@@ -49,12 +56,20 @@ export function registerGenerator<Id extends string, Parameters, Category extend
     name: module.definition.name,
     description: module.definition.description,
     previewTitle: module.previewTitle,
+    projectCodec: module.projectCodec as GeneratorProjectCodec<unknown> | undefined,
     minimumFrameCount: module.minimumFrameCount,
     maximumFrameCount: module.maximumFrameCount,
     createSession: (previewFps) => ({
       ...createDefaultSession(module, previewFps),
       generatorId: module.definition.id,
     }) as RegisteredGeneratorSession<Id>,
+    createImportedAction: (parameters, previewFps) => {
+      const action = createImportedProjectAction(module, parameters as Parameters, previewFps)
+      return {
+        generatorId: module.definition.id,
+        action: action as GeneratorSessionAction<unknown, string>,
+      }
+    },
     reduceSession: sessionReducer,
     readFrameCount: (session) => module.readFrameCount((session as unknown as Session).parameters),
     readFrameSize: (session) => module.readFrameSize((session as unknown as Session).parameters),
