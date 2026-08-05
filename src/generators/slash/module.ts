@@ -1,7 +1,7 @@
 import { createGeneratorWorkspace } from '../../components/GeneratorWorkspace'
 import { defineGenerator, registerGenerator } from '../registry'
 import { SlashControls, SlashPreviewTools } from './controls'
-import { DEFAULT_SLASH_PARAMETERS, MAX_FRAME_COUNT, MIN_FRAME_COUNT, type SlashParameters } from './model'
+import { MIN_CANVAS_SIZE, MAX_CANVAS_SIZE, DEFAULT_SLASH_PARAMETERS, MAX_FRAME_COUNT, MIN_FRAME_COUNT, resizeSlashCanvas, type SlashParameters } from './model'
 import { renderSlashFrames } from './renderer'
 
 export type SlashCategory = 'shape' | 'palette' | 'motion' | 'breakup' | 'fragments'
@@ -26,12 +26,14 @@ export const slashModule = defineGenerator({
   defaultParameters: DEFAULT_SLASH_PARAMETERS,
   render: renderSlashFrames,
   readFrameCount: (parameters) => parameters.frameCount,
+  readFrameSize: (parameters) => ({ width: parameters.canvasWidth, height: parameters.canvasHeight }),
   writeFrameCount: (parameters, frameCount) => ({ ...parameters, frameCount }),
+  minimumFrameSize: { width: MIN_CANVAS_SIZE, height: MIN_CANVAS_SIZE },
+  maximumFrameSize: { width: MAX_CANVAS_SIZE, height: MAX_CANVAS_SIZE },
+  resize: (parameters, nextSize, scaleEffect) => resizeSlashCanvas(parameters, nextSize, scaleEffect),
   minimumFrameCount: MIN_FRAME_COUNT,
   maximumFrameCount: MAX_FRAME_COUNT,
   previewTitle: 'Sweep study',
-  frameWidth: 128,
-  frameHeight: 128,
   Controls: SlashControls,
   PreviewTools: SlashPreviewTools,
 })

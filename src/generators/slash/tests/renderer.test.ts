@@ -3,6 +3,8 @@ import type { PixelFrame } from '../../../shared/pixel/frame'
 import {
   DEFAULT_SLASH_PARAMETERS,
   FRAME_SIZE,
+  frameLimits,
+  resizeSlashCanvas,
   type DissolveMode,
   type EdgeBreakupMode,
   type FragmentMode,
@@ -23,6 +25,50 @@ describe('renderSlashFrames', () => {
     expect(first[0].width).toBe(FRAME_SIZE)
     expect(first[0].height).toBe(FRAME_SIZE)
     expect(frameBytes(first)).toEqual(frameBytes(second))
+  })
+
+  it('supports configurable canvas dimensions and preserves dimensions in every frame', () => {
+    const targetSizes = [
+      { width: 16, height: 16 },
+      { width: 256, height: 128 },
+      { width: 64, height: 128 },
+      { width: 512, height: 512 },
+    ] as const
+
+    for (const size of targetSizes) {
+      const resized = resizeSlashCanvas(quietParameters(), size, true)
+      const frames = renderSlashFrames({
+        ...resized,
+        frameCount: 6,
+      })
+      expect(frames).toHaveLength(6)
+      for (const frame of frames) {
+        expect(frame.width).toBe(size.width)
+        expect(frame.height).toBe(size.height)
+      }
+      expect(countOpaquePixels(frames[frames.length - 1])).toBe(0)
+    }
+  })
+
+  it('keeps pixel sizes derived from short-edge scaling logic', () => {
+    const baseLimits = frameLimits({ width: 128, height: 128 })
+    const resized = resizeSlashCanvas(
+      {
+        ...DEFAULT_SLASH_PARAMETERS,
+        ...quietParameters(),
+        radius: baseLimits.maxRadius,
+        thickness: baseLimits.maxRadius,
+        fragmentSize: 3,
+        fragmentTangentSpeed: 12,
+        fragmentOutwardSpeed: 8,
+      },
+      { width: 64, height: 32 },
+      true,
+    )
+    expect(resized.radius).toBeLessThanOrEqual(frameLimits({ width: 64, height: 32 }).maxRadius)
+    expect(resized.thickness).toBeLessThanOrEqual(resized.radius)
+    expect(resized.fragmentSize).toBeLessThanOrEqual(frameLimits({ width: 64, height: 32 }).maxFragmentSize)
+    expect(resized.fragmentTangentSpeed).toBeLessThanOrEqual(frameLimits({ width: 64, height: 32 }).maxFragmentTangentSpeed)
   })
 
   it('supports two through six palette colors without introducing other RGBA values', () => {

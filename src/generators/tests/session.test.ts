@@ -126,12 +126,11 @@ function sampleModule(
     defaultParameters: { value: 1, frameCount: 8 },
     render,
     readFrameCount: (parameters) => parameters.frameCount,
+    readFrameSize: () => ({ width: 1, height: 1 }),
     writeFrameCount: (parameters, frameCount) => ({ ...parameters, frameCount }),
     minimumFrameCount: 1,
     maximumFrameCount: 12,
     previewTitle: 'Sample preview',
-    frameWidth: 1,
-    frameHeight: 1,
     Controls: () => null,
   }
 }

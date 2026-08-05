@@ -49,8 +49,6 @@ export function registerGenerator<Id extends string, Parameters, Category extend
     name: module.definition.name,
     description: module.definition.description,
     previewTitle: module.previewTitle,
-    frameWidth: module.frameWidth,
-    frameHeight: module.frameHeight,
     minimumFrameCount: module.minimumFrameCount,
     maximumFrameCount: module.maximumFrameCount,
     createSession: (previewFps) => ({
@@ -59,6 +57,7 @@ export function registerGenerator<Id extends string, Parameters, Category extend
     }) as RegisteredGeneratorSession<Id>,
     reduceSession: sessionReducer,
     readFrameCount: (session) => module.readFrameCount((session as unknown as Session).parameters),
+    readFrameSize: (session) => module.readFrameSize((session as unknown as Session).parameters),
     Workspace: createWorkspace(module, {} as Session),
   }
 }

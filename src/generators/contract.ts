@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import type { PixelFrame } from '../shared/pixel/frame'
+import type { FrameSize, PixelFrame } from '../shared/pixel/frame'
 
 /** Navigation metadata for one registered generator with a literal id. */
 export interface GeneratorDefinition<Id extends string> {
@@ -45,8 +45,14 @@ export interface GeneratorModule<Id extends string, Parameters, Category extends
   readonly minimumFrameCount: number
   readonly maximumFrameCount: number
   readonly previewTitle: string
-  readonly frameWidth: number
-  readonly frameHeight: number
+  readonly readFrameSize: (parameters: Parameters) => FrameSize
+  readonly minimumFrameSize?: FrameSize
+  readonly maximumFrameSize?: FrameSize
+  readonly resize?: (
+    parameters: Parameters,
+    nextSize: FrameSize,
+    scaleEffect: boolean,
+  ) => Parameters
   readonly Controls: ComponentType<{
     readonly category: Category
     readonly parameters: Parameters
@@ -56,6 +62,7 @@ export interface GeneratorModule<Id extends string, Parameters, Category extends
   readonly PreviewTools?: ComponentType<{
     readonly parameters: Parameters
     readonly onChange: (parameters: Parameters) => void
+    readonly onResize?: (nextSize: FrameSize, scaleEffect: boolean) => void
   }>
 }
 
@@ -99,8 +106,6 @@ export interface RegisteredGenerator<Id extends string> {
   readonly name: string
   readonly description: string
   readonly previewTitle: string
-  readonly frameWidth: number
-  readonly frameHeight: number
   readonly minimumFrameCount: number
   readonly maximumFrameCount: number
   createSession(previewFps: number): RegisteredGeneratorSession<Id>
@@ -109,6 +114,7 @@ export interface RegisteredGenerator<Id extends string> {
     action: RegisteredGeneratorAction<Id>,
   ): RegisteredGeneratorSession<Id>
   readFrameCount(session: RegisteredGeneratorSession<Id>): number
+  readFrameSize(session: RegisteredGeneratorSession<Id>): FrameSize
   readonly Workspace: ComponentType<{
     readonly session: RegisteredGeneratorSession<string>
     readonly selectedGeneratorId: string

@@ -34,12 +34,11 @@ export const blipModule = defineGenerator({
     pixels: new Uint8ClampedArray(8 * 6 * 4),
   })),
   readFrameCount: (parameters) => parameters.frameCount,
+  readFrameSize: () => ({ width: 8, height: 6 }),
   writeFrameCount: (parameters, frameCount) => ({ ...parameters, frameCount }),
   minimumFrameCount: 3,
   maximumFrameCount: 10,
   previewTitle: 'Blip loop',
-  frameWidth: 8,
-  frameHeight: 6,
   Controls: BlipControls,
 })
 

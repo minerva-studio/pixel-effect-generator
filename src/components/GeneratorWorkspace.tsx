@@ -32,22 +32,31 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
   type Session = GeneratorSession<Parameters, Category>
 
   const BoundWorkspace = ({ session, selectedGeneratorId, onSelectGenerator, onSessionAction, onReset }: RegisteredWorkspaceProps) => {
-    const typedSession = session as unknown as Session
-    const frameCount = module.readFrameCount(typedSession.parameters)
-    const category = module.categories.find((entry) => entry.id === typedSession.activeCategory)!
-    const Controls = module.Controls
-    const PreviewTools = module.PreviewTools
-
     const dispatch = (action: GeneratorSessionAction<Parameters, Category>) => {
       onSessionAction({
         generatorId: module.definition.id,
         action: action as GeneratorSessionAction<unknown, string>,
       })
     }
-
+    const typedSession = session as unknown as Session
+    const frameCount = module.readFrameCount(typedSession.parameters)
+    const category = module.categories.find((entry) => entry.id === typedSession.activeCategory)!
+    const Controls = module.Controls
+    const PreviewTools = module.PreviewTools
+    const frames = typedSession.frames.read()
+    const firstFrame = frames[0]
+    const parameterFrameSize = module.readFrameSize(typedSession.parameters)
+    const frameWidth = firstFrame?.width ?? parameterFrameSize.width
+    const frameHeight = firstFrame?.height ?? parameterFrameSize.height
     const dispatchParameters = (parameters: Parameters) => {
       dispatch(createRenderedParametersAction(module, parameters))
     }
+    const resizeHandler = module.resize
+    const onResize = resizeHandler
+      ? (nextSize: { readonly width: number; readonly height: number }, scaleEffect: boolean) => {
+          dispatchParameters(resizeHandler(typedSession.parameters, nextSize, scaleEffect))
+        }
+      : undefined
 
     useEffect(() => {
       if (typedSession.frameIndex >= frameCount) {
@@ -69,8 +78,8 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
         <Preview
           frameSet={typedSession.frames}
           previewTitle={module.previewTitle}
-          frameWidth={module.frameWidth}
-          frameHeight={module.frameHeight}
+          frameWidth={frameWidth}
+          frameHeight={frameHeight}
           frameIndex={typedSession.frameIndex}
           isPlaying={typedSession.isPlaying}
           previewFps={typedSession.previewFps}
@@ -84,15 +93,15 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
             module.writeFrameCount(typedSession.parameters, frameCount),
           )}
           tools={PreviewTools ? (
-            <PreviewTools parameters={typedSession.parameters} onChange={dispatchParameters} />
+            <PreviewTools parameters={typedSession.parameters} onChange={dispatchParameters} onResize={onResize} />
           ) : undefined}
           footer={(
             <ExportBar
               frameSet={typedSession.frames}
               frameCount={frameCount}
-              frameWidth={module.frameWidth}
-              frameHeight={module.frameHeight}
-              fileName={`pixel-${module.definition.id}-${frameCount}-frames.png`}
+              frameWidth={frameWidth}
+              frameHeight={frameHeight}
+              fileName={`pixel-${module.definition.id}-${frameWidth}x${frameHeight}-${frameCount}-frames.png`}
             />
           )}
         />

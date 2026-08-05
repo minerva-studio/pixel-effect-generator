@@ -31,6 +31,16 @@
   .preview-seed-control { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
   .preview-seed-control > .field-title { min-width: 0; }
   .preview-seed-control .seed-inputs { grid-template-columns: minmax(0, 1fr) auto; }
+  .canvas-size-heading { align-items: flex-start; }
+  .canvas-preset-row { grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
+  .canvas-custom-row { padding-left: 110px; }
   .preview-stage { min-height: 340px; }
   .export-row { align-items: flex-end; }
+}
+
+@media (max-width: 400px) {
+  .canvas-size-heading { display: grid; }
+  .canvas-preset-row { grid-template-columns: 1fr; }
+  .canvas-custom-row { grid-template-columns: 1fr; padding-left: 0; }
+  .canvas-custom-row .secondary-button { justify-self: stretch; }
 }

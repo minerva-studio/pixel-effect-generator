@@ -91,27 +91,30 @@ describe('dual module sessions', () => {
 
   it('keeps frame-count parameters, rendered frames, and sheet dimensions aligned', () => {
     const sessions = createDefaultSessionRecord(dualRegistry, 12)
-    const parameters = slashModule.writeFrameCount(sessions.slash.parameters as SlashParameters, 12)
+    const resizedParameters = slashModule.resize?.(sessions.slash.parameters as SlashParameters, { width: 64, height: 128 }, true)
+    const updatedParameters = resizedParameters
+      ? slashModule.writeFrameCount(resizedParameters, 12)
+      : slashModule.writeFrameCount(sessions.slash.parameters as SlashParameters, 12)
     const updated = updateSessionRecord(dualRegistry.record, sessions, {
       generatorId: 'slash',
-      action: createRenderedParametersAction(slashModule, parameters),
+      action: createRenderedParametersAction(slashModule, updatedParameters),
     })
     const frames = updated.slash.frames.read()
     const sheet = packHorizontalSheet(frames)
 
     expect((updated.slash.parameters as SlashParameters).frameCount).toBe(12)
+    expect(updatedParameters.canvasWidth).toBe(64)
+    expect(updatedParameters.canvasHeight).toBe(128)
     expect(frames).toHaveLength(12)
-    expect(sheet.width).toBe(12 * slashModule.frameWidth)
-    expect(sheet.height).toBe(slashModule.frameHeight)
+    expect(sheet.width).toBe(12 * updatedParameters.canvasWidth)
+    expect(sheet.height).toBe(updatedParameters.canvasHeight)
   })
   it('exposes per-generator preview metadata', () => {
     expect(slashModule.categories.map((category) => category.id)).toEqual(['shape', 'palette', 'motion', 'fragments', 'breakup'])
     expect(GENERATOR_REGISTRY.get('slash').previewTitle).toBe('Sweep study')
-    expect(GENERATOR_REGISTRY.get('slash').frameWidth).toBe(128)
-    expect(GENERATOR_REGISTRY.get('slash').frameHeight).toBe(128)
+    expect(GENERATOR_REGISTRY.get('slash').readFrameSize(GENERATOR_REGISTRY.get('slash').createSession(12))).toEqual({ width: 128, height: 128 })
     expect(dualRegistry.get('blip').previewTitle).toBe('Blip loop')
-    expect(dualRegistry.get('blip').frameWidth).toBe(8)
-    expect(dualRegistry.get('blip').frameHeight).toBe(6)
+    expect(dualRegistry.get('blip').readFrameSize(dualRegistry.get('blip').createSession(12))).toEqual({ width: 8, height: 6 })
   })
 
   it('provides a type-safe workspace component for each registration', () => {

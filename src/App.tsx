@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { RegisteredGeneratorAction } from './generators/contract'
+import type { RegisteredGeneratorAction, RegisteredGeneratorSession } from './generators/contract'
 import {
   GENERATOR_REGISTRY,
   createDefaultSessionRecord,
@@ -50,7 +50,7 @@ export default function App() {
           <h1>Pixel Effect Generator</h1>
           <p className="subtitle">Focused generators for deterministic, pixel-perfect game VFX.</p>
         </div>
-        <div className="status-chip"><span />{activeGenerator.frameWidth} × {activeGenerator.frameHeight} RGBA</div>
+        <div className="status-chip"><span />{activeSessionSize(activeSession).width} × {activeSessionSize(activeSession).height} RGBA</div>
       </header>
       <ActiveWorkspace
         session={activeSession}
@@ -65,6 +65,13 @@ export default function App() {
       />
     </main>
   )
+}
+
+function activeSessionSize(session: RegisteredGeneratorSession<string>): { width: number; height: number } {
+  const frames = session.frames.read()
+  return frames[0]
+    ? { width: frames[0].width, height: frames[0].height }
+    : { width: 0, height: 0 }
 }
 
 /** Narrows dynamic workspace ids to generators present in the production registry. */

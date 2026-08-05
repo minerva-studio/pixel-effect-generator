@@ -1,7 +1,10 @@
 import type { RgbColor } from '../../shared/pixel/color'
+import type { FrameSize } from '../../shared/pixel/frame'
 import { assertInRange, assertValidColor } from '../../shared/pixel/color'
 
 export const FRAME_SIZE = 128
+export const MIN_CANVAS_SIZE = 16
+export const MAX_CANVAS_SIZE = 512
 export const MIN_FRAME_COUNT = 5
 export const MAX_FRAME_COUNT = 24
 export const MAX_SWEEP_DEGREES = 720
@@ -13,6 +16,8 @@ export type FragmentMode = 'pixelChunks' | 'directionalShards' | 'energySparks'
 
 export interface SlashParameters {
   readonly palette: readonly RgbColor[]
+  readonly canvasWidth: number
+  readonly canvasHeight: number
   readonly radius: number
   readonly thickness: number
   readonly startAngleDegrees: number
@@ -37,12 +42,97 @@ export interface SlashParameters {
   readonly fragmentLifetime: number
 }
 
+export interface SlashFrameLimits {
+  readonly maxRadius: number
+  readonly maxThickness: number
+  readonly maxFragmentSize: number
+  readonly maxFragmentTangentSpeed: number
+  readonly maxFragmentOutwardSpeed: number
+}
+
+/** Returns the default canvas dimensions for the Slash generator. */
+export function defaultSlashCanvasSize(): FrameSize {
+  return { width: FRAME_SIZE, height: FRAME_SIZE }
+}
+
+/** Computes derived numeric limits from an explicit canvas size. */
+export function frameLimits(size: FrameSize): SlashFrameLimits {
+  const shortSide = Math.min(size.width, size.height)
+  const scale = shortSide / FRAME_SIZE
+  return {
+    maxRadius: Math.max(2, Math.floor(shortSide / 2) - 1),
+    maxThickness: Math.max(2, Math.floor(shortSide / 2) - 1),
+    maxFragmentSize: Math.max(1, Math.round(3 * scale)),
+    maxFragmentTangentSpeed: Math.max(0, Math.round(32 * scale)),
+    maxFragmentOutwardSpeed: Math.max(0, Math.round(24 * scale)),
+  }
+}
+
+/** Clamps an integer value into inclusive bounds. */
+export function clampInteger(value: number, minimum: number, maximum: number): number {
+  if (!Number.isFinite(value)) {
+    return minimum
+  }
+  return Math.min(maximum, Math.max(minimum, Math.round(value)))
+}
+
+function clampCanvasDimension(value: number): number {
+  return clampInteger(value, MIN_CANVAS_SIZE, MAX_CANVAS_SIZE)
+}
+
+/** Normalizes canvas dimensions into supported integer bounds. */
+export function normalizeCanvasSize(size: FrameSize): FrameSize {
+  return {
+    width: clampCanvasDimension(size.width),
+    height: clampCanvasDimension(size.height),
+  }
+}
+
+/** Resolves a resize request as a deterministic parameter transform. */
+export function resizeSlashCanvas(parameters: SlashParameters, nextSize: FrameSize, scaleEffect = true): SlashParameters {
+  const oldSize = normalizeCanvasSize({ width: parameters.canvasWidth, height: parameters.canvasHeight })
+  const scaledSize = normalizeCanvasSize(nextSize)
+  const scale = scaleEffect ? Math.min(scaledSize.width, scaledSize.height) / Math.min(oldSize.width, oldSize.height) : 1
+  const limits = frameLimits(scaledSize)
+  const nextRadius = clampInteger(
+    scaleEffect ? parameters.radius * scale : parameters.radius,
+    2,
+    limits.maxRadius,
+  )
+  const nextThicknessBase = scaleEffect ? parameters.thickness * scale : parameters.thickness
+  const nextThickness = clampInteger(nextThicknessBase, 1, nextRadius)
+  return {
+    ...parameters,
+    canvasWidth: scaledSize.width,
+    canvasHeight: scaledSize.height,
+    radius: nextRadius,
+    thickness: nextThickness,
+    fragmentSize: clampInteger(
+      scaleEffect ? parameters.fragmentSize * scale : parameters.fragmentSize,
+      1,
+      limits.maxFragmentSize,
+    ),
+    fragmentTangentSpeed: clampInteger(
+      scaleEffect ? parameters.fragmentTangentSpeed * scale : parameters.fragmentTangentSpeed,
+      0,
+      limits.maxFragmentTangentSpeed,
+    ),
+    fragmentOutwardSpeed: clampInteger(
+      scaleEffect ? parameters.fragmentOutwardSpeed * scale : parameters.fragmentOutwardSpeed,
+      0,
+      limits.maxFragmentOutwardSpeed,
+    ),
+  }
+}
+
 export const DEFAULT_SLASH_PARAMETERS: SlashParameters = {
   palette: [
     { r: 255, g: 255, b: 255 },
     { r: 154, g: 198, b: 255 },
     { r: 52, g: 140, b: 255 },
   ],
+  canvasWidth: FRAME_SIZE,
+  canvasHeight: FRAME_SIZE,
   radius: 44,
   thickness: 12,
   startAngleDegrees: -90,
@@ -73,7 +163,13 @@ export function assertValidParameters(parameters: SlashParameters): void {
     throw new RangeError('palette must contain between 2 and 6 colors.')
   }
   parameters.palette.forEach((color, index) => assertValidColor(color, `palette[${index}]`))
-  assertInRange(parameters.radius, 2, FRAME_SIZE / 2 - 1, 'radius')
+  assertInRange(parameters.canvasWidth, MIN_CANVAS_SIZE, MAX_CANVAS_SIZE, 'canvasWidth')
+  assertInRange(parameters.canvasHeight, MIN_CANVAS_SIZE, MAX_CANVAS_SIZE, 'canvasHeight')
+  const limits = frameLimits({
+    width: parameters.canvasWidth,
+    height: parameters.canvasHeight,
+  })
+  assertInRange(parameters.radius, 2, limits.maxRadius, 'radius')
   assertInRange(parameters.thickness, 1, parameters.radius, 'thickness')
   assertInRange(parameters.startAngleDegrees, -180, 180, 'startAngleDegrees')
   assertInRange(parameters.sweepDegrees, 30, MAX_SWEEP_DEGREES, 'sweepDegrees')
@@ -87,16 +183,20 @@ export function assertValidParameters(parameters: SlashParameters): void {
   assertInRange(parameters.fragmentAmount, 0, 1, 'fragmentAmount')
   assertInRange(parameters.seed, 0, 0xffffffff, 'seed')
   assertInRange(parameters.edgeDepth, 0.05, 0.5, 'edgeDepth')
-  assertInRange(parameters.fragmentSize, 1, 3, 'fragmentSize')
-  assertInRange(parameters.fragmentTangentSpeed, 0, 32, 'fragmentTangentSpeed')
-  assertInRange(parameters.fragmentOutwardSpeed, 0, 24, 'fragmentOutwardSpeed')
+  assertInRange(parameters.fragmentSize, 1, limits.maxFragmentSize, 'fragmentSize')
+  assertInRange(parameters.fragmentTangentSpeed, 0, limits.maxFragmentTangentSpeed, 'fragmentTangentSpeed')
+  assertInRange(parameters.fragmentOutwardSpeed, 0, limits.maxFragmentOutwardSpeed, 'fragmentOutwardSpeed')
   assertInRange(parameters.fragmentLifetime, 0.1, 1, 'fragmentLifetime')
   if (
     !Number.isInteger(parameters.frameCount)
+    || !Number.isInteger(parameters.canvasWidth)
+    || !Number.isInteger(parameters.canvasHeight)
+    || !Number.isInteger(parameters.radius)
+    || !Number.isInteger(parameters.thickness)
     || !Number.isInteger(parameters.seed)
     || !Number.isInteger(parameters.fragmentSize)
   ) {
-    throw new RangeError('frameCount, seed, and fragmentSize must be integers.')
+    throw new RangeError('frameCount, canvas sizes, radius, thickness, seed, and fragmentSize must be integers.')
   }
   if (parameters.direction !== 'clockwise' && parameters.direction !== 'counterClockwise') {
     throw new RangeError('direction is invalid.')

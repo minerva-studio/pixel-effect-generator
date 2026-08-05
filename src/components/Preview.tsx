@@ -76,7 +76,14 @@ export function Preview({
       </div>
 
       <div className="preview-stage">
-        <div className="canvas-wrap">
+        <div
+          className="canvas-wrap"
+          style={{
+            aspectRatio: `${frameWidth} / ${frameHeight}`,
+            width: frameWidth >= frameHeight ? 'min(512px, calc(100% - 36px))' : 'auto',
+            height: frameWidth < frameHeight ? 'min(470px, calc(100vh - 260px))' : 'auto',
+          }}
+        >
           <canvas ref={previewCanvas} className="pixel-canvas" aria-label="Animated pixel effect preview" />
           <div className="origin-mark" aria-hidden="true" />
         </div>

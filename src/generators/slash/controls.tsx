@@ -1,19 +1,26 @@
-import { useId } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
 import { hexToRgb, rgbToHex } from '../../shared/pixel/color'
+import { frameLimits } from './model'
 import { insertPaletteColor, removePaletteColor } from './palette'
 import { MAX_SWEEP_DEGREES } from './model'
 import type { SlashCategory } from './module'
 import type { SlashDirection, SlashParameters } from './model'
+import type { FrameSize } from '../../shared/pixel/frame'
 
 interface SlashControlsProps {
   readonly category: SlashCategory
   readonly parameters: SlashParameters
   readonly onChange: (parameters: SlashParameters) => void
+  readonly onResize?: (nextSize: FrameSize, scaleEffect: boolean) => void
 }
 
 /** Renders the active Slash parameter category without owning generator state. */
 export function SlashControls({ category, parameters, onChange }: SlashControlsProps) {
+  const limits = frameLimits({
+    width: parameters.canvasWidth,
+    height: parameters.canvasHeight,
+  })
   const update = <Key extends keyof SlashParameters>(key: Key, value: SlashParameters[Key]) => {
     const next = { ...parameters, [key]: value }
     if (key === 'radius' && next.thickness > Number(value)) {
@@ -26,7 +33,7 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
     case 'shape':
       return (
         <div className="control-list">
-          <NumberControl label="Radius" description="Distance from the origin to the slash's outer edge." value={parameters.radius} minimum={2} maximum={63} unit="px" onChange={(value) => update('radius', value)} />
+          <NumberControl label="Radius" description="Distance from the origin to the slash's outer edge." value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />
           <NumberControl label="Thickness" description="Width of the colored arc between its inner and outer edges." value={parameters.thickness} minimum={1} maximum={parameters.radius} unit="px" onChange={(value) => update('thickness', value)} />
           <NumberControl label="Start angle" description="Starting direction in screen space: 0° points right and 90° points down." value={parameters.startAngleDegrees} minimum={-180} maximum={180} unit="°" onChange={(value) => update('startAngleDegrees', value)} />
           <NumberControl label="Sweep angle" description="Degrees travelled from the start angle; values above 360° create a second pass." value={parameters.sweepDegrees} minimum={30} maximum={MAX_SWEEP_DEGREES} unit="°" onChange={(value) => update('sweepDegrees', value)} />
@@ -89,9 +96,9 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
             onChange={(value) => update('fragmentMode', value)}
           />
           <NumberControl label="Amount" description="Amount of colored debris released as the trailing edge passes." value={parameters.fragmentAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentAmount', value)} />
-          <NumberControl label="Size" description="Maximum chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentSize} minimum={1} maximum={3} unit="px" onChange={(value) => update('fragmentSize', value)} />
-          <NumberControl label="Tangent speed" description="Motion along the direction of the sweep per animation cycle." value={parameters.fragmentTangentSpeed} minimum={0} maximum={32} unit="px" onChange={(value) => update('fragmentTangentSpeed', value)} />
-          <NumberControl label="Outward speed" description="Motion away from the slash center per animation cycle." value={parameters.fragmentOutwardSpeed} minimum={0} maximum={24} unit="px" onChange={(value) => update('fragmentOutwardSpeed', value)} />
+          <NumberControl label="Size" description="Maximum chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentSize} minimum={1} maximum={limits.maxFragmentSize} unit="px" onChange={(value) => update('fragmentSize', value)} />
+          <NumberControl label="Tangent speed" description="Motion along the direction of the sweep per animation cycle." value={parameters.fragmentTangentSpeed} minimum={0} maximum={limits.maxFragmentTangentSpeed} unit="px" onChange={(value) => update('fragmentTangentSpeed', value)} />
+          <NumberControl label="Outward speed" description="Motion away from the slash center per animation cycle." value={parameters.fragmentOutwardSpeed} minimum={0} maximum={limits.maxFragmentOutwardSpeed} unit="px" onChange={(value) => update('fragmentOutwardSpeed', value)} />
           <NumberControl label="Lifetime" description="Fraction of the animation for which detached fragments remain alive." value={parameters.fragmentLifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentLifetime', value)} />
         </div>
       )
@@ -99,8 +106,13 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
 }
 
 /** Renders Slash-specific deterministic controls beneath preview timing. */
-export function SlashPreviewTools({ parameters, onChange }: Omit<SlashControlsProps, 'category'>) {
-  return <SeedControl value={parameters.seed} onChange={(seed) => onChange({ ...parameters, seed })} />
+export function SlashPreviewTools({ parameters, onChange, onResize }: Omit<SlashControlsProps, 'category'>) {
+  return (
+    <div className="preview-tools">
+      <CanvasResizeControl parameters={parameters} onResize={onResize} />
+      <SeedControl value={parameters.seed} onChange={(seed) => onChange({ ...parameters, seed })} />
+    </div>
+  )
 }
 
 /** Renders the ordered inner-to-outer palette editor. */
@@ -200,6 +212,142 @@ function SeedControl({ value, onChange }: { readonly value: number; readonly onC
         <input id={seedId} type="number" min="0" max="4294967295" step="1" value={value} onChange={(event) => onChange(clampSeed(Number(event.target.value)))} />
         <button className="secondary-button" type="button" onClick={randomize}>Randomize</button>
       </div>
+    </div>
+  )
+}
+
+interface CanvasResizeControlProps {
+  readonly parameters: SlashParameters
+  readonly onResize?: (nextSize: FrameSize, scaleEffect: boolean) => void
+}
+
+const CANVAS_PRESETS: readonly { readonly label: string; readonly size: FrameSize }[] = [
+  { label: 'Square 32×32', size: { width: 32, height: 32 } },
+  { label: 'Square 48×48', size: { width: 48, height: 48 } },
+  { label: 'Square 64×64', size: { width: 64, height: 64 } },
+  { label: 'Square 96×96', size: { width: 96, height: 96 } },
+  { label: 'Square 128×128', size: { width: 128, height: 128 } },
+  { label: 'Square 192×192', size: { width: 192, height: 192 } },
+  { label: 'Square 256×256', size: { width: 256, height: 256 } },
+  { label: 'Horizontal 64×32', size: { width: 64, height: 32 } },
+  { label: 'Horizontal 128×64', size: { width: 128, height: 64 } },
+  { label: 'Horizontal 256×128', size: { width: 256, height: 128 } },
+  { label: 'Custom', size: { width: 0, height: 0 } },
+]
+
+function CanvasResizeControl({ parameters, onResize }: CanvasResizeControlProps) {
+  const [selectedPreset, setSelectedPreset] = useState(CANVAS_PRESETS[4].label)
+  const [draftWidth, setDraftWidth] = useState(String(parameters.canvasWidth))
+  const [draftHeight, setDraftHeight] = useState(String(parameters.canvasHeight))
+  const [scaleEffect, setScaleEffect] = useState(true)
+
+  const selectedSize = CANVAS_PRESETS.find((option) => option.label === selectedPreset)?.size
+  const isCustom = selectedSize?.width === 0 || selectedSize?.height === 0
+
+  useEffect(() => {
+    const preset = CANVAS_PRESETS.find((option) => option.size.width === parameters.canvasWidth && option.size.height === parameters.canvasHeight)
+    const nextPreset = preset ? preset.label : 'Custom'
+    setSelectedPreset(nextPreset)
+    setDraftWidth(String(parameters.canvasWidth))
+    setDraftHeight(String(parameters.canvasHeight))
+  }, [parameters.canvasWidth, parameters.canvasHeight])
+
+  const parseCanvasValue = (raw: string): number | undefined => {
+    const value = Number(raw)
+    if (!Number.isInteger(value) || Number.isNaN(value)) {
+      return undefined
+    }
+    return value
+  }
+
+  const isValidCanvasValue = (value: number | undefined, minimum = 16, maximum = 512) => value !== undefined && value >= minimum && value <= maximum
+
+  const handlePreset = (label: string) => {
+    setSelectedPreset(label)
+    const preset = CANVAS_PRESETS.find((option) => option.label === label)
+    if (!preset || preset.size.width === 0 || preset.size.height === 0) {
+      return
+    }
+    setDraftWidth(String(preset.size.width))
+    setDraftHeight(String(preset.size.height))
+    onResize?.(preset.size, scaleEffect)
+  }
+
+  const applyCustom = () => {
+    const width = parseCanvasValue(draftWidth)
+    const height = parseCanvasValue(draftHeight)
+    if (!isValidCanvasValue(width) || !isValidCanvasValue(height)) {
+      return
+    }
+    onResize?.({ width: width!, height: height! }, scaleEffect)
+  }
+
+  const widthValid = isValidCanvasValue(parseCanvasValue(draftWidth))
+  const heightValid = isValidCanvasValue(parseCanvasValue(draftHeight))
+
+  return (
+    <div className="canvas-size-control">
+      <div className="canvas-size-heading">
+        <div className="canvas-size-title">
+          <span>Canvas size</span>
+          <strong>{parameters.canvasWidth} × {parameters.canvasHeight}</strong>
+        </div>
+        <label className="scale-toggle">
+          <input
+            aria-label="Resize proportionally"
+            type="checkbox"
+            checked={scaleEffect}
+            onChange={(event) => setScaleEffect(event.target.checked)}
+          />
+          <span className="toggle-track" aria-hidden="true"><span /></span>
+          <span>Scale effect</span>
+        </label>
+      </div>
+
+      <div className="canvas-preset-row">
+        <label htmlFor="canvas-preset">Preset</label>
+        <select id="canvas-preset" aria-label="Canvas preset" value={selectedPreset} onChange={(event) => handlePreset(event.target.value)}>
+          {CANVAS_PRESETS.map((preset) => <option key={preset.label} value={preset.label}>{preset.label}</option>)}
+        </select>
+      </div>
+
+      {isCustom ? (
+        <div className="canvas-custom-row">
+          <div className="canvas-dimension-inputs">
+            <label>
+              <span>W</span>
+              <input
+                aria-label="Custom canvas width"
+                type="number"
+                min={16}
+                max={512}
+                step={1}
+                value={draftWidth}
+                onChange={(event) => {
+                  setDraftWidth(event.target.value)
+                }}
+              />
+            </label>
+            <span className="dimension-separator">×</span>
+            <label>
+              <span>H</span>
+              <input
+                aria-label="Custom canvas height"
+                type="number"
+                min={16}
+                max={512}
+                step={1}
+                value={draftHeight}
+                onChange={(event) => {
+                  setDraftHeight(event.target.value)
+                }}
+              />
+            </label>
+          </div>
+          <button type="button" className="secondary-button" disabled={!widthValid || !heightValid} onClick={applyCustom}>Apply</button>
+          {!widthValid || !heightValid ? <small className="canvas-size-error">Use whole pixels from 16 to 512.</small> : null}
+        </div>
+      ) : null}
     </div>
   )
 }

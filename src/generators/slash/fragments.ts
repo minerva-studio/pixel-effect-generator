@@ -1,6 +1,5 @@
 import { clamp01, createXorshift32, hashUnit, lerp, smoothStep } from '../../shared/pixel/rng'
 import type { SlashParameters } from './model'
-import { FRAME_SIZE } from './model'
 import { bayerThreshold } from './breakup'
 import type { RgbColor } from '../../shared/pixel/color'
 
@@ -83,6 +82,8 @@ function generateModernFragments(parameters: SlashParameters): readonly Fragment
 /** Draws the mode-specific fragment pass into the shared frame buffer. */
 export function renderFragments(
   pixels: Uint8ClampedArray,
+  frameWidth: number,
+  frameHeight: number,
   parameters: SlashParameters,
   fragments: readonly FragmentDescriptor[],
   sampleTime: number,
@@ -91,19 +92,21 @@ export function renderFragments(
   rotationSine: number,
 ): void {
   if (parameters.fragmentMode === 'pixelChunks') {
-    renderPixelChunks(pixels, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
+    renderPixelChunks(pixels, frameWidth, frameHeight, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
     return
   }
   if (parameters.fragmentMode === 'energySparks') {
-    renderEnergySparks(pixels, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
+    renderEnergySparks(pixels, frameWidth, frameHeight, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
     return
   }
-  renderDirectionalShards(pixels, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
+  renderDirectionalShards(pixels, frameWidth, frameHeight, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
 }
 
 /** Legacy square-chunk fragment rendering. */
 function renderPixelChunks(
   pixels: Uint8ClampedArray,
+  frameWidth: number,
+  frameHeight: number,
   parameters: SlashParameters,
   fragments: readonly FragmentDescriptor[],
   sampleTime: number,
@@ -112,7 +115,8 @@ function renderPixelChunks(
   rotationSine: number,
 ): void {
   const tiltScale = Math.max(Math.cos(degreesToRadians(parameters.tiltDegrees)), 1 / parameters.radius)
-  const center = FRAME_SIZE / 2
+  const centerX = frameWidth / 2
+  const centerY = frameHeight / 2
 
   for (const fragment of fragments) {
     const age = sampleTime - fragment.spawnTime
@@ -134,8 +138,8 @@ function renderPixelChunks(
     const localY = (normalY * fragment.radius
       + tangentY * fragment.tangentSpeed * age
       + normalY * fragment.outwardSpeed * age) * tiltScale
-    const screenX = Math.round(center + localX * rotationCosine - localY * rotationSine)
-    const screenY = Math.round(center + localX * rotationSine + localY * rotationCosine)
+    const screenX = Math.round(centerX + localX * rotationCosine - localY * rotationSine)
+    const screenY = Math.round(centerY + localX * rotationSine + localY * rotationCosine)
     const survival = 1 - age / fragment.lifetime
     const color = parameters.palette[fragment.colorIndex]
 
@@ -144,7 +148,7 @@ function renderPixelChunks(
         if (survival < bayerThreshold(offsetX + fragment.ditherOffsetX, offsetY + fragment.ditherOffsetY)) {
           continue
         }
-        writePixel(pixels, screenX + offsetX, screenY + offsetY, color)
+        writePixel(pixels, frameWidth, frameHeight, screenX + offsetX, screenY + offsetY, color)
       }
     }
   }
@@ -153,6 +157,8 @@ function renderPixelChunks(
 /** Renders fragments as short integer-pixel lines aligned with the tangent. */
 function renderDirectionalShards(
   pixels: Uint8ClampedArray,
+  frameWidth: number,
+  frameHeight: number,
   parameters: SlashParameters,
   fragments: readonly FragmentDescriptor[],
   sampleTime: number,
@@ -161,7 +167,8 @@ function renderDirectionalShards(
   rotationSine: number,
 ): void {
   const tiltScale = Math.max(Math.cos(degreesToRadians(parameters.tiltDegrees)), 1 / parameters.radius)
-  const center = FRAME_SIZE / 2
+  const centerX = frameWidth / 2
+  const centerY = frameHeight / 2
   const directionSign = parameters.direction === 'clockwise' ? 1 : -1
 
   for (const fragment of fragments) {
@@ -183,8 +190,8 @@ function renderDirectionalShards(
     const localY = (normalY * fragment.radius
       + tangentY * fragment.tangentSpeed * age
       + normalY * fragment.outwardSpeed * age) * tiltScale
-    const screenX = Math.round(center + localX * rotationCosine - localY * rotationSine)
-    const screenY = Math.round(center + localX * rotationSine + localY * rotationCosine)
+    const screenX = Math.round(centerX + localX * rotationCosine - localY * rotationSine)
+    const screenY = Math.round(centerY + localX * rotationSine + localY * rotationCosine)
     const color = parameters.palette[fragment.colorIndex]
     const segmentLength = Math.max(1, fragment.size)
     const stepX = tangentX * rotationCosine - tangentY * tiltScale * rotationSine
@@ -193,7 +200,7 @@ function renderDirectionalShards(
     const endX = Math.round(screenX + stepX * (segmentLength - 1))
     const endY = Math.round(screenY + stepY * (segmentLength - 1))
     for (const point of integerLinePoints(screenX, screenY, endX, endY)) {
-      writePixel(pixels, point.x, point.y, color)
+      writePixel(pixels, frameWidth, frameHeight, point.x, point.y, color)
     }
   }
 }
@@ -201,6 +208,8 @@ function renderDirectionalShards(
 /** Renders fast, short-lived single or double pixel sparks. */
 function renderEnergySparks(
   pixels: Uint8ClampedArray,
+  frameWidth: number,
+  frameHeight: number,
   parameters: SlashParameters,
   fragments: readonly FragmentDescriptor[],
   sampleTime: number,
@@ -209,7 +218,8 @@ function renderEnergySparks(
   rotationSine: number,
 ): void {
   const tiltScale = Math.max(Math.cos(degreesToRadians(parameters.tiltDegrees)), 1 / parameters.radius)
-  const center = FRAME_SIZE / 2
+  const centerX = frameWidth / 2
+  const centerY = frameHeight / 2
   const directionSign = parameters.direction === 'clockwise' ? 1 : -1
 
   for (let fragmentIndex = 0; fragmentIndex < fragments.length; fragmentIndex += 1) {
@@ -233,16 +243,23 @@ function renderEnergySparks(
     const localY = (normalY * fragment.radius
       + tangentY * fragment.tangentSpeed * 1.7 * age
       + normalY * fragment.outwardSpeed * 1.7 * age) * tiltScale
-    const screenX = Math.round(center + localX * rotationCosine - localY * rotationSine)
-    const screenY = Math.round(center + localX * rotationSine + localY * rotationCosine)
+    const screenX = Math.round(centerX + localX * rotationCosine - localY * rotationSine)
+    const screenY = Math.round(centerY + localX * rotationSine + localY * rotationCosine)
     const color = parameters.palette[fragment.colorIndex]
     const trailHash = hashUnit(parameters.seed ^ 0x165667b1, fragmentIndex, 0)
 
-    writePixel(pixels, screenX, screenY, color)
+    writePixel(pixels, frameWidth, frameHeight, screenX, screenY, color)
     if (fragment.size >= 2 && trailHash < 0.55) {
       const trailX = tangentX * rotationCosine - tangentY * tiltScale * rotationSine
       const trailY = tangentX * rotationSine + tangentY * tiltScale * rotationCosine
-      writePixel(pixels, Math.round(screenX + trailX), Math.round(screenY + trailY), color)
+      writePixel(
+        pixels,
+        frameWidth,
+        frameHeight,
+        Math.round(screenX + trailX),
+        Math.round(screenY + trailY),
+        color,
+      )
     }
   }
 }
@@ -284,11 +301,18 @@ export function integerLinePoints(
 }
 
 /** Writes one fully opaque pixel, silently ignoring out-of-bounds targets. */
-export function writePixel(pixels: Uint8ClampedArray, x: number, y: number, color: RgbColor): void {
-  if (x < 0 || x >= FRAME_SIZE || y < 0 || y >= FRAME_SIZE) {
+export function writePixel(
+  pixels: Uint8ClampedArray,
+  frameWidth: number,
+  frameHeight: number,
+  x: number,
+  y: number,
+  color: RgbColor,
+): void {
+  if (x < 0 || x >= frameWidth || y < 0 || y >= frameHeight) {
     return
   }
-  const pixelIndex = (y * FRAME_SIZE + x) * 4
+  const pixelIndex = (y * frameWidth + x) * 4
   pixels[pixelIndex] = color.r
   pixels[pixelIndex + 1] = color.g
   pixels[pixelIndex + 2] = color.b

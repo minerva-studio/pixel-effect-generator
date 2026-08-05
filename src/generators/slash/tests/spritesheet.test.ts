@@ -15,6 +15,14 @@ describe('packHorizontalSheet', () => {
       expect(extractFrame(sheet, frameIndex)).toEqual(Array.from(frames[frameIndex].pixels))
     }
   })
+
+  it('keeps horizontal layout for non-square canvas sizes', () => {
+    const frames = renderSlashFrames({ ...DEFAULT_SLASH_PARAMETERS, frameCount: 6, canvasWidth: 256, canvasHeight: 128 })
+    const sheet = packHorizontalSheet(frames)
+
+    expect(sheet.width).toBe(256 * frames.length)
+    expect(sheet.height).toBe(128)
+  })
 })
 
 function extractFrame(sheet: PixelFrame, frameIndex: number): number[] {

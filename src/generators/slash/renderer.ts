@@ -3,28 +3,32 @@ import { clamp01, easeOutCubic, lerp, positiveModulo, smoothStep } from '../../s
 import { dissolveThreshold, edgeBreakupCut } from './breakup'
 import { FragmentDescriptor, generateFragments, renderFragments, writePixel } from './fragments'
 import { colorBandIndex } from './palette'
-import { FRAME_SIZE, assertValidParameters, type SlashParameters } from './model'
+import { assertValidParameters, type SlashParameters } from './model'
 
 const FULL_CIRCLE_RADIANS = Math.PI * 2
 
 /** Renders every animation frame into deterministic RGBA pixel buffers. */
 export function renderSlashFrames(parameters: SlashParameters): PixelFrame[] {
   assertValidParameters(parameters)
+  const frameWidth = parameters.canvasWidth
+  const frameHeight = parameters.canvasHeight
   const fragments = generateFragments(parameters)
   return Array.from(
     { length: parameters.frameCount },
-    (_, frameIndex) => renderSlashFrame(parameters, fragments, frameIndex),
+    (_, frameIndex) => renderSlashFrame(parameters, frameWidth, frameHeight, fragments, frameIndex),
   )
 }
 
 function renderSlashFrame(
   parameters: SlashParameters,
+  frameWidth: number,
+  frameHeight: number,
   fragments: readonly FragmentDescriptor[],
   frameIndex: number,
 ): PixelFrame {
-  const pixels = new Uint8ClampedArray(FRAME_SIZE * FRAME_SIZE * 4)
+  const pixels = new Uint8ClampedArray(frameWidth * frameHeight * 4)
   if (frameIndex === parameters.frameCount - 1) {
-    return { width: FRAME_SIZE, height: FRAME_SIZE, pixels }
+    return { width: frameWidth, height: frameHeight, pixels }
   }
 
   const sampleTime = (frameIndex + 1) / parameters.frameCount
@@ -40,14 +44,15 @@ function renderSlashFrame(
   const tiltScale = Math.max(Math.cos(degreesToRadians(parameters.tiltDegrees)), 1 / parameters.radius)
   const inverseTiltScale = 1 / tiltScale
   const innerRadius = parameters.radius - parameters.thickness
-  const center = FRAME_SIZE / 2
+  const centerX = frameWidth / 2
+  const centerY = frameHeight / 2
   const rotationCosine = Math.cos(rotationRadians)
   const rotationSine = Math.sin(rotationRadians)
 
-  for (let y = 0; y < FRAME_SIZE; y += 1) {
-    for (let x = 0; x < FRAME_SIZE; x += 1) {
-      const screenX = x + 0.5 - center
-      const screenY = y + 0.5 - center
+  for (let y = 0; y < frameHeight; y += 1) {
+    for (let x = 0; x < frameWidth; x += 1) {
+      const screenX = x + 0.5 - centerX
+      const screenY = y + 0.5 - centerY
       const localX = screenX * rotationCosine + screenY * rotationSine
       const localY = (-screenX * rotationSine + screenY * rotationCosine) * inverseTiltScale
       const radius = Math.sqrt(localX * localX + localY * localY)
@@ -78,12 +83,19 @@ function renderSlashFrame(
         continue
       }
 
-      writePixel(pixels, x, y, parameters.palette[colorBandIndex(radialProgress, parameters.palette.length)])
+      writePixel(
+        pixels,
+        frameWidth,
+        frameHeight,
+        x,
+        y,
+        parameters.palette[colorBandIndex(radialProgress, parameters.palette.length)],
+      )
     }
   }
 
-  renderFragments(pixels, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
-  return { width: FRAME_SIZE, height: FRAME_SIZE, pixels }
+  renderFragments(pixels, frameWidth, frameHeight, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
+  return { width: frameWidth, height: frameHeight, pixels }
 }
 
 /** Resolves the first visible revolution of one spatial angle in a multi-turn sweep. */
@@ -109,4 +121,3 @@ function tailProgressAt(time: number, tailStart: number): number {
 function degreesToRadians(degrees: number): number {
   return degrees * Math.PI / 180
 }
-
