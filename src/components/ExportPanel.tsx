@@ -22,7 +22,7 @@ import { normalizeGuid, randomGuid } from '../shared/unity/guid'
 import { UNITY_MAX_ATLAS_SIZE } from '../shared/unity/textureSize'
 import { buildFrameZip, buildUnityZip, type FrameZipInput, type UnityZipInput } from '../shared/zip/zip'
 import { drawFrame, exportHorizontalSpriteSheet } from './export'
-import { createFileDelivery, getDesktopFileApi, type FileDelivery } from './fileDelivery'
+import { createFileDelivery, getDesktopFileApi, type FileDelivery, type FileSaveResult } from './fileDelivery'
 import type { FileOperationController, WorkspaceFileTask } from './fileOperations'
 import { useToast } from './toast/ToastProvider'
 import type { UnityExportSettingsState } from './unitySettings'
@@ -137,22 +137,21 @@ export async function runSpriteSheetExport(
   layout: SpriteSheetLayout,
   fileName: string,
   dependencies: ExportDependencies,
-): Promise<boolean> {
+): Promise<FileSaveResult> {
   try {
     if (!dependencies.fileDelivery.isDesktop && layout === 'horizontal') {
       dependencies.downloadSpriteSheet(frameSet.read(), fileName)
-      return true
+      return 'saved'
     }
     const packed = packSpriteSheet(frameSet.read(), layout, 'frame')
     const bytes = dependencies.encodePng(packed.frame)
-    const result = await dependencies.fileDelivery.saveBytes('spritesheet-png', fileName, toArrayBuffer(bytes))
-    return result === 'saved'
+    return dependencies.fileDelivery.saveBytes('spritesheet-png', fileName, toArrayBuffer(bytes))
   } catch {
-    return false
+    return 'failed'
   }
 }
 
-/** Encodes and downloads one animation; returns false when encoding fails. */
+/** Encodes and saves one animation; returns the native save result. */
 export async function runAnimationExport(
   format: AnimationFormat,
   frameSet: RenderedFrameSet,
@@ -160,17 +159,16 @@ export async function runAnimationExport(
   loop: boolean,
   fileName: string,
   dependencies: ExportDependencies,
-): Promise<boolean> {
+): Promise<FileSaveResult> {
   try {
     const result = dependencies.encodeAnimation({ format, frames: frameSet.read(), fps, loop })
-    const saved = await dependencies.fileDelivery.saveBytes(format, fileName, toArrayBuffer(result.bytes))
-    return saved === 'saved'
+    return dependencies.fileDelivery.saveBytes(format, fileName, toArrayBuffer(result.bytes))
   } catch {
-    return false
+    return 'failed'
   }
 }
 
-/** Builds and downloads one Unity 6 atlas ZIP. */
+/** Builds and saves one Unity 6 atlas ZIP. */
 export async function runUnityExport(
   frameSet: RenderedFrameSet,
   layout: SpriteSheetLayout,
@@ -182,7 +180,7 @@ export async function runUnityExport(
   imageName: string,
   zipFileName: string,
   dependencies: ExportDependencies,
-): Promise<boolean> {
+): Promise<FileSaveResult> {
   try {
     const zip = dependencies.buildUnityZip({
       generatorId: document.generator,
@@ -195,14 +193,13 @@ export async function runUnityExport(
       folderName,
       imageName,
     })
-    const saved = await dependencies.fileDelivery.saveBytes('unity-zip', zipFileName, toArrayBuffer(zip))
-    return saved === 'saved'
+    return dependencies.fileDelivery.saveBytes('unity-zip', zipFileName, toArrayBuffer(zip))
   } catch {
-    return false
+    return 'failed'
   }
 }
 
-/** Builds and downloads one per-frame transparent PNG ZIP. */
+/** Builds and saves one per-frame transparent PNG ZIP. */
 export async function runFrameZipExport(
   frameSet: RenderedFrameSet,
   fps: number,
@@ -211,7 +208,7 @@ export async function runFrameZipExport(
   frameNamePrefix: string,
   fileName: string,
   dependencies: ExportDependencies,
-): Promise<boolean> {
+): Promise<FileSaveResult> {
   try {
     const zip = dependencies.buildFrameZip({
       generatorId: document.generator,
@@ -221,10 +218,9 @@ export async function runFrameZipExport(
       folderName,
       frameNamePrefix,
     })
-    const saved = await dependencies.fileDelivery.saveBytes('frame-zip', fileName, toArrayBuffer(zip))
-    return saved === 'saved'
+    return dependencies.fileDelivery.saveBytes('frame-zip', fileName, toArrayBuffer(zip))
   } catch {
-    return false
+    return 'failed'
   }
 }
 
@@ -761,7 +757,7 @@ export function ExportPanel({
 
   const handleExport = async (
     task: WorkspaceFileTask,
-    run: () => Promise<boolean>,
+    run: () => Promise<FileSaveResult>,
     category: ExportCategory,
   ) => {
     if (!fileOperations.tryStart(task)) {
@@ -771,21 +767,22 @@ export function ExportPanel({
     const toastKeys = exportToastKeys(task)
     const pendingId = toastKeys === null ? null : toast.show('pending', t(toastKeys.pending))
     try {
-      let succeeded = false
+      let result: FileSaveResult = 'failed'
       try {
-        succeeded = await run()
+        result = await run()
       } catch {
-        succeeded = false
+        result = 'failed'
       }
       if (pendingId !== null) {
         toast.dismiss(pendingId)
       }
-      if (!succeeded) {
+      if (result === 'failed') {
         dispatch({ type: 'categoryError', category, message: t('export.errors.exportFailed') })
         toast.show('error', t('export.errors.exportFailed'))
-      } else if (toastKeys !== null) {
+      } else if (result === 'saved' && toastKeys !== null) {
         toast.show('success', t(toastKeys.success))
       }
+      // 'cancelled' is a normal user outcome: no success or error feedback.
     } finally {
       fileOperations.finish(task)
     }

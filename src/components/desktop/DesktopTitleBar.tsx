@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
 import {
   LOCALE_DISPLAY_NAMES,
@@ -8,14 +8,26 @@ import {
 import { useDesktopApp } from './DesktopProvider'
 import type { ProjectWorkflow } from './useProjectWorkflow'
 
+/** Roving-focus index for one arrow step in a vertical menu. */
+export function nextMenuIndex(current: number, length: number, direction: 1 | -1): number {
+  if (length <= 0) {
+    return -1
+  }
+  if (current < 0) {
+    return direction === 1 ? 0 : length - 1
+  }
+  return (current + direction + length) % length
+}
+
 /** Desktop-only window chrome with a draggable region and File menu. */
-export function DesktopTitleBar({ workflow }: { readonly workflow: ProjectWorkflow }) {
+export function DesktopTitleBar({ workflow, busy }: { readonly workflow: ProjectWorkflow; readonly busy: boolean }) {
   const { t, locale, setLocale } = useI18n()
   const api = useDesktopApp()
   const [maximized, setMaximized] = useState(false)
   const [fileOpen, setFileOpen] = useState(false)
   const fileButtonRef = useRef<HTMLButtonElement | null>(null)
   const fileMenuRef = useRef<HTMLDivElement | null>(null)
+  const fileMenuPanelRef = useRef<HTMLDivElement | null>(null)
   const fileMenuId = useId()
 
   useEffect(() => {
@@ -58,6 +70,48 @@ export function DesktopTitleBar({ workflow }: { readonly workflow: ProjectWorkfl
     }
   }, [fileOpen])
 
+  // Standard menu behavior: opening focuses the first enabled item.
+  useEffect(() => {
+    if (!fileOpen) {
+      return
+    }
+    enabledMenuButtons(fileMenuPanelRef.current)[0]?.focus()
+  }, [fileOpen])
+
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const buttons = enabledMenuButtons(fileMenuPanelRef.current)
+    if (buttons.length === 0) {
+      return
+    }
+    const current = buttons.indexOf(document.activeElement as HTMLButtonElement)
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault()
+        buttons[nextMenuIndex(current, buttons.length, 1)]?.focus()
+        break
+      case 'ArrowUp':
+        event.preventDefault()
+        buttons[nextMenuIndex(current, buttons.length, -1)]?.focus()
+        break
+      case 'Home':
+        event.preventDefault()
+        buttons[0]?.focus()
+        break
+      case 'End':
+        event.preventDefault()
+        buttons[buttons.length - 1]?.focus()
+        break
+      case 'Escape':
+        event.preventDefault()
+        setFileOpen(false)
+        fileButtonRef.current?.focus()
+        break
+      case 'Tab':
+        setFileOpen(false)
+        break
+    }
+  }
+
   if (api === null) {
     return null
   }
@@ -85,12 +139,19 @@ export function DesktopTitleBar({ workflow }: { readonly workflow: ProjectWorkfl
           {t('desktop.titleBar.file')}
         </button>
         {fileOpen ? (
-          <div className="titlebar-file-menu" id={fileMenuId} role="menu" aria-label={t('desktop.titleBar.file')}>
-            <button type="button" role="menuitem" onClick={() => { setFileOpen(false); workflow.newProject() }}>
+          <div
+            className="titlebar-file-menu"
+            id={fileMenuId}
+            role="menu"
+            aria-label={t('desktop.titleBar.file')}
+            ref={fileMenuPanelRef}
+            onKeyDown={handleMenuKeyDown}
+          >
+            <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.newProject() }}>
               <span>{t('desktop.titleBar.newProject')}</span>
               <kbd>Ctrl+N</kbd>
             </button>
-            <button type="button" role="menuitem" onClick={() => { setFileOpen(false); workflow.openProject() }}>
+            <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.openProject() }}>
               <span>{t('desktop.titleBar.openProject')}</span>
               <kbd>Ctrl+O</kbd>
             </button>
@@ -104,6 +165,7 @@ export function DesktopTitleBar({ workflow }: { readonly workflow: ProjectWorkfl
                     type="button"
                     role="menuitem"
                     key={recent.id}
+                    disabled={busy}
                     onClick={() => { setFileOpen(false); workflow.openRecent(recent.id) }}
                   >
                     <span className="titlebar-recent-name">{recent.name}</span>
@@ -111,16 +173,16 @@ export function DesktopTitleBar({ workflow }: { readonly workflow: ProjectWorkfl
                 ))
               )}
               {workflow.recents.length > 0 ? (
-                <button type="button" className="titlebar-recent-clear" onClick={workflow.clearRecent}>
+                <button type="button" className="titlebar-recent-clear" disabled={busy} onClick={workflow.clearRecent}>
                   {t('desktop.titleBar.clearRecent')}
                 </button>
               ) : null}
             </div>
-            <button type="button" role="menuitem" onClick={() => { setFileOpen(false); workflow.saveProject() }}>
+            <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.saveProject() }}>
               <span>{t('desktop.titleBar.save')}</span>
               <kbd>Ctrl+S</kbd>
             </button>
-            <button type="button" role="menuitem" onClick={() => { setFileOpen(false); workflow.saveProjectAs() }}>
+            <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.saveProjectAs() }}>
               <span>{t('desktop.titleBar.saveAs')}</span>
               <kbd>Ctrl+Shift+S</kbd>
             </button>
@@ -176,6 +238,14 @@ export function DesktopTitleBar({ workflow }: { readonly workflow: ProjectWorkfl
       </div>
     </header>
   )
+}
+
+/** Collects focusable menu buttons, skipping disabled ones. */
+function enabledMenuButtons(panel: HTMLDivElement | null): HTMLButtonElement[] {
+  if (panel === null) {
+    return []
+  }
+  return Array.from(panel.querySelectorAll<HTMLButtonElement>('button')).filter((button) => !button.disabled)
 }
 
 /** Small inline pixel-slash mark used while no branded asset is needed. */

@@ -190,7 +190,7 @@ describe('runProjectSave', () => {
       deps,
     )
 
-    expect(result.ok).toBe(true)
+    expect(result).toBe('saved')
     expect(importProject).not.toHaveBeenCalled()
     expect(saveText).toHaveBeenCalledTimes(1)
     const [kind, fileName, text] = saveText.mock.calls[0] as unknown as [string, string, string]
@@ -203,24 +203,31 @@ describe('runProjectSave', () => {
   it('treats a cancelled native dialog as a normal outcome', async () => {
     const saveText = vi.fn(async () => 'cancelled' as const)
     const deps = dependencies({ fileDelivery: projectDelivery({ saveText }) })
-    expect(await runProjectSave(bridge(), unitySettings, 'p.json', deps)).toEqual({ ok: true })
+    expect(await runProjectSave(bridge(), unitySettings, 'p.json', deps)).toBe('cancelled')
     expect(saveText).toHaveBeenCalledTimes(1)
+  })
+
+  it('maps a failed native write to a save error', async () => {
+    const saveText = vi.fn(async () => 'failed' as const)
+    const deps = dependencies({ fileDelivery: projectDelivery({ saveText }) })
+    expect(await runProjectSave(bridge(), unitySettings, 'p.json', deps))
+      .toMatchObject({ error: { code: 'DOWNLOAD_FAILED' } })
   })
 
   it('rejects invalid PPU and GUID without saving', async () => {
     const saveText = vi.fn(async () => 'saved' as const)
     const deps = dependencies({ fileDelivery: projectDelivery({ saveText }) })
     expect(await runProjectSave(bridge(), { pixelsPerUnit: 0, stableGuid: '' }, 'p.json', deps))
-      .toMatchObject({ ok: false, error: { code: 'INVALID_PPU' } })
+      .toMatchObject({ error: { code: 'INVALID_PPU' } })
     expect(await runProjectSave(bridge(), { pixelsPerUnit: 32, stableGuid: 'nope' }, 'p.json', deps))
-      .toMatchObject({ ok: false, error: { code: 'INVALID_GUID' } })
+      .toMatchObject({ error: { code: 'INVALID_GUID' } })
     expect(saveText).not.toHaveBeenCalled()
   })
 
   it('reports failures when serialization throws', async () => {
     const failingBridge = { ...bridge(), buildDocument: () => { throw new Error('boom') } }
     const result = await runProjectSave(failingBridge, unitySettings, 'p.json', dependencies())
-    expect(result).toMatchObject({ ok: false, error: { code: 'DOWNLOAD_FAILED' } })
+    expect(result).toMatchObject({ error: { code: 'DOWNLOAD_FAILED' } })
   })
 })
 

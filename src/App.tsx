@@ -94,7 +94,7 @@ function DesktopApp({ api }: { readonly api: DesktopAppApi }) {
 
   return (
     <div className="desktop-shell">
-      <DesktopTitleBar workflow={workflow} />
+      <DesktopTitleBar workflow={workflow} busy={sessions.fileOperations.activeTask !== null} />
       <main className="app-shell desktop-app-shell">
         <ActiveWorkspace
           session={sessions.activeSession}

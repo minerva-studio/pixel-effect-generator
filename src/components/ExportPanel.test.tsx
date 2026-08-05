@@ -213,7 +213,7 @@ describe('export panel actions', () => {
     const downloadSpriteSheet = vi.fn()
     const deps = dependencies({ downloadSpriteSheet })
     const ok = await runSpriteSheetExport(frameSet, 'horizontal', 'sheet.png', deps)
-    expect(ok).toBe(true)
+    expect(ok).toBe('saved')
     expect(downloadSpriteSheet).toHaveBeenCalledTimes(1)
     expect(downloadSpriteSheet).toHaveBeenCalledWith(frames, 'sheet.png')
     expect(deps.fileDelivery.saveBytes).not.toHaveBeenCalled()
@@ -223,7 +223,7 @@ describe('export panel actions', () => {
     const encodePng = vi.fn((_frame: PixelFrame) => new Uint8Array([7, 8]))
     const fileDelivery = browserDelivery()
     const ok = await runSpriteSheetExport(frameSet, 'compact', 'compact.png', dependencies({ encodePng, fileDelivery }))
-    expect(ok).toBe(true)
+    expect(ok).toBe('saved')
     expect(encodePng).toHaveBeenCalledTimes(1)
     expect(fileDelivery.saveBytes).toHaveBeenCalledWith('spritesheet-png', 'compact.png', expect.any(ArrayBuffer))
     const buffer = fileDelivery.saveBytes.mock.calls[0][2] as unknown as ArrayBuffer
@@ -234,9 +234,27 @@ describe('export panel actions', () => {
     const fileDelivery = desktopDelivery()
     const deps = dependencies({ fileDelivery })
     const ok = await runSpriteSheetExport(frameSet, 'horizontal', 'sheet.png', deps)
-    expect(ok).toBe(true)
+    expect(ok).toBe('saved')
     expect(fileDelivery.saveBytes).toHaveBeenCalledWith('spritesheet-png', 'sheet.png', expect.any(ArrayBuffer))
     expect(deps.downloadSpriteSheet).not.toHaveBeenCalled()
+  })
+
+  it('treats a cancelled save dialog as a normal outcome', async () => {
+    const fileDelivery = {
+      ...desktopDelivery(),
+      saveBytes: vi.fn(async () => 'cancelled' as const),
+    }
+    const ok = await runSpriteSheetExport(frameSet, 'horizontal', 'sheet.png', dependencies({ fileDelivery }))
+    expect(ok).toBe('cancelled')
+  })
+
+  it('maps a failed native write to failed without success feedback', async () => {
+    const fileDelivery = {
+      ...desktopDelivery(),
+      saveBytes: vi.fn(async () => 'failed' as const),
+    }
+    const ok = await runAnimationExport('gif', frameSet, 12, true, 'clip.gif', dependencies({ fileDelivery }))
+    expect(ok).toBe('failed')
   })
 
   it('encodes and saves GIF and APNG with the loop state and FPS', async () => {
@@ -249,7 +267,7 @@ describe('export panel actions', () => {
     const fileDelivery = browserDelivery()
     const ok = await runAnimationExport('gif', frameSet, 12, false, 'clip.gif', dependencies({ encodeAnimation, fileDelivery }))
 
-    expect(ok).toBe(true)
+    expect(ok).toBe('saved')
     expect(encodeAnimation).toHaveBeenCalledWith({ format: 'gif', frames, fps: 12, loop: false })
     expect(fileDelivery.saveBytes).toHaveBeenCalledWith('gif', 'clip.gif', expect.any(ArrayBuffer))
   })
@@ -258,7 +276,7 @@ describe('export panel actions', () => {
     const encodeAnimation = vi.fn(() => { throw new Error('encode failed') })
     const fileDelivery = browserDelivery()
     const ok = await runAnimationExport('apng', frameSet, 24, true, 'clip.png', dependencies({ encodeAnimation, fileDelivery }))
-    expect(ok).toBe(false)
+    expect(ok).toBe('failed')
     expect(fileDelivery.saveBytes).not.toHaveBeenCalled()
   })
 
@@ -285,7 +303,7 @@ describe('export panel actions', () => {
       'atlas.zip',
       dependencies({ buildUnityZip, fileDelivery }),
     )
-    expect(ok).toBe(true)
+    expect(ok).toBe('saved')
     expect(buildUnityZip).toHaveBeenCalledWith(expect.objectContaining({
       generatorId: 'slash',
       frames,
@@ -311,7 +329,7 @@ describe('export panel actions', () => {
       export: { unity: { pixelsPerUnit: 32, guid: null } },
     }
     const ok = await runFrameZipExport(frameSet, 12, document, 'frames', 'slash', 'frames.zip', dependencies({ buildFrameZip, fileDelivery }))
-    expect(ok).toBe(true)
+    expect(ok).toBe('saved')
     expect(buildFrameZip).toHaveBeenCalledWith(expect.objectContaining({
       generatorId: 'slash',
       frames,

@@ -4,6 +4,7 @@ import App from '../../App'
 import { I18nProvider } from '../../i18n/I18nProvider'
 import type { DesktopAppApi } from '../../electron/desktopApi'
 import { DesktopProvider } from './DesktopProvider'
+import { nextMenuIndex } from './DesktopTitleBar'
 
 function fakeDesktopApi(): DesktopAppApi {
   return {
@@ -14,6 +15,7 @@ function fakeDesktopApi(): DesktopAppApi {
       toggleMaximize: vi.fn(async () => undefined),
       toggleFullScreen: vi.fn(async () => undefined),
       requestClose: vi.fn(async () => undefined),
+      completeCloseSave: vi.fn(async () => undefined),
       isMaximized: vi.fn(async () => false),
       onMaximizedChanged: vi.fn(() => () => undefined),
     },
@@ -76,5 +78,23 @@ describe('desktop vs web shell', () => {
     expect(markup).toContain('class="hero"')
     expect(markup).not.toContain('desktop-titlebar')
     expect(markup).not.toContain('>File<')
+    expect(markup).toContain('128 × 128 RGBA')
+  })
+})
+
+describe('nextMenuIndex', () => {
+  it('cycles forward and backward', () => {
+    expect(nextMenuIndex(0, 5, 1)).toBe(1)
+    expect(nextMenuIndex(4, 5, 1)).toBe(0)
+    expect(nextMenuIndex(0, 5, -1)).toBe(4)
+  })
+
+  it('starts at first or last when nothing is focused', () => {
+    expect(nextMenuIndex(-1, 5, 1)).toBe(0)
+    expect(nextMenuIndex(-1, 5, -1)).toBe(4)
+  })
+
+  it('returns -1 for empty menus', () => {
+    expect(nextMenuIndex(0, 0, 1)).toBe(-1)
   })
 })

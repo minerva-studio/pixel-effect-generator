@@ -81,23 +81,29 @@ export function resolveProjectSaveSettings(
   return { ok: true, exportSettings: { pixelsPerUnit: settings.pixelsPerUnit, guid: normalized } }
 }
 
+/** Outcome of one project save; cancelled is a normal user result. */
+export type ProjectSaveOutcome = 'saved' | 'cancelled' | { readonly error: ExportError }
+
 /** Builds and saves the current project document as stable JSON. */
 export async function runProjectSave(
   bridge: ProjectBridge,
   unitySettings: UnityExportSettingsState,
   fileName: string,
   dependencies: ProjectMenuDependencies,
-): Promise<{ readonly ok: true } | { readonly ok: false; readonly error: ExportError }> {
+): Promise<ProjectSaveOutcome> {
   const resolved = resolveProjectSaveSettings(unitySettings)
   if (!resolved.ok) {
-    return resolved
+    return { error: resolved.error }
   }
   try {
     const document = bridge.buildDocument(resolved.exportSettings)
-    await dependencies.fileDelivery.saveText('project-json', fileName, dependencies.serializeJson(document))
-    return { ok: true }
+    const result = await dependencies.fileDelivery.saveText('project-json', fileName, dependencies.serializeJson(document))
+    if (result === 'failed') {
+      return { error: { code: 'DOWNLOAD_FAILED', detail: 'save failed' } }
+    }
+    return result
   } catch (error) {
-    return { ok: false, error: { code: 'DOWNLOAD_FAILED', detail: describeError(error) } }
+    return { error: { code: 'DOWNLOAD_FAILED', detail: describeError(error) } }
   }
 }
 
@@ -283,14 +289,15 @@ export function ProjectMenu({
     dispatch({ type: 'operationStarted' })
     const pendingId = toast.show('pending', t('export.toasts.savingProject'))
     try {
-      const result = await runProjectSave(bridge, unitySettings, fileName, dependencies)
+      const outcome = await runProjectSave(bridge, unitySettings, fileName, dependencies)
       toast.dismiss(pendingId)
-      if (result.ok) {
+      if (outcome === 'saved') {
         toast.show('success', t('desktop.toasts.savedProject'))
-      } else {
-        dispatch({ type: 'operationFailed', message: projectErrorMessage(t, result.error.code) })
-        toast.show('error', projectErrorMessage(t, result.error.code))
+      } else if (outcome !== 'cancelled') {
+        dispatch({ type: 'operationFailed', message: projectErrorMessage(t, outcome.error.code) })
+        toast.show('error', projectErrorMessage(t, outcome.error.code))
       }
+      // cancelled is a normal outcome: no success or error feedback.
     } catch {
       toast.dismiss(pendingId)
       toast.show('error', projectErrorMessage(t, 'DOWNLOAD_FAILED'))

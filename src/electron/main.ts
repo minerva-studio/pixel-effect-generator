@@ -35,7 +35,7 @@ let mainWindow: BrowserWindow | null = null
 let currentProjectPath: string | null = null
 let dirty = false
 let unsavedLabels = FALLBACK_UNSAVED_LABELS
-let closeAfterSave = false
+let closeDialogOpen = false
 let recentEntries: readonly RecentEntry[] = []
 const pendingOpens = new Map<string, string>()
 
@@ -65,11 +65,17 @@ function createWindow(): void {
   mainWindow.on('maximize', () => send('desktop:window:maximized-changed', true))
   mainWindow.on('unmaximize', () => send('desktop:window:maximized-changed', false))
   mainWindow.on('close', (event) => {
-    if (!dirty) {
+    if (!dirty || closeDialogOpen) {
+      if (closeDialogOpen) {
+        event.preventDefault()
+      }
       return
     }
     event.preventDefault()
-    void handleUnsavedBeforeClose()
+    closeDialogOpen = true
+    void handleUnsavedBeforeClose().catch(() => {
+      closeDialogOpen = false
+    })
   })
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -97,14 +103,17 @@ function createWindow(): void {
 async function handleUnsavedBeforeClose(): Promise<void> {
   const choice = await showUnsavedDialog()
   if (choice === 'cancel') {
+    closeDialogOpen = false
     return
   }
   if (choice === 'discard') {
     dirty = false
+    closeDialogOpen = false
     mainWindow?.close()
     return
   }
-  closeAfterSave = true
+  // Keep the close guard held while the renderer owns the native save flow.
+  // It will report the terminal result through complete-close-save.
   send('desktop:save-requested')
 }
 
@@ -129,7 +138,7 @@ function registerIpc(): void {
   ipcMain.handle('desktop:save-file', async (_event, request: unknown): Promise<DesktopSaveResult> => {
     const parsed = parseSaveRequest(request)
     if (parsed === null) {
-      return { status: 'cancelled' }
+      return { status: 'failed', error: 'invalid save request' }
     }
     const spec = SAVE_SPECS[parsed.kind]
     const options: Electron.SaveDialogOptions = {
@@ -148,7 +157,7 @@ function registerIpc(): void {
       await writeAtomic(filePath, new Uint8Array(parsed.bytes))
       return { status: 'saved' }
     } catch (error) {
-      return { status: 'cancelled' }
+      return { status: 'failed', error: describeError(error) }
     }
   })
 
@@ -173,6 +182,19 @@ function registerIpc(): void {
   })
   ipcMain.handle('desktop:window:request-close', () => {
     mainWindow?.close()
+  })
+  ipcMain.handle('desktop:window:complete-close-save', (_event, saved: unknown) => {
+    if (!closeDialogOpen) {
+      return
+    }
+    if (saved === true) {
+      dirty = false
+      closeDialogOpen = false
+      mainWindow?.close()
+      return
+    }
+    // Cancelled and failed saves both keep the current project open.
+    closeDialogOpen = false
   })
   ipcMain.handle('desktop:window:is-maximized', () => mainWindow?.isMaximized() ?? false)
 

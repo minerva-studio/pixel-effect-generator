@@ -11,6 +11,7 @@ const api: DesktopAppApi = {
     toggleMaximize: () => ipcRenderer.invoke('desktop:window:toggle-maximize'),
     toggleFullScreen: () => ipcRenderer.invoke('desktop:window:toggle-full-screen'),
     requestClose: () => ipcRenderer.invoke('desktop:window:request-close'),
+    completeCloseSave: (saved) => ipcRenderer.invoke('desktop:window:complete-close-save', saved),
     isMaximized: () => ipcRenderer.invoke('desktop:window:is-maximized'),
     onMaximizedChanged: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, maximized: boolean) => listener(maximized)

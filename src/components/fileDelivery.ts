@@ -37,12 +37,12 @@ export function createFileDelivery(desktopApi: DesktopAppApi | undefined): FileD
       isDesktop: true,
       saveBytes: async (kind, suggestedName, bytes) => {
         const result = await desktopApi.saveFile({ kind, suggestedName, bytes })
-        return result.status === 'saved' ? 'saved' : 'cancelled'
+        return mapSaveResult(result)
       },
       saveText: async (kind, suggestedName, text) => {
         const bytes = new TextEncoder().encode(text).buffer
         const result = await desktopApi.saveFile({ kind, suggestedName, bytes })
-        return result.status === 'saved' ? 'saved' : 'cancelled'
+        return mapSaveResult(result)
       },
       openProjectText: async () => {
         const result = await desktopApi.project.open()
@@ -65,6 +65,17 @@ export function createFileDelivery(desktopApi: DesktopAppApi | undefined): FileD
     },
     openProjectText: async () => ({ status: 'cancelled' }),
   }
+}
+
+/** Maps the native tri-state result without exposing internal error details. */
+function mapSaveResult(result: {
+  readonly status: 'saved' | 'cancelled' | 'failed'
+  readonly error?: string
+}): FileSaveResult {
+  if (result.status === 'saved') {
+    return 'saved'
+  }
+  return result.status === 'failed' ? 'failed' : 'cancelled'
 }
 
 /** Reads the desktop bridge safely; undefined in browsers and tests. */

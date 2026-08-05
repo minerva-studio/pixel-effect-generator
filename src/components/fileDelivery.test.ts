@@ -11,6 +11,7 @@ function desktopApi(overrides: Partial<DesktopAppApi> = {}): DesktopAppApi {
       toggleMaximize: vi.fn(async () => undefined),
       toggleFullScreen: vi.fn(async () => undefined),
       requestClose: vi.fn(async () => undefined),
+      completeCloseSave: vi.fn(async () => undefined),
       isMaximized: vi.fn(async () => false),
       onMaximizedChanged: vi.fn(() => () => undefined),
     },
@@ -52,6 +53,14 @@ describe('createFileDelivery', () => {
     const delivery = createFileDelivery(api)
     expect(await delivery.saveText('project-json', 'p.json', '{}')).toBe('cancelled')
     expect(await delivery.saveBytes('gif', 'a.gif', new Uint8Array([1]).buffer)).toBe('cancelled')
+  })
+
+  it('maps failed native saves to failed without exposing internal details', async () => {
+    const api = desktopApi({
+      saveFile: vi.fn(async () => ({ status: 'failed' as const, error: 'EACCES C:\\secret\\x.png' })),
+    })
+    const delivery = createFileDelivery(api)
+    expect(await delivery.saveBytes('spritesheet-png', 'x.png', new Uint8Array([1]).buffer)).toBe('failed')
   })
 
   it('passes through desktop project open results', async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { DesktopAppApi, RecentProject, UnsavedDialogLabels } from '../../electron/desktopApi'
 import type {
   RegisteredGenerator,
@@ -7,7 +7,7 @@ import type {
 } from '../../generators/contract'
 import type { TranslateFunction } from '../../i18n/messages'
 import { buildProjectDocument, serializeJsonValue } from '../../shared/project/document'
-import type { ProjectExportSettings } from '../../shared/project/types'
+import type { GeneratorProjectCodec, ProjectExportSettings } from '../../shared/project/types'
 import type { FileOperationController } from '../fileOperations'
 import { importProjectFromText } from '../ProjectMenu'
 import type { ToastApi } from '../toast/ToastProvider'
@@ -24,6 +24,44 @@ export interface ProjectWorkflow {
   readonly saveProjectAs: () => void
   readonly exitProject: () => void
   readonly clearRecent: () => void
+}
+
+/** Dirty baseline keyed by generator so switching generators never compares
+ * one generator's project against another. */
+export interface ProjectBaseline {
+  readonly generatorId: string
+  readonly text: string
+}
+
+/** Stable serialization of the persistent project fields only. */
+export function serializeProjectSnapshot(
+  codec: GeneratorProjectCodec<unknown> | undefined,
+  parameters: unknown,
+  fps: number,
+  unitySettings: UnityExportSettingsState,
+): string {
+  if (codec === undefined) {
+    return ''
+  }
+  try {
+    const trimmed = unitySettings.stableGuid.trim()
+    const settings: ProjectExportSettings = {
+      pixelsPerUnit: unitySettings.pixelsPerUnit,
+      guid: trimmed === '' ? null : trimmed,
+    }
+    return serializeJsonValue(buildProjectDocument(codec, parameters, fps, settings))
+  } catch {
+    return ''
+  }
+}
+
+/** True when the current serialization differs from the matching baseline. */
+export function isProjectDirty(
+  baseline: ProjectBaseline | null,
+  generatorId: string,
+  serialized: string,
+): boolean {
+  return baseline !== null && baseline.generatorId === generatorId && serialized !== baseline.text
 }
 
 interface ProjectWorkflowDeps {
@@ -56,29 +94,30 @@ export function useProjectWorkflow({
   toast,
   t,
 }: ProjectWorkflowDeps): ProjectWorkflow {
+  const codec = generator.projectCodec
   const [currentFileName, setCurrentFileName] = useState<string | null>(null)
-  const [baseline, setBaseline] = useState<string | null>(null)
+  const [baseline, setBaseline] = useState<ProjectBaseline | null>(() => ({
+    generatorId: generator.id,
+    text: serializeProjectSnapshot(codec, session.parameters, session.previewFps, unitySettings),
+  }))
   const [recents, setRecents] = useState<readonly RecentProject[]>([])
 
-  const codec = generator.projectCodec
   const serializeCurrent = useCallback((): string => {
-    if (codec === undefined) {
-      return ''
-    }
-    try {
-      const trimmed = unitySettings.stableGuid.trim()
-      const settings: ProjectExportSettings = {
-        pixelsPerUnit: unitySettings.pixelsPerUnit,
-        guid: trimmed === '' ? null : trimmed,
-      }
-      return serializeJsonValue(buildProjectDocument(codec, session.parameters, session.previewFps, settings))
-    } catch {
-      return ''
-    }
+    return serializeProjectSnapshot(codec, session.parameters, session.previewFps, unitySettings)
   }, [codec, session.parameters, session.previewFps, unitySettings.pixelsPerUnit, unitySettings.stableGuid])
 
+  const snapshotRef = useRef(serializeCurrent)
+  snapshotRef.current = serializeCurrent
+
   const serialized = serializeCurrent()
-  const dirty = baseline !== null && serialized !== baseline
+  const dirty = isProjectDirty(baseline, generator.id, serialized)
+
+  // Switching generators re-establishes the baseline for the new generator's
+  // current (default) parameters instead of comparing against the old one.
+  useEffect(() => {
+    setBaseline({ generatorId: generator.id, text: snapshotRef.current() })
+    setCurrentFileName(null)
+  }, [generator.id])
 
   const unsavedLabels = useMemo<UnsavedDialogLabels>(() => ({
     title: t('desktop.confirm.title'),
@@ -126,7 +165,7 @@ export function useProjectWorkflow({
       const result = await api.project.save(bytes)
       toast.dismiss(pendingId)
       if (result.status === 'saved') {
-        setBaseline(text)
+        setBaseline({ generatorId: generator.id, text })
         setCurrentFileName(result.name)
         toast.show('success', t('desktop.toasts.savedProject'))
         return true
@@ -155,7 +194,7 @@ export function useProjectWorkflow({
       const result = await api.project.saveAs(projectSuggestedName(generator, session, t), bytes)
       toast.dismiss(pendingId)
       if (result.status === 'saved') {
-        setBaseline(text)
+        setBaseline({ generatorId: generator.id, text })
         setCurrentFileName(result.name)
         toast.show('success', t('desktop.toasts.savedProject'))
         refreshRecents()
@@ -205,27 +244,36 @@ export function useProjectWorkflow({
       return
     }
     await api.project.confirmOpen(result.id)
-    setBaseline(baselineFor(imported.parameters, imported.fps, imported.exportSettings))
+    setBaseline({ generatorId: generator.id, text: baselineFor(imported.parameters, imported.fps, imported.exportSettings) })
     setCurrentFileName(result.name)
     refreshRecents()
   }, [api, baselineFor, codec, generator, onSessionAction, onUnitySettingsChange, refreshRecents, toast, t])
 
   const newProject = useCallback(async (): Promise<void> => {
+    if (fileOperations.activeTask !== null) {
+      return
+    }
     if (!(await confirmBeforeProceeding())) {
       return
     }
     onReset()
     onUnitySettingsChange(DEFAULT_UNITY_EXPORT_SETTINGS)
     const defaults = generator.createSession(12)
-    setBaseline(baselineFor(defaults.parameters, defaults.previewFps, {
-      pixelsPerUnit: DEFAULT_UNITY_EXPORT_SETTINGS.pixelsPerUnit,
-      guid: null,
-    }))
+    setBaseline({
+      generatorId: generator.id,
+      text: baselineFor(defaults.parameters, defaults.previewFps, {
+        pixelsPerUnit: DEFAULT_UNITY_EXPORT_SETTINGS.pixelsPerUnit,
+        guid: null,
+      }),
+    })
     setCurrentFileName(null)
     toast.show('success', t('desktop.toasts.newProject'))
-  }, [baselineFor, confirmBeforeProceeding, generator, onReset, onUnitySettingsChange, toast, t])
+  }, [baselineFor, confirmBeforeProceeding, fileOperations.activeTask, generator, onReset, onUnitySettingsChange, toast, t])
 
   const openProject = useCallback(async (): Promise<void> => {
+    if (fileOperations.activeTask !== null) {
+      return
+    }
     if (!(await confirmBeforeProceeding())) {
       return
     }
@@ -235,9 +283,12 @@ export function useProjectWorkflow({
     } else if (result.status === 'failed') {
       toast.show('error', t('desktop.toasts.openFailed'))
     }
-  }, [api, applyOpenedProject, confirmBeforeProceeding, toast, t])
+  }, [api, applyOpenedProject, confirmBeforeProceeding, fileOperations.activeTask, toast, t])
 
   const openRecent = useCallback(async (id: string): Promise<void> => {
+    if (fileOperations.activeTask !== null) {
+      return
+    }
     if (!(await confirmBeforeProceeding())) {
       return
     }
@@ -248,15 +299,18 @@ export function useProjectWorkflow({
       toast.show('error', t('desktop.toasts.recentFailed'))
       refreshRecents()
     }
-  }, [api, applyOpenedProject, confirmBeforeProceeding, refreshRecents, toast, t])
+  }, [api, applyOpenedProject, confirmBeforeProceeding, fileOperations.activeTask, refreshRecents, toast, t])
 
   const exitProject = useCallback(() => {
     void api.window.requestClose()
   }, [api])
 
   const clearRecent = useCallback(() => {
+    if (fileOperations.activeTask !== null) {
+      return
+    }
     void api.project.clearRecent().then(refreshRecents)
-  }, [api, refreshRecents])
+  }, [api, fileOperations.activeTask, refreshRecents])
 
   useEffect(() => {
     const offMenu = api.project.onMenuAction((action) => {
@@ -279,11 +333,10 @@ export function useProjectWorkflow({
       }
     })
     const offSave = api.project.onSaveRequested(() => {
-      void saveProject().then((saved) => {
-        if (saved) {
-          void api.window.requestClose()
-        }
-      })
+      void saveProject().then(
+        (saved) => api.window.completeCloseSave(saved),
+        () => api.window.completeCloseSave(false),
+      )
     })
     return () => {
       offMenu()

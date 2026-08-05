@@ -7,8 +7,11 @@ export type DesktopSaveKind =
   | 'frame-zip'
   | 'unity-zip'
 
-/** Result of a native save request. */
-export type DesktopSaveResult = { readonly status: 'saved' | 'cancelled' }
+/** Result of a native save request; only a user-cancelled dialog is cancelled. */
+export type DesktopSaveResult =
+  | { readonly status: 'saved' }
+  | { readonly status: 'cancelled' }
+  | { readonly status: 'failed'; readonly error: string }
 
 /** One opaque recent-project entry; paths never leave the main process. */
 export interface RecentProject {
@@ -57,6 +60,7 @@ export interface DesktopAppApi {
     toggleMaximize(): Promise<void>
     toggleFullScreen(): Promise<void>
     requestClose(): Promise<void>
+    completeCloseSave(saved: boolean): Promise<void>
     isMaximized(): Promise<boolean>
     onMaximizedChanged(listener: (maximized: boolean) => void): () => void
   }
