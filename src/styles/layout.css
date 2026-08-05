@@ -11,6 +11,19 @@
 }
 
 .hero { margin-bottom: 24px; }
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.language-select {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: #c9cddd;
+  background: rgba(17, 20, 29, 0.7);
+  font-size: 0.75rem;
+}
 .eyebrow, .section-label { margin: 0 0 8px; color: var(--accent-bright); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.18em; }
 h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 8px; font-size: clamp(2rem, 4vw, 3.5rem); letter-spacing: -0.055em; line-height: 0.95; }

@@ -1,5 +1,11 @@
 import { useState } from 'react'
 import type { RegisteredGeneratorAction, RegisteredGeneratorSession } from './generators/contract'
+import { useI18n } from './i18n/I18nProvider'
+import {
+  LOCALE_DISPLAY_NAMES,
+  SUPPORTED_LOCALES,
+  isSupportedLocale,
+} from './i18n/locales'
 import {
   GENERATOR_REGISTRY,
   createDefaultSessionRecord,
@@ -11,12 +17,14 @@ const DEFAULT_PREVIEW_FPS = 12
 
 /** Hosts per-generator sessions, navigation, preview playback, and export. */
 export default function App() {
+  const { t, locale, setLocale } = useI18n()
   const [selectedGeneratorId, setSelectedGeneratorId] = useState<GeneratorId>(
     GENERATOR_REGISTRY.registrations[0].id,
   )
   const [sessions, setSessions] = useState(() => createDefaultSessionRecord(GENERATOR_REGISTRY, DEFAULT_PREVIEW_FPS))
   const activeGenerator = GENERATOR_REGISTRY.get(selectedGeneratorId)
   const activeSession = sessions[selectedGeneratorId]
+  const activeSize = activeSessionSize(activeSession)
   const ActiveWorkspace = activeGenerator.Workspace
 
   const dispatch = (action: RegisteredGeneratorAction<string>) => {
@@ -46,11 +54,34 @@ export default function App() {
     <main className="app-shell">
       <header className="hero">
         <div>
-          <p className="eyebrow">PIXEL EFFECT TOOLKIT</p>
-          <h1>Pixel Effect Generator</h1>
-          <p className="subtitle">Focused generators for deterministic, pixel-perfect game VFX.</p>
+          <p className="eyebrow">{t('app.eyebrow')}</p>
+          <h1>{t('app.title')}</h1>
+          <p className="subtitle">{t('app.subtitle')}</p>
         </div>
-        <div className="status-chip"><span />{activeSessionSize(activeSession).width} × {activeSessionSize(activeSession).height} RGBA</div>
+        <div className="hero-actions">
+          <select
+            className="language-select"
+            aria-label={t('app.languageLabel')}
+            value={locale}
+            onChange={(event) => {
+              const nextLocale = event.target.value
+              if (isSupportedLocale(nextLocale)) {
+                setLocale(nextLocale)
+              }
+            }}
+          >
+            {SUPPORTED_LOCALES.map((option) => (
+              <option value={option} key={option}>{LOCALE_DISPLAY_NAMES[option]}</option>
+            ))}
+          </select>
+          <div className="status-chip">
+            <span />
+            {t('app.status', {
+              width: activeSize.width,
+              height: activeSize.height,
+            })}
+          </div>
+        </div>
       </header>
       <ActiveWorkspace
         session={activeSession}

@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
+import { useI18n } from '../../i18n/I18nProvider'
 import { hexToRgb, rgbToHex } from '../../shared/pixel/color'
 import { MAX_FRAGMENT_SIZE, frameLimits, updateFragmentMaxSize, updateFragmentMinSize } from './model'
 import { insertPaletteColor, removePaletteColor } from './palette'
@@ -17,6 +18,7 @@ interface SlashControlsProps {
 
 /** Renders the active Slash parameter category without owning generator state. */
 export function SlashControls({ category, parameters, onChange }: SlashControlsProps) {
+  const { t } = useI18n()
   const limits = frameLimits({
     width: parameters.canvasWidth,
     height: parameters.canvasHeight,
@@ -33,12 +35,12 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
     case 'shape':
       return (
         <div className="control-list">
-          <NumberControl label="Radius" description="Distance from the origin to the slash's outer edge." value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />
-          <NumberControl label="Thickness" description="Width of the colored arc between its inner and outer edges." value={parameters.thickness} minimum={1} maximum={parameters.radius} unit="px" onChange={(value) => update('thickness', value)} />
-          <NumberControl label="Start angle" description="Starting direction in screen space: 0° points right and 90° points down." value={parameters.startAngleDegrees} minimum={-180} maximum={180} unit="°" onChange={(value) => update('startAngleDegrees', value)} />
-          <NumberControl label="Sweep angle" description="Degrees travelled from the start angle; values above 360° create a second pass." value={parameters.sweepDegrees} minimum={30} maximum={MAX_SWEEP_DEGREES} unit="°" onChange={(value) => update('sweepDegrees', value)} />
-          <NumberControl label="Rotation" description="Rotates the complete local slash path to aim the overall swing in screen space." value={parameters.rotationDegrees} minimum={-180} maximum={180} unit="°" onChange={(value) => update('rotationDegrees', value)} />
-          <NumberControl label="Perspective tilt" description="Compresses the slash plane; 90° produces the thinnest stable pixel projection." value={parameters.tiltDegrees} minimum={0} maximum={90} unit="°" onChange={(value) => update('tiltDegrees', value)} />
+          <NumberControl label={t('slash.controls.radius.label')} description={t('slash.controls.radius.description')} value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />
+          <NumberControl label={t('slash.controls.thickness.label')} description={t('slash.controls.thickness.description')} value={parameters.thickness} minimum={1} maximum={parameters.radius} unit="px" onChange={(value) => update('thickness', value)} />
+          <NumberControl label={t('slash.controls.startAngle.label')} description={t('slash.controls.startAngle.description')} value={parameters.startAngleDegrees} minimum={-180} maximum={180} unit="°" onChange={(value) => update('startAngleDegrees', value)} />
+          <NumberControl label={t('slash.controls.sweepAngle.label')} description={t('slash.controls.sweepAngle.description')} value={parameters.sweepDegrees} minimum={30} maximum={MAX_SWEEP_DEGREES} unit="°" onChange={(value) => update('sweepDegrees', value)} />
+          <NumberControl label={t('slash.controls.rotation.label')} description={t('slash.controls.rotation.description')} value={parameters.rotationDegrees} minimum={-180} maximum={180} unit="°" onChange={(value) => update('rotationDegrees', value)} />
+          <NumberControl label={t('slash.controls.tilt.label')} description={t('slash.controls.tilt.description')} value={parameters.tiltDegrees} minimum={0} maximum={90} unit="°" onChange={(value) => update('tiltDegrees', value)} />
         </div>
       )
     case 'palette':
@@ -47,60 +49,60 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
       return (
         <div className="control-list">
           <DirectionControl value={parameters.direction} onChange={(value) => update('direction', value)} />
-          <NumberControl label="Sweep speed" description="Higher values make the leading edge complete its path sooner." value={parameters.sweepSpeed} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sweepSpeed', value)} />
-          <NumberControl label="Trail length" description="Delays the trailing edge so more of the arc remains visible." value={parameters.trailLength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('trailLength', value)} />
+          <NumberControl label={t('slash.controls.sweepSpeed.label')} description={t('slash.controls.sweepSpeed.description')} value={parameters.sweepSpeed} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sweepSpeed', value)} />
+          <NumberControl label={t('slash.controls.trailLength.label')} description={t('slash.controls.trailLength.description')} value={parameters.trailLength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('trailLength', value)} />
         </div>
       )
     case 'breakup':
       return (
         <div className="control-list">
           <SelectControl
-            label="Dissolve mode"
-            description="How the trailing edge erodes pixels: ordered dither, clustered noise blocks, or streak-like tears."
+            label={t('slash.controls.dissolveMode.label')}
+            description={t('slash.controls.dissolveMode.description')}
             value={parameters.dissolveMode}
             options={[
-              { value: 'ordered', label: 'Ordered' },
-              { value: 'clusteredNoise', label: 'Clustered noise' },
-              { value: 'directionalStreaks', label: 'Directional streaks' },
+              { value: 'ordered', label: t('slash.options.ordered') },
+              { value: 'clusteredNoise', label: t('slash.options.clusteredNoise') },
+              { value: 'directionalStreaks', label: t('slash.options.directionalStreaks') },
             ]}
             onChange={(value) => update('dissolveMode', value)}
           />
           <SelectControl
-            label="Edge mode"
-            description="How the outer edge breaks up: 2×2 chips, a jagged contour, or wedge-shaped slash cuts."
+            label={t('slash.controls.edgeMode.label')}
+            description={t('slash.controls.edgeMode.description')}
             value={parameters.edgeBreakupMode}
             options={[
-              { value: 'blockChips', label: 'Block chips' },
-              { value: 'jaggedContour', label: 'Jagged contour' },
-              { value: 'slashCuts', label: 'Slash cuts' },
+              { value: 'blockChips', label: t('slash.options.blockChips') },
+              { value: 'jaggedContour', label: t('slash.options.jaggedContour') },
+              { value: 'slashCuts', label: t('slash.options.slashCuts') },
             ]}
             onChange={(value) => update('edgeBreakupMode', value)}
           />
-          <NumberControl label="Dissolve" description="Length of the dissolution transition immediately ahead of the trailing edge." value={parameters.dissolveLength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('dissolveLength', value)} />
-          <NumberControl label="Edge breakup" description="Intensity of outer-edge removal for the active edge mode." value={parameters.edgeBreakup} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeBreakup', value)} />
-          <NumberControl label="Breakup depth" description="Maximum depth of edge breakup while preserving the core arc." value={parameters.edgeDepth} minimum={0.05} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeDepth', value)} />
+          <NumberControl label={t('slash.controls.dissolve.label')} description={t('slash.controls.dissolve.description')} value={parameters.dissolveLength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('dissolveLength', value)} />
+          <NumberControl label={t('slash.controls.edgeBreakup.label')} description={t('slash.controls.edgeBreakup.description')} value={parameters.edgeBreakup} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeBreakup', value)} />
+          <NumberControl label={t('slash.controls.breakupDepth.label')} description={t('slash.controls.breakupDepth.description')} value={parameters.edgeDepth} minimum={0.05} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(value) => update('edgeDepth', value)} />
         </div>
       )
     case 'fragments':
       return (
         <div className="control-list">
           <SelectControl
-            label="Fragment mode"
-            description="How debris is drawn: square chunks, tangent-aligned shards, or fast short-lived sparks."
+            label={t('slash.controls.fragmentMode.label')}
+            description={t('slash.controls.fragmentMode.description')}
             value={parameters.fragmentMode}
             options={[
-              { value: 'pixelChunks', label: 'Pixel chunks' },
-              { value: 'directionalShards', label: 'Directional shards' },
-              { value: 'energySparks', label: 'Energy sparks' },
+              { value: 'pixelChunks', label: t('slash.options.pixelChunks') },
+              { value: 'directionalShards', label: t('slash.options.directionalShards') },
+              { value: 'energySparks', label: t('slash.options.energySparks') },
             ]}
             onChange={(value) => update('fragmentMode', value)}
           />
-          <NumberControl label="Amount" description="Amount of colored debris released as the trailing edge passes." value={parameters.fragmentAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentAmount', value)} />
-          <NumberControl label="Minimum size" description="Smallest chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentMinSize} minimum={1} maximum={MAX_FRAGMENT_SIZE} unit="px" onChange={(value) => onChange(updateFragmentMinSize(parameters, value))} />
-          <NumberControl label="Maximum size" description="Largest chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentMaxSize} minimum={1} maximum={MAX_FRAGMENT_SIZE} unit="px" onChange={(value) => onChange(updateFragmentMaxSize(parameters, value))} />
-          <NumberControl label="Tangent speed" description="Motion along the direction of the sweep per animation cycle." value={parameters.fragmentTangentSpeed} minimum={0} maximum={limits.maxFragmentTangentSpeed} unit="px" onChange={(value) => update('fragmentTangentSpeed', value)} />
-          <NumberControl label="Outward speed" description="Motion away from the slash center per animation cycle." value={parameters.fragmentOutwardSpeed} minimum={0} maximum={limits.maxFragmentOutwardSpeed} unit="px" onChange={(value) => update('fragmentOutwardSpeed', value)} />
-          <NumberControl label="Lifetime" description="Fraction of the animation for which detached fragments remain alive." value={parameters.fragmentLifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentLifetime', value)} />
+          <NumberControl label={t('slash.controls.amount.label')} description={t('slash.controls.amount.description')} value={parameters.fragmentAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentAmount', value)} />
+          <NumberControl label={t('slash.controls.minSize.label')} description={t('slash.controls.minSize.description')} value={parameters.fragmentMinSize} minimum={1} maximum={MAX_FRAGMENT_SIZE} unit="px" onChange={(value) => onChange(updateFragmentMinSize(parameters, value))} />
+          <NumberControl label={t('slash.controls.maxSize.label')} description={t('slash.controls.maxSize.description')} value={parameters.fragmentMaxSize} minimum={1} maximum={MAX_FRAGMENT_SIZE} unit="px" onChange={(value) => onChange(updateFragmentMaxSize(parameters, value))} />
+          <NumberControl label={t('slash.controls.tangentSpeed.label')} description={t('slash.controls.tangentSpeed.description')} value={parameters.fragmentTangentSpeed} minimum={0} maximum={limits.maxFragmentTangentSpeed} unit="px" onChange={(value) => update('fragmentTangentSpeed', value)} />
+          <NumberControl label={t('slash.controls.outwardSpeed.label')} description={t('slash.controls.outwardSpeed.description')} value={parameters.fragmentOutwardSpeed} minimum={0} maximum={limits.maxFragmentOutwardSpeed} unit="px" onChange={(value) => update('fragmentOutwardSpeed', value)} />
+          <NumberControl label={t('slash.controls.lifetime.label')} description={t('slash.controls.lifetime.description')} value={parameters.fragmentLifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentLifetime', value)} />
         </div>
       )
   }
@@ -118,6 +120,7 @@ export function SlashPreviewTools({ parameters, onChange, onResize }: Omit<Slash
 
 /** Renders the ordered inner-to-outer palette editor. */
 function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'category'>) {
+  const { t } = useI18n()
   const hintId = useId()
   const updateColor = (index: number, color: string) => {
     const palette = parameters.palette.map((current, colorIndex) => colorIndex === index ? hexToRgb(color) : current)
@@ -127,24 +130,24 @@ function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'categ
   return (
     <div className="palette-editor">
       <div className="palette-guide">
-        <span>Inner edge</span>
-        <InfoHint label="Palette order" description="Bands are sampled directly on the pixel grid. No blended colors are introduced." hintId={hintId} />
-        <span>Outer edge</span>
+        <span>{t('slash.palette.innerEdge')}</span>
+        <InfoHint label={t('slash.controls.paletteOrder.label')} description={t('slash.controls.paletteOrder.description')} hintId={hintId} />
+        <span>{t('slash.palette.outerEdge')}</span>
       </div>
       <div className="palette-list">
         {parameters.palette.map((color, index) => (
           <div className="palette-row" key={`${index}-${rgbToHex(color)}`}>
             <span className="palette-order">{String(index + 1).padStart(2, '0')}</span>
-            <input aria-label={`Palette band ${index + 1}`} type="color" value={rgbToHex(color)} onChange={(event) => updateColor(index, event.target.value)} />
+            <input aria-label={t('slash.palette.band', { index: index + 1 })} type="color" value={rgbToHex(color)} onChange={(event) => updateColor(index, event.target.value)} />
             <code>{rgbToHex(color).toUpperCase()}</code>
             <button
               className="remove-button"
               type="button"
               disabled={parameters.palette.length <= 2}
-              aria-label={`Remove palette band ${index + 1}`}
+              aria-label={t('slash.palette.removeBand', { index: index + 1 })}
               onClick={() => onChange({ ...parameters, palette: removePaletteColor(parameters.palette, index) })}
             >
-              Remove
+              {t('slash.palette.remove')}
             </button>
           </div>
         ))}
@@ -155,7 +158,7 @@ function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'categ
         disabled={parameters.palette.length >= 6}
         onClick={() => onChange({ ...parameters, palette: insertPaletteColor(parameters.palette) })}
       >
-        Add color band
+        {t('slash.palette.addColorBand')}
       </button>
     </div>
   )
@@ -163,23 +166,24 @@ function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'categ
 
 /** Renders the two explicit temporal sweep directions. */
 function DirectionControl({ value, onChange }: { readonly value: SlashDirection; readonly onChange: (value: SlashDirection) => void }) {
+  const { t } = useI18n()
   const hintId = useId()
   return (
     <div className="parameter-field">
       <div className="field-copy">
         <span className="field-title">
-          <span className="field-label">Sweep direction</span>
-          <InfoHint label="Sweep direction" description="Changes temporal travel along the same arc without flipping the rendered image." hintId={hintId} />
+          <span className="field-label">{t('slash.controls.direction.label')}</span>
+          <InfoHint label={t('slash.controls.direction.label')} description={t('slash.controls.direction.description')} hintId={hintId} />
         </span>
       </div>
-      <div className="segmented-control" role="group" aria-label="Sweep direction">
+      <div className="segmented-control" role="group" aria-label={t('slash.controls.direction.label')}>
         <button
           aria-pressed={value === 'clockwise'}
           className={value === 'clockwise' ? 'active' : ''}
           type="button"
           onClick={() => onChange('clockwise')}
         >
-          Clockwise
+          {t('slash.options.clockwise')}
         </button>
         <button
           aria-pressed={value === 'counterClockwise'}
@@ -187,7 +191,7 @@ function DirectionControl({ value, onChange }: { readonly value: SlashDirection;
           type="button"
           onClick={() => onChange('counterClockwise')}
         >
-          Counter
+          {t('slash.options.counterClockwise')}
         </button>
       </div>
     </div>
@@ -196,6 +200,7 @@ function DirectionControl({ value, onChange }: { readonly value: SlashDirection;
 
 /** Renders the reproducible seed field and a cryptographically sourced randomize action. */
 function SeedControl({ value, onChange }: { readonly value: number; readonly onChange: (value: number) => void }) {
+  const { t } = useI18n()
   const seedId = useId()
   const hintId = useId()
   const randomize = () => {
@@ -206,12 +211,12 @@ function SeedControl({ value, onChange }: { readonly value: number; readonly onC
   return (
     <div className="preview-seed-control">
       <span className="field-title">
-        <label htmlFor={seedId}>Random seed</label>
-        <InfoHint label="Random seed" description="Re-enter the same unsigned 32-bit value to reproduce breakup exactly." hintId={hintId} />
+        <label htmlFor={seedId}>{t('slash.controls.randomSeed.label')}</label>
+        <InfoHint label={t('slash.controls.randomSeed.label')} description={t('slash.controls.randomSeed.description')} hintId={hintId} />
       </span>
       <div className="seed-inputs">
         <input id={seedId} type="number" min="0" max="4294967295" step="1" value={value} onChange={(event) => onChange(clampSeed(Number(event.target.value)))} />
-        <button className="secondary-button" type="button" onClick={randomize}>Randomize</button>
+        <button className="secondary-button" type="button" onClick={randomize}>{t('slash.seed.randomize')}</button>
       </div>
     </div>
   )
@@ -222,36 +227,48 @@ interface CanvasResizeControlProps {
   readonly onResize?: (nextSize: FrameSize, scaleEffect: boolean) => void
 }
 
-const CANVAS_PRESETS: readonly { readonly label: string; readonly size: FrameSize }[] = [
-  { label: 'Square 32×32', size: { width: 32, height: 32 } },
-  { label: 'Square 48×48', size: { width: 48, height: 48 } },
-  { label: 'Square 64×64', size: { width: 64, height: 64 } },
-  { label: 'Square 96×96', size: { width: 96, height: 96 } },
-  { label: 'Square 128×128', size: { width: 128, height: 128 } },
-  { label: 'Square 192×192', size: { width: 192, height: 192 } },
-  { label: 'Square 256×256', size: { width: 256, height: 256 } },
-  { label: 'Horizontal 64×32', size: { width: 64, height: 32 } },
-  { label: 'Horizontal 128×64', size: { width: 128, height: 64 } },
-  { label: 'Horizontal 256×128', size: { width: 256, height: 128 } },
-  { label: 'Custom', size: { width: 0, height: 0 } },
+/** Stable canvas preset identifiers used as select values; labels come from i18n. */
+const CANVAS_PRESETS: readonly { readonly id: string; readonly size: FrameSize }[] = [
+  { id: 'square32', size: { width: 32, height: 32 } },
+  { id: 'square48', size: { width: 48, height: 48 } },
+  { id: 'square64', size: { width: 64, height: 64 } },
+  { id: 'square96', size: { width: 96, height: 96 } },
+  { id: 'square128', size: { width: 128, height: 128 } },
+  { id: 'square192', size: { width: 192, height: 192 } },
+  { id: 'square256', size: { width: 256, height: 256 } },
+  { id: 'horizontal64x32', size: { width: 64, height: 32 } },
+  { id: 'horizontal128x64', size: { width: 128, height: 64 } },
+  { id: 'horizontal256x128', size: { width: 256, height: 128 } },
+  { id: 'custom', size: { width: 0, height: 0 } },
 ]
 
 function CanvasResizeControl({ parameters, onResize }: CanvasResizeControlProps) {
-  const [selectedPreset, setSelectedPreset] = useState(CANVAS_PRESETS[4].label)
+  const { t } = useI18n()
+  const [selectedPreset, setSelectedPreset] = useState(CANVAS_PRESETS[4].id)
   const [draftWidth, setDraftWidth] = useState(String(parameters.canvasWidth))
   const [draftHeight, setDraftHeight] = useState(String(parameters.canvasHeight))
   const [scaleEffect, setScaleEffect] = useState(true)
 
-  const selectedSize = CANVAS_PRESETS.find((option) => option.label === selectedPreset)?.size
+  const selectedSize = CANVAS_PRESETS.find((option) => option.id === selectedPreset)?.size
   const isCustom = selectedSize?.width === 0 || selectedSize?.height === 0
 
   useEffect(() => {
     const preset = CANVAS_PRESETS.find((option) => option.size.width === parameters.canvasWidth && option.size.height === parameters.canvasHeight)
-    const nextPreset = preset ? preset.label : 'Custom'
+    const nextPreset = preset ? preset.id : 'custom'
     setSelectedPreset(nextPreset)
     setDraftWidth(String(parameters.canvasWidth))
     setDraftHeight(String(parameters.canvasHeight))
   }, [parameters.canvasWidth, parameters.canvasHeight])
+
+  const presetLabel = (preset: { readonly id: string; readonly size: FrameSize }): string => {
+    if (preset.id === 'custom') {
+      return t('slash.canvas.presetCustom')
+    }
+    const { width, height } = preset.size
+    return width === height
+      ? t('slash.canvas.presetSquare', { width, height })
+      : t('slash.canvas.presetHorizontal', { width, height })
+  }
 
   const parseCanvasValue = (raw: string): number | undefined => {
     const value = Number(raw)
@@ -263,9 +280,9 @@ function CanvasResizeControl({ parameters, onResize }: CanvasResizeControlProps)
 
   const isValidCanvasValue = (value: number | undefined, minimum = 16, maximum = 512) => value !== undefined && value >= minimum && value <= maximum
 
-  const handlePreset = (label: string) => {
-    setSelectedPreset(label)
-    const preset = CANVAS_PRESETS.find((option) => option.label === label)
+  const handlePreset = (id: string) => {
+    setSelectedPreset(id)
+    const preset = CANVAS_PRESETS.find((option) => option.id === id)
     if (!preset || preset.size.width === 0 || preset.size.height === 0) {
       return
     }
@@ -290,25 +307,25 @@ function CanvasResizeControl({ parameters, onResize }: CanvasResizeControlProps)
     <div className="canvas-size-control">
       <div className="canvas-size-heading">
         <div className="canvas-size-title">
-          <span>Canvas size</span>
+          <span>{t('slash.canvas.size')}</span>
           <strong>{parameters.canvasWidth} × {parameters.canvasHeight}</strong>
         </div>
         <label className="scale-toggle">
           <input
-            aria-label="Resize proportionally"
+            aria-label={t('slash.canvas.resizeProportionally')}
             type="checkbox"
             checked={scaleEffect}
             onChange={(event) => setScaleEffect(event.target.checked)}
           />
           <span className="toggle-track" aria-hidden="true"><span /></span>
-          <span>Scale effect</span>
+          <span>{t('slash.canvas.scaleEffect')}</span>
         </label>
       </div>
 
       <div className="canvas-preset-row">
-        <label htmlFor="canvas-preset">Preset</label>
-        <select id="canvas-preset" aria-label="Canvas preset" value={selectedPreset} onChange={(event) => handlePreset(event.target.value)}>
-          {CANVAS_PRESETS.map((preset) => <option key={preset.label} value={preset.label}>{preset.label}</option>)}
+        <label htmlFor="canvas-preset">{t('slash.canvas.preset')}</label>
+        <select id="canvas-preset" aria-label={t('slash.canvas.presetLabel')} value={selectedPreset} onChange={(event) => handlePreset(event.target.value)}>
+          {CANVAS_PRESETS.map((preset) => <option key={preset.id} value={preset.id}>{presetLabel(preset)}</option>)}
         </select>
       </div>
 
@@ -318,7 +335,7 @@ function CanvasResizeControl({ parameters, onResize }: CanvasResizeControlProps)
             <label>
               <span>W</span>
               <input
-                aria-label="Custom canvas width"
+                aria-label={t('slash.canvas.customWidth')}
                 type="number"
                 min={16}
                 max={512}
@@ -333,7 +350,7 @@ function CanvasResizeControl({ parameters, onResize }: CanvasResizeControlProps)
             <label>
               <span>H</span>
               <input
-                aria-label="Custom canvas height"
+                aria-label={t('slash.canvas.customHeight')}
                 type="number"
                 min={16}
                 max={512}
@@ -345,8 +362,8 @@ function CanvasResizeControl({ parameters, onResize }: CanvasResizeControlProps)
               />
             </label>
           </div>
-          <button type="button" className="secondary-button" disabled={!widthValid || !heightValid} onClick={applyCustom}>Apply</button>
-          {!widthValid || !heightValid ? <small className="canvas-size-error">Use whole pixels from 16 to 512.</small> : null}
+          <button type="button" className="secondary-button" disabled={!widthValid || !heightValid} onClick={applyCustom}>{t('slash.canvas.apply')}</button>
+          {!widthValid || !heightValid ? <small className="canvas-size-error">{t('slash.canvas.sizeError')}</small> : null}
         </div>
       ) : null}
     </div>

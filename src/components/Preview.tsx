@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, type ReactNode } from 'react'
 import type { RenderedFrameSet } from '../generators/contract'
+import { useI18n } from '../i18n/I18nProvider'
 import { drawFrame } from './export'
 
 const PREVIEW_FPS_OPTIONS = [6, 8, 12, 18, 24] as const
@@ -42,6 +43,7 @@ export function Preview({
   tools,
   footer,
 }: PreviewProps) {
+  const { t } = useI18n()
   const previewCanvas = useRef<HTMLCanvasElement>(null)
   const advancePlayback = useEffectEvent(() => {
     onFrameIndex(nextFrameIndex(frameIndex, frameCount))
@@ -69,7 +71,7 @@ export function Preview({
     <section className="panel preview-panel">
       <div className="panel-heading preview-heading">
         <div>
-          <p className="section-label">LIVE PREVIEW</p>
+          <p className="section-label">{t('preview.livePreview')}</p>
           <h2>{previewTitle}</h2>
         </div>
         <span className="frame-counter">{String(frameIndex + 1).padStart(2, '0')} / {String(frameCount).padStart(2, '0')}</span>
@@ -84,18 +86,18 @@ export function Preview({
             height: frameWidth < frameHeight ? 'min(470px, calc(100vh - 260px))' : 'auto',
           }}
         >
-          <canvas ref={previewCanvas} className="pixel-canvas" aria-label="Animated pixel effect preview" />
+          <canvas ref={previewCanvas} className="pixel-canvas" aria-label={t('preview.canvasLabel')} />
           <div className="origin-mark" aria-hidden="true" />
         </div>
       </div>
 
       <div className="playback">
         <div className="playback-timeline">
-          <button className="icon-button" type="button" onClick={() => onPlaying(!isPlaying)} aria-label={isPlaying ? 'Pause animation' : 'Play animation'}>
+          <button className="icon-button" type="button" onClick={() => onPlaying(!isPlaying)} aria-label={isPlaying ? t('preview.pause') : t('preview.play')}>
             {isPlaying ? 'Ⅱ' : '▶'}
           </button>
           <input
-            aria-label="Current frame"
+            aria-label={t('preview.currentFrame')}
             type="range"
             min="0"
             max={frameCount - 1}
@@ -107,12 +109,12 @@ export function Preview({
           />
           <span>{String(frameIndex + 1).padStart(2, '0')} / {String(frameCount).padStart(2, '0')}</span>
         </div>
-        <div className="preview-settings" aria-label="Preview timing settings">
+        <div className="preview-settings" aria-label={t('preview.timingSettings')}>
           <label className="frame-setting">
-            <span>Total frames</span>
+            <span>{t('preview.totalFrames')}</span>
             <span className="compact-range">
               <input
-                aria-label="Total frames"
+                aria-label={t('preview.totalFrames')}
                 type="range"
                 min={minimumFrameCount}
                 max={maximumFrameCount}
@@ -121,7 +123,7 @@ export function Preview({
                 onChange={(event) => onFrameCount(clampFrameCount(Number(event.target.value), minimumFrameCount, maximumFrameCount))}
               />
               <input
-                aria-label="Total frames value"
+                aria-label={t('controls.value', { label: t('preview.totalFrames') })}
                 type="number"
                 min={minimumFrameCount}
                 max={maximumFrameCount}
@@ -132,14 +134,14 @@ export function Preview({
             </span>
           </label>
           <label>
-            <span>Playback FPS</span>
-            <select aria-label="Playback FPS" value={previewFps} onChange={(event) => onPreviewFps(Number(event.target.value))}>
+            <span>{t('preview.playbackFps')}</span>
+            <select aria-label={t('preview.playbackFps')} value={previewFps} onChange={(event) => onPreviewFps(Number(event.target.value))}>
               {PREVIEW_FPS_OPTIONS.map((fps) => <option value={fps} key={fps}>{fps} FPS</option>)}
             </select>
           </label>
-          <strong>{previewFps} FPS preview</strong>
+          <strong>{t('preview.fpsPreview', { fps: previewFps })}</strong>
         </div>
-        {tools ? <div className="preview-tools" aria-label="Generator preview tools">{tools}</div> : null}
+        {tools ? <div className="preview-tools" aria-label={t('preview.generatorTools')}>{tools}</div> : null}
       </div>
       {footer}
     </section>
