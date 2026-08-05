@@ -47,10 +47,14 @@ describe('generator registry', () => {
     expect(slashModule.render(slashModule.defaultParameters)).toHaveLength(8)
   })
 
-  it('registers the experimental explosion without project or preset capabilities', () => {
+  it('registers the experimental explosion with presets but no project codec', () => {
     expect(explosionModule.definition.index).toBe(2)
     expect(explosionModule.projectCodec).toBeUndefined()
-    expect(explosionModule.presetCapability).toBeUndefined()
+    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual([
+      'modernBurst',
+      'modernImplosion',
+      'retroBurst',
+    ])
     expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(10)
   })
 })

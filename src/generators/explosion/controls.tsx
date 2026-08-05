@@ -1,5 +1,5 @@
-import { useId } from 'react'
 import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
+import { GeneratorPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
 import { hexToRgb, rgbToHex, type RgbColor } from '../../shared/pixel/color'
 import type { FrameSize } from '../../shared/pixel/frame'
@@ -36,6 +36,14 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
             { value: 'explosion', label: t('explosion.options.explosion') },
             { value: 'implosion', label: t('explosion.options.implosion') },
           ]} onChange={(value) => update('mode', value)} />
+          <SelectControl label={t('explosion.controls.bodyStyle.label')} description={t('explosion.controls.bodyStyle.description')} value={parameters.bodyStyle} options={[
+            { value: 'cleanClusters', label: t('explosion.options.cleanClusters') },
+            { value: 'pixelNoise', label: t('explosion.options.pixelNoise') },
+          ]} onChange={(value) => update('bodyStyle', value)} />
+          <SelectControl label={t('explosion.controls.shockwaveStyle.label')} description={t('explosion.controls.shockwaveStyle.description')} value={parameters.shockwaveStyle} options={[
+            { value: 'segmentedArc', label: t('explosion.options.segmentedArc') },
+            { value: 'fullRing', label: t('explosion.options.fullRing') },
+          ]} onChange={(value) => update('shockwaveStyle', value)} />
           <NumberControl label={t('explosion.controls.radius.label')} description={t('explosion.controls.radius.description')} value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />
           <NumberControl label={t('explosion.controls.bodyStrength.label')} description={t('explosion.controls.bodyStrength.description')} value={parameters.bodyStrength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('bodyStrength', value)} />
           <NumberControl label={t('explosion.controls.irregularity.label')} description={t('explosion.controls.irregularity.description')} value={parameters.irregularity} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('irregularity', value)} />
@@ -65,6 +73,19 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
           <NumberControl label={t('explosion.controls.fragmentLifetime.label')} description={t('explosion.controls.fragmentLifetime.description')} value={parameters.fragmentLifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentLifetime', value)} />
         </div>
       )
+    case 'trails':
+      return (
+        <div className="control-list">
+          <SelectControl label={t('explosion.controls.trailMode.label')} description={t('explosion.controls.trailMode.description')} value={parameters.trailMode} options={[
+            { value: 'energyRays', label: t('explosion.options.energyRays') },
+            { value: 'flameStrands', label: t('explosion.options.flameStrands') },
+          ]} onChange={(value) => update('trailMode', value)} />
+          <NumberControl label={t('explosion.controls.trailAmount.label')} description={t('explosion.controls.trailAmount.description')} value={parameters.trailAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('trailAmount', value)} />
+          <NumberControl label={t('explosion.controls.trailLength.label')} description={t('explosion.controls.trailLength.description')} value={parameters.trailLength} minimum={0} maximum={limits.maxTrailLength} unit="px" onChange={(value) => update('trailLength', value)} />
+          <NumberControl label={t('explosion.controls.trailWidth.label')} description={t('explosion.controls.trailWidth.description')} value={parameters.trailWidth} minimum={1} maximum={limits.maxTrailWidth} unit="px" onChange={(value) => update('trailWidth', value)} />
+          <NumberControl label={t('explosion.controls.trailLengthRandomness.label')} description={t('explosion.controls.trailLengthRandomness.description')} value={parameters.trailLengthRandomness} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('trailLengthRandomness', value)} />
+        </div>
+      )
   }
 }
 
@@ -79,25 +100,18 @@ export function ExplosionPreviewTools({
   readonly onResize?: (nextSize: FrameSize, scaleEffect: boolean) => void
 }) {
   const { t } = useI18n()
-  const seedId = useId()
-  const randomize = () => onChange({
-    ...parameters,
-    seed: crypto.getRandomValues(new Uint32Array(1))[0],
-  })
   return (
-    <div className="preview-tools">
-      <div className="control-list">
-        <NumberControl label={t('explosion.canvas.width')} description={t('explosion.canvas.widthDescription')} value={parameters.canvasWidth} minimum={MIN_CANVAS_SIZE} maximum={MAX_CANVAS_SIZE} unit="px" onChange={(width) => onResize?.({ width, height: parameters.canvasHeight }, true)} />
-        <NumberControl label={t('explosion.canvas.height')} description={t('explosion.canvas.heightDescription')} value={parameters.canvasHeight} minimum={MIN_CANVAS_SIZE} maximum={MAX_CANVAS_SIZE} unit="px" onChange={(height) => onResize?.({ width: parameters.canvasWidth, height }, true)} />
-      </div>
-      <div className="preview-seed-control">
-        <label htmlFor={seedId}>{t('explosion.controls.seed.label')}</label>
-        <div className="seed-inputs">
-          <input id={seedId} type="number" min="0" max="4294967295" step="1" value={parameters.seed} onChange={(event) => onChange({ ...parameters, seed: clampSeed(Number(event.target.value)) })} />
-          <button className="secondary-button" type="button" onClick={randomize}>{t('explosion.seed.randomize')}</button>
-        </div>
-      </div>
-    </div>
+    <GeneratorPreviewTools
+      canvasSize={{ width: parameters.canvasWidth, height: parameters.canvasHeight }}
+      onResize={onResize}
+      seedValue={parameters.seed}
+      onSeedChange={(seed) => onChange({ ...parameters, seed })}
+      minimumSize={MIN_CANVAS_SIZE}
+      maximumSize={MAX_CANVAS_SIZE}
+      seedLabel={t('explosion.controls.seed.label')}
+      seedDescription={t('explosion.controls.seed.description')}
+      seedRandomizeLabel={t('explosion.seed.randomize')}
+    />
   )
 }
 
@@ -135,12 +149,4 @@ function insertPaletteColor(palette: readonly RgbColor[]): readonly RgbColor[] {
     g: Math.round((last.g + previous.g) / 2),
     b: Math.round((last.b + previous.b) / 2),
   }]
-}
-
-/** Normalizes a typed seed into the supported unsigned 32-bit range. */
-function clampSeed(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 0
-  }
-  return Math.min(0xffffffff, Math.max(0, Math.round(value)))
 }

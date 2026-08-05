@@ -64,6 +64,23 @@ describe('Slash controls', () => {
     expect(previewToolsMarkup).toContain('Randomize')
   })
 
+  it('renders the shared canvas preset, scaling, custom size, and seed tools', () => {
+    vi.stubGlobal('navigator', { language: 'en-US' })
+    const markup = renderToStaticMarkup(
+      <I18nProvider>
+        <SlashPreviewTools parameters={DEFAULT_SLASH_PARAMETERS} onChange={() => undefined} />
+      </I18nProvider>,
+    )
+    expect(markup).toContain('Canvas size')
+    expect(markup).toContain('Scale effect')
+    expect(markup).toContain('Canvas preset')
+    expect(markup).toContain('Custom')
+    expect(markup).toContain('Random seed')
+    expect(markup).toContain('Randomize')
+    expect(markup).toContain('canvas-size-control')
+    expect(markup).toContain('preview-seed-control')
+  })
+
   it('keeps the same separation in Simplified Chinese', () => {
     const breakupMarkup = renderControls('breakup', 'zh-CN')
     const fragmentMarkup = renderControls('fragments', 'zh-CN')

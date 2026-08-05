@@ -72,6 +72,22 @@ const enTree = {
     zoomFit: 'Fit',
     zoomOption: '{zoom}×',
   },
+  previewTools: {
+    canvas: {
+      size: 'Canvas size',
+      resizeProportionally: 'Resize proportionally',
+      scaleEffect: 'Scale effect',
+      preset: 'Preset',
+      presetLabel: 'Canvas preset',
+      customWidth: 'Custom canvas width',
+      customHeight: 'Custom canvas height',
+      apply: 'Apply',
+      sizeError: 'Use whole pixels from 16 to 512.',
+      presetSquare: 'Square {width}×{height}',
+      presetHorizontal: 'Horizontal {width}×{height}',
+      presetCustom: 'Custom',
+    },
+  },
   presets: {
     selectLabel: 'Effect preset',
     placeholder: 'Presets…',
@@ -170,20 +186,6 @@ const enTree = {
     seed: {
       randomize: 'Randomize',
     },
-    canvas: {
-      size: 'Canvas size',
-      resizeProportionally: 'Resize proportionally',
-      scaleEffect: 'Scale effect',
-      preset: 'Preset',
-      presetLabel: 'Canvas preset',
-      customWidth: 'Custom canvas width',
-      customHeight: 'Custom canvas height',
-      apply: 'Apply',
-      sizeError: 'Use whole pixels from 16 to 512.',
-      presetSquare: 'Square {width}×{height}',
-      presetHorizontal: 'Horizontal {width}×{height}',
-      presetCustom: 'Custom',
-    },
   },
   explosion: {
     name: 'Explosion',
@@ -194,9 +196,13 @@ const enTree = {
       palette: { label: 'Palette', description: 'Order discrete colors from the hot core to the dark edge.' },
       motion: { label: 'Motion', description: 'Control expansion, convergence, timing, and dissolve.' },
       fragments: { label: 'Fragments', description: 'Scatter or gather deterministic pixel debris.' },
+      trails: { label: 'Trails', description: 'Shape energy rays or flame strands that travel with the burst.' },
     },
     controls: {
       mode: { label: 'Effect mode', description: 'Use dedicated timing for an outward explosion or inward implosion.' },
+      bodyStyle: { label: 'Body style', description: 'Modern clean color clusters or the dense retro pixel noise.' },
+      shockwaveStyle: { label: 'Shockwave style', description: 'Segmented impact arcs or the original complete ring.' },
+      trailMode: { label: 'Trail mode', description: 'Sharp tapered energy rays or thicker forked flame strands.' },
       radius: { label: 'Radius', description: 'Maximum radius of the centered layered effect.' },
       bodyStrength: { label: 'Body strength', description: 'Density of the main colored burst body; zero disables it.' },
       irregularity: { label: 'Irregularity', description: 'Amount of deterministic contour variation and edge breakup.' },
@@ -212,9 +218,22 @@ const enTree = {
       fragmentRadialSpeed: { label: 'Radial distance', description: 'Distance fragments travel away from or toward the center.' },
       fragmentTangentialJitter: { label: 'Tangential drift', description: 'Sideways deviation from each fragment radial path.' },
       fragmentLifetime: { label: 'Lifetime', description: 'Fraction of the animation in which fragments participate.' },
+      trailAmount: { label: 'Trail count', description: 'Number of rays or strands; zero disables trails.' },
+      trailLength: { label: 'Trail length', description: 'Maximum visible trail length; zero disables trails.' },
+      trailWidth: { label: 'Trail width', description: 'Base pixel width of each ray or strand.' },
+      trailLengthRandomness: { label: 'Length randomness', description: 'How much individual trail lengths vary.' },
       seed: { label: 'Random seed', description: 'Unsigned 32-bit value used to reproduce the same effect.' },
     },
-    options: { explosion: 'Explosion', implosion: 'Implosion' },
+    options: {
+      explosion: 'Explosion',
+      implosion: 'Implosion',
+      cleanClusters: 'Clean clusters',
+      pixelNoise: 'Pixel noise',
+      segmentedArc: 'Segmented arc',
+      fullRing: 'Full ring',
+      energyRays: 'Energy rays',
+      flameStrands: 'Flame strands',
+    },
     palette: {
       hotCore: 'Hot core',
       outerEdge: 'Dark edge',
@@ -223,11 +242,19 @@ const enTree = {
       remove: 'Remove',
       addColorBand: 'Add color band',
     },
-    canvas: {
-      width: 'Canvas width',
-      widthDescription: 'Frame width in whole pixels; resizing scales the effect.',
-      height: 'Canvas height',
-      heightDescription: 'Frame height in whole pixels; resizing scales the effect.',
+    presets: {
+      modernBurst: {
+        name: 'Modern Burst',
+        description: 'The modern flame body with segmented arcs and energy rays.',
+      },
+      modernImplosion: {
+        name: 'Modern Implosion',
+        description: 'The same modern language collapsing inward with longer flame strands.',
+      },
+      retroBurst: {
+        name: 'Retro Burst',
+        description: 'The original warm ring with dense pixel noise and square debris.',
+      },
     },
     seed: { randomize: 'Randomize' },
   },
@@ -435,6 +462,22 @@ export const zhCN: MessageTree = {
     zoomFit: '适应',
     zoomOption: '{zoom}×',
   },
+  previewTools: {
+    canvas: {
+      size: '画布尺寸',
+      resizeProportionally: '等比缩放',
+      scaleEffect: '缩放效果',
+      preset: '预设',
+      presetLabel: '画布预设',
+      customWidth: '自定义画布宽度',
+      customHeight: '自定义画布高度',
+      apply: '应用',
+      sizeError: '画布边长需为 16 到 512 的整数。',
+      presetSquare: '方形 {width}×{height}',
+      presetHorizontal: '横向 {width}×{height}',
+      presetCustom: '自定义',
+    },
+  },
   presets: {
     selectLabel: '效果预设',
     placeholder: '预设…',
@@ -533,20 +576,6 @@ export const zhCN: MessageTree = {
     seed: {
       randomize: '随机化',
     },
-    canvas: {
-      size: '画布尺寸',
-      resizeProportionally: '等比缩放',
-      scaleEffect: '缩放效果',
-      preset: '预设',
-      presetLabel: '画布预设',
-      customWidth: '自定义画布宽度',
-      customHeight: '自定义画布高度',
-      apply: '应用',
-      sizeError: '画布边长需为 16 到 512 的整数。',
-      presetSquare: '方形 {width}×{height}',
-      presetHorizontal: '横向 {width}×{height}',
-      presetCustom: '自定义',
-    },
   },
   explosion: {
     name: '爆炸与内聚',
@@ -557,9 +586,13 @@ export const zhCN: MessageTree = {
       palette: { label: '调色板', description: '从白热点到暗色外缘排列离散颜色。' },
       motion: { label: '运动', description: '控制扩张、内聚、时序与消散。' },
       fragments: { label: '碎片', description: '散射或汇聚可复现的像素碎片。' },
+      trails: { label: '拖尾', description: '塑造随爆发伸展或收束的能量射线与火焰拉丝。' },
     },
     controls: {
       mode: { label: '效果模式', description: '使用专门时序生成向外爆炸或向内聚合。' },
+      bodyStyle: { label: '主体风格', description: '现代干净色块，或密集的复古像素噪点。' },
+      shockwaveStyle: { label: '冲击波风格', description: '带缺口的分段冲击弧，或原有的完整圆环。' },
+      trailMode: { label: '拖尾模式', description: '锐利的锥形能量射线，或较粗且分叉的火焰拉丝。' },
       radius: { label: '半径', description: '居中分层效果的最大半径。' },
       bodyStrength: { label: '爆体强度', description: '主体彩色爆体的密度；设为零可关闭。' },
       irregularity: { label: '不规则度', description: '确定性轮廓变化与边缘破碎的程度。' },
@@ -575,9 +608,22 @@ export const zhCN: MessageTree = {
       fragmentRadialSpeed: { label: '径向距离', description: '碎片向外飞散或向内汇入的距离。' },
       fragmentTangentialJitter: { label: '切向漂移', description: '碎片偏离径向路径的横向距离。' },
       fragmentLifetime: { label: '存活时间', description: '碎片参与动画的时间比例。' },
+      trailAmount: { label: '拖尾数量', description: '射线或拉丝的数量；设为零可关闭。' },
+      trailLength: { label: '拖尾长度', description: '可见拖尾的最大长度；设为零可关闭。' },
+      trailWidth: { label: '拖尾宽度', description: '每条射线或拉丝的基础像素宽度。' },
+      trailLengthRandomness: { label: '长度随机度', description: '各条拖尾长度之间的差异程度。' },
       seed: { label: '随机种子', description: '用于精确复现同一效果的无符号 32 位数值。' },
     },
-    options: { explosion: '爆炸', implosion: '内聚' },
+    options: {
+      explosion: '爆炸',
+      implosion: '内聚',
+      cleanClusters: '干净色块',
+      pixelNoise: '像素噪点',
+      segmentedArc: '分段弧',
+      fullRing: '完整圆环',
+      energyRays: '能量射线',
+      flameStrands: '火焰拉丝',
+    },
     palette: {
       hotCore: '白热点',
       outerEdge: '暗色外缘',
@@ -586,11 +632,19 @@ export const zhCN: MessageTree = {
       remove: '删除',
       addColorBand: '添加色带',
     },
-    canvas: {
-      width: '画布宽度',
-      widthDescription: '以整数像素设置帧宽度；调整时同步缩放效果。',
-      height: '画布高度',
-      heightDescription: '以整数像素设置帧高度；调整时同步缩放效果。',
+    presets: {
+      modernBurst: {
+        name: '现代爆发',
+        description: '现代火焰主体，配分段冲击弧与能量射线。',
+      },
+      modernImplosion: {
+        name: '现代内聚',
+        description: '同一视觉语言向内坍缩，配更长的火焰拉丝。',
+      },
+      retroBurst: {
+        name: '复古爆发',
+        description: '原有暖色圆环、密集像素噪点与方块碎片。',
+      },
     },
     seed: { randomize: '随机化' },
   },
@@ -725,8 +779,8 @@ export interface MessageParams {
   'slash.palette.removeBand': { index: number }
   'explosion.palette.band': { index: number }
   'explosion.palette.removeBand': { index: number }
-  'slash.canvas.presetSquare': { width: number; height: number }
-  'slash.canvas.presetHorizontal': { width: number; height: number }
+  'previewTools.canvas.presetSquare': { width: number; height: number }
+  'previewTools.canvas.presetHorizontal': { width: number; height: number }
   'export.fileName': { name: string; width: number; height: number; frameCount: number }
   'project.fileName': { name: string; width: number; height: number; frameCount: number }
   'export.fileNames.compactPng': { name: string; width: number; height: number; frameCount: number }
@@ -840,6 +894,7 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
     palette: { label: 'explosion.categories.palette.label', description: 'explosion.categories.palette.description' },
     motion: { label: 'explosion.categories.motion.label', description: 'explosion.categories.motion.description' },
     fragments: { label: 'explosion.categories.fragments.label', description: 'explosion.categories.fragments.description' },
+    trails: { label: 'explosion.categories.trails.label', description: 'explosion.categories.trails.description' },
   },
 }
 
@@ -850,6 +905,11 @@ const PRESET_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Prese
     energySweep: { name: 'slash.presets.energySweep.name', description: 'slash.presets.energySweep.description' },
     shatteredEdge: { name: 'slash.presets.shatteredEdge.name', description: 'slash.presets.shatteredEdge.description' },
     fullCircle: { name: 'slash.presets.fullCircle.name', description: 'slash.presets.fullCircle.description' },
+  },
+  explosion: {
+    modernBurst: { name: 'explosion.presets.modernBurst.name', description: 'explosion.presets.modernBurst.description' },
+    modernImplosion: { name: 'explosion.presets.modernImplosion.name', description: 'explosion.presets.modernImplosion.description' },
+    retroBurst: { name: 'explosion.presets.retroBurst.name', description: 'explosion.presets.retroBurst.description' },
   },
 }
 

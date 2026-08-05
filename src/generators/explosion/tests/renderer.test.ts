@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { PixelFrame } from '../../../shared/pixel/frame'
 import { DEFAULT_EXPLOSION_PARAMETERS, resizeExplosionCanvas } from '../model'
+import { EXPLOSION_BUILTIN_PRESETS, applyExplosionPreset } from '../presets'
 import { renderExplosionFrames } from '../renderer'
+
+/** Fingerprint of the pre-modern default rendering preserved by Retro Burst. */
+const RETRO_BASELINE_HASH = '397daefa'
 
 describe('renderExplosionFrames', () => {
   it('is deterministic, seed-sensitive, and dimensionally stable', () => {
@@ -45,12 +49,21 @@ describe('renderExplosionFrames', () => {
       { ...base, coreRadius: 0 },
       { ...base, shockwaveWidth: 0 },
       { ...base, fragmentAmount: 0 },
+      { ...base, trailAmount: 0 },
     ]
     for (const parameters of scenarios) {
       expect(() => renderExplosionFrames(parameters)).not.toThrow()
       expect(renderExplosionFrames(parameters).some((frame) => countOpaque(frame) > 0)).toBe(true)
     }
-    const empty = renderExplosionFrames({ ...base, bodyStrength: 0, coreRadius: 0, shockwaveWidth: 0, fragmentAmount: 0 })
+    const empty = renderExplosionFrames({
+      ...base,
+      bodyStrength: 0,
+      coreRadius: 0,
+      shockwaveWidth: 0,
+      fragmentAmount: 0,
+      trailAmount: 0,
+      trailLength: 0,
+    })
     expect(empty.every((frame) => countOpaque(frame) === 0)).toBe(true)
   })
 
@@ -60,6 +73,79 @@ describe('renderExplosionFrames', () => {
     expect(bytes(explosion)).not.toEqual(bytes(implosion))
     expect(maximumRadius(explosion[1])).toBeLessThan(maximumRadius(explosion.at(-2)!))
     expect(maximumRadius(implosion[1])).toBeGreaterThan(maximumRadius(implosion.at(-2)!))
+  })
+
+  it('distinguishes both body styles deterministically', () => {
+    const clean = renderExplosionFrames(DEFAULT_EXPLOSION_PARAMETERS)
+    const repeated = renderExplosionFrames(DEFAULT_EXPLOSION_PARAMETERS)
+    const noise = renderExplosionFrames({ ...DEFAULT_EXPLOSION_PARAMETERS, bodyStyle: 'pixelNoise' })
+    expect(bytes(clean)).toEqual(bytes(repeated))
+    expect(bytes(clean)).not.toEqual(bytes(noise))
+  })
+
+  it('distinguishes both shockwave styles deterministically', () => {
+    const segmented = renderExplosionFrames(DEFAULT_EXPLOSION_PARAMETERS)
+    const repeated = renderExplosionFrames(DEFAULT_EXPLOSION_PARAMETERS)
+    const ring = renderExplosionFrames({ ...DEFAULT_EXPLOSION_PARAMETERS, shockwaveStyle: 'fullRing' })
+    expect(bytes(segmented)).toEqual(bytes(repeated))
+    expect(bytes(segmented)).not.toEqual(bytes(ring))
+  })
+
+  it('distinguishes both trail modes deterministically', () => {
+    const rays = renderExplosionFrames(DEFAULT_EXPLOSION_PARAMETERS)
+    const repeated = renderExplosionFrames(DEFAULT_EXPLOSION_PARAMETERS)
+    const strands = renderExplosionFrames({ ...DEFAULT_EXPLOSION_PARAMETERS, trailMode: 'flameStrands' })
+    expect(bytes(rays)).toEqual(bytes(repeated))
+    expect(bytes(rays)).not.toEqual(bytes(strands))
+  })
+
+  it('disables trails when amount or length is zero without touching other layers', () => {
+    const base = { ...DEFAULT_EXPLOSION_PARAMETERS, frameCount: 7 }
+    const noAmount = renderExplosionFrames({ ...base, trailAmount: 0 })
+    const noLength = renderExplosionFrames({ ...base, trailLength: 0 })
+    const noAmountStrands = renderExplosionFrames({ ...base, trailMode: 'flameStrands', trailAmount: 0 })
+    const noLengthWide = renderExplosionFrames({
+      ...base,
+      trailLength: 0,
+      trailWidth: 8,
+      trailLengthRandomness: 0.9,
+    })
+    expect(bytes(noAmount)).toEqual(bytes(noLength))
+    expect(bytes(noAmount)).toEqual(bytes(noAmountStrands))
+    expect(bytes(noAmount)).toEqual(bytes(noLengthWide))
+    expect(bytes(renderExplosionFrames(base))).not.toEqual(bytes(noAmount))
+  })
+
+  it('extends explosion trails outward and contracts implosion trails inward', () => {
+    const base = {
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      bodyStrength: 0,
+      coreRadius: 0,
+      shockwaveWidth: 0,
+      fragmentAmount: 0,
+      trailAmount: 1,
+      trailLengthRandomness: 0,
+      frameCount: 10,
+    }
+    const explosion = renderExplosionFrames({ ...base, mode: 'explosion' })
+    const implosion = renderExplosionFrames({ ...base, mode: 'implosion' })
+    const explosionRadii = explosion.map(maximumRadius)
+    const implosionRadii = implosion.map(maximumRadius)
+
+    expect(explosionRadii[1]).toBeGreaterThan(0)
+    expect(explosionRadii[1]).toBeLessThan(Math.max(...explosionRadii))
+    expect(explosionRadii.at(-2)!).toBe(0)
+    expect(implosionRadii[1]).toBeGreaterThan(implosionRadii[3])
+    expect(implosionRadii[1]).toBeGreaterThan(0)
+    expect(implosionRadii.at(-2)!).toBe(0)
+  })
+
+  it('keeps Retro Burst pixel-identical to the pre-modern default rendering', () => {
+    const retro = applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, EXPLOSION_BUILTIN_PRESETS[2].payload)
+    expect(frameHash(renderExplosionFrames(retro))).toBe(RETRO_BASELINE_HASH)
+    expect(retro.bodyStyle).toBe('pixelNoise')
+    expect(retro.shockwaveStyle).toBe('fullRing')
+    expect(retro.trailAmount).toBe(0)
   })
 })
 
@@ -102,4 +188,15 @@ function maximumRadius(frame: PixelFrame): number {
     }
   }
   return maximum
+}
+
+/** Hashes sampled frame bytes for compact byte-identical comparisons. */
+function frameHash(frames: readonly { readonly pixels: Uint8ClampedArray }[]): string {
+  let hash = 2166136261
+  for (const frame of frames) {
+    for (let index = 0; index < frame.pixels.length; index += 7) {
+      hash = Math.imul(hash ^ frame.pixels[index], 16777619)
+    }
+  }
+  return (hash >>> 0).toString(16)
 }

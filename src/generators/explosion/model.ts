@@ -9,12 +9,18 @@ export const MAX_FRAME_COUNT = 24
 export const MAX_FRAGMENT_SIZE = 8
 
 export type ExplosionMode = 'explosion' | 'implosion'
+export type ExplosionBodyStyle = 'cleanClusters' | 'pixelNoise'
+export type ExplosionShockwaveStyle = 'segmentedArc' | 'fullRing'
+export type ExplosionTrailMode = 'energyRays' | 'flameStrands'
 
 export interface ExplosionParameters {
   readonly palette: readonly RgbColor[]
   readonly canvasWidth: number
   readonly canvasHeight: number
   readonly mode: ExplosionMode
+  readonly bodyStyle: ExplosionBodyStyle
+  readonly shockwaveStyle: ExplosionShockwaveStyle
+  readonly trailMode: ExplosionTrailMode
   readonly radius: number
   readonly bodyStrength: number
   readonly irregularity: number
@@ -31,6 +37,10 @@ export interface ExplosionParameters {
   readonly fragmentRadialSpeed: number
   readonly fragmentTangentialJitter: number
   readonly fragmentLifetime: number
+  readonly trailAmount: number
+  readonly trailLength: number
+  readonly trailWidth: number
+  readonly trailLengthRandomness: number
   readonly seed: number
 }
 
@@ -38,6 +48,8 @@ export interface ExplosionFrameLimits {
   readonly maxRadius: number
   readonly maxFragmentSpeed: number
   readonly maxTangentialJitter: number
+  readonly maxTrailLength: number
+  readonly maxTrailWidth: number
 }
 
 /** Computes size-dependent limits for a centered radial effect. */
@@ -48,6 +60,8 @@ export function explosionFrameLimits(size: FrameSize): ExplosionFrameLimits {
     maxRadius: Math.max(2, halfMinimum),
     maxFragmentSpeed: Math.max(1, Math.round(64 * scale)),
     maxTangentialJitter: Math.max(1, Math.round(32 * scale)),
+    maxTrailLength: Math.max(2, Math.round(halfMinimum * 1.5)),
+    maxTrailWidth: Math.max(1, Math.round(halfMinimum * 0.2)),
   }
 }
 
@@ -99,35 +113,44 @@ export function resizeExplosionCanvas(
     shockwaveWidth: clampInteger(parameters.shockwaveWidth * scale, 0, limits.maxRadius),
     fragmentRadialSpeed: clampInteger(parameters.fragmentRadialSpeed * scale, 0, limits.maxFragmentSpeed),
     fragmentTangentialJitter: clampInteger(parameters.fragmentTangentialJitter * scale, 0, limits.maxTangentialJitter),
+    trailLength: clampInteger(parameters.trailLength * scale, 0, limits.maxTrailLength),
+    trailWidth: clampInteger(parameters.trailWidth * scale, 1, limits.maxTrailWidth),
   }
 }
 
 export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
   palette: [
-    { r: 255, g: 250, b: 224 },
-    { r: 255, g: 201, b: 72 },
-    { r: 242, g: 95, b: 44 },
-    { r: 105, g: 42, b: 52 },
+    { r: 255, g: 255, b: 255 },
+    { r: 255, g: 196, b: 58 },
+    { r: 255, g: 102, b: 84 },
+    { r: 86, g: 44, b: 122 },
   ],
   canvasWidth: DEFAULT_CANVAS_SIZE,
   canvasHeight: DEFAULT_CANVAS_SIZE,
   mode: 'explosion',
+  bodyStyle: 'cleanClusters',
+  shockwaveStyle: 'segmentedArc',
+  trailMode: 'energyRays',
   radius: 42,
   bodyStrength: 0.9,
-  irregularity: 0.28,
+  irregularity: 0.26,
   coreRadius: 16,
   shockwaveWidth: 3,
   frameCount: 10,
-  expansionSpeed: 0.62,
-  coreDuration: 0.42,
-  shockwaveSpeed: 0.72,
-  dissolveStart: 0.58,
+  expansionSpeed: 0.72,
+  coreDuration: 0.26,
+  shockwaveSpeed: 0.82,
+  dissolveStart: 0.5,
   fragmentAmount: 0.42,
   fragmentMinSize: 1,
   fragmentMaxSize: 3,
   fragmentRadialSpeed: 30,
   fragmentTangentialJitter: 9,
-  fragmentLifetime: 0.68,
+  fragmentLifetime: 0.74,
+  trailAmount: 0.45,
+  trailLength: 54,
+  trailWidth: 3,
+  trailLengthRandomness: 0.35,
   seed: 20260805,
 }
 
@@ -156,12 +179,25 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   assertInRange(parameters.fragmentRadialSpeed, 0, limits.maxFragmentSpeed, 'fragmentRadialSpeed')
   assertInRange(parameters.fragmentTangentialJitter, 0, limits.maxTangentialJitter, 'fragmentTangentialJitter')
   assertInRange(parameters.fragmentLifetime, 0.1, 1, 'fragmentLifetime')
+  assertInRange(parameters.trailAmount, 0, 1, 'trailAmount')
+  assertInRange(parameters.trailLength, 0, limits.maxTrailLength, 'trailLength')
+  assertInRange(parameters.trailWidth, 1, limits.maxTrailWidth, 'trailWidth')
+  assertInRange(parameters.trailLengthRandomness, 0, 1, 'trailLengthRandomness')
   assertInRange(parameters.seed, 0, 0xffffffff, 'seed')
   if (parameters.fragmentMinSize > parameters.fragmentMaxSize) {
     throw new RangeError('fragmentMinSize must not exceed fragmentMaxSize.')
   }
   if (parameters.mode !== 'explosion' && parameters.mode !== 'implosion') {
     throw new RangeError('mode is invalid.')
+  }
+  if (parameters.bodyStyle !== 'cleanClusters' && parameters.bodyStyle !== 'pixelNoise') {
+    throw new RangeError('bodyStyle is invalid.')
+  }
+  if (parameters.shockwaveStyle !== 'segmentedArc' && parameters.shockwaveStyle !== 'fullRing') {
+    throw new RangeError('shockwaveStyle is invalid.')
+  }
+  if (parameters.trailMode !== 'energyRays' && parameters.trailMode !== 'flameStrands') {
+    throw new RangeError('trailMode is invalid.')
   }
   const integers = [
     parameters.canvasWidth,
@@ -174,6 +210,8 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
     parameters.fragmentMaxSize,
     parameters.fragmentRadialSpeed,
     parameters.fragmentTangentialJitter,
+    parameters.trailLength,
+    parameters.trailWidth,
     parameters.seed,
   ]
   if (integers.some((value) => !Number.isInteger(value))) {

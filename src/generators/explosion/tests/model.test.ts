@@ -12,6 +12,9 @@ describe('explosion parameter model', () => {
   it('validates defaults and rejects invalid modes and size intervals', () => {
     expect(() => assertValidExplosionParameters(DEFAULT_EXPLOSION_PARAMETERS)).not.toThrow()
     expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, mode: 'other' as 'explosion' })).toThrow(/mode/i)
+    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, bodyStyle: 'other' as 'cleanClusters' })).toThrow(/bodyStyle/i)
+    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, shockwaveStyle: 'other' as 'segmentedArc' })).toThrow(/shockwaveStyle/i)
+    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, trailMode: 'other' as 'energyRays' })).toThrow(/trailMode/i)
     expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, fragmentMinSize: 4, fragmentMaxSize: 2 })).toThrow(/fragmentMinSize/i)
   })
 
@@ -23,6 +26,9 @@ describe('explosion parameter model', () => {
     expect(resized.radius).toBeLessThanOrEqual(limits.maxRadius)
     expect(resized.coreRadius).toBe(4)
     expect(resized.fragmentRadialSpeed).toBeLessThanOrEqual(limits.maxFragmentSpeed)
+    expect(resized.trailLength).toBeLessThanOrEqual(limits.maxTrailLength)
+    expect(resized.trailWidth).toBeLessThanOrEqual(limits.maxTrailWidth)
+    expect(resized.trailWidth).toBeGreaterThanOrEqual(1)
   })
 
   it('keeps fragment size edits ordered', () => {

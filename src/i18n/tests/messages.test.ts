@@ -31,7 +31,7 @@ describe('translation resources', () => {
     expect(translate(en, 'slash.palette.removeBand', { index: 2 })).toBe('Remove palette band 2')
     expect(translate(en, 'export.fileName', { name: 'Slash', width: 128, height: 128, frameCount: 8 })).toBe('pixel-Slash-128x128-8-frames.png')
     expect(translate(messagesForLocale('zh-CN'), 'export.fileName', { name: '斩击', width: 128, height: 128, frameCount: 8 })).toBe('pixel-斩击-128x128-8-帧.png')
-    expect(translate(messagesForLocale('zh-CN'), 'slash.canvas.presetSquare', { width: 64, height: 64 })).toBe('方形 64×64')
+    expect(translate(messagesForLocale('zh-CN'), 'previewTools.canvas.presetSquare', { width: 64, height: 64 })).toBe('方形 64×64')
   })
 
   it('builds animated export file names with fps in both languages', () => {
@@ -87,6 +87,8 @@ describe('translation resources', () => {
     expect(translate(en, 'presets.saveAs')).toBe('Save as…')
     expect(translate(en, 'slash.presets.fullCircle.name')).toBe('Full Circle')
     expect(translate(messagesForLocale('zh-CN'), 'slash.presets.fullCircle.description')).toBe('完整的 360° 环形扫击。')
+    expect(translate(en, 'explosion.presets.retroBurst.name')).toBe('Retro Burst')
+    expect(translate(messagesForLocale('zh-CN'), 'explosion.presets.modernBurst.description')).toBe('现代火焰主体，配分段冲击弧与能量射线。')
   })
 
   it('falls back to English for keys missing from the current locale', () => {
@@ -114,6 +116,7 @@ describe('translation resources', () => {
     expect(categoryDisplayKeys('slash', 'missing')).toBeUndefined()
     expect(generatorDisplayKeys('explosion')?.name).toBe('explosion.name')
     expect(categoryDisplayKeys('explosion', 'fragments')?.label).toBe('explosion.categories.fragments.label')
+    expect(categoryDisplayKeys('explosion', 'trails')?.label).toBe('explosion.categories.trails.label')
     expect(categoryDisplayKeys('missing', 'shape')).toBeUndefined()
   })
 })
