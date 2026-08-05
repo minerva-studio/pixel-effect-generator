@@ -4,7 +4,7 @@ import { SlashControls, SlashPreviewTools } from '../controls'
 import { DEFAULT_SLASH_PARAMETERS } from '../model'
 
 describe('Slash controls', () => {
-  it('describes fragment size for every drawing mode', () => {
+  it('exposes adjacent minimum and maximum fragment size fields for every drawing mode', () => {
     const markup = renderToStaticMarkup(
       <SlashControls
         category="fragments"
@@ -13,8 +13,11 @@ describe('Slash controls', () => {
       />,
     )
 
-    expect(markup).toContain('Maximum chunk width, shard line length, or spark trail length')
-    expect(markup).not.toContain('Maximum square size of an individual fragment')
+    expect(markup).toContain('Minimum size')
+    expect(markup).toContain('Maximum size')
+    expect(markup).toContain('Smallest chunk width, shard line length, or spark trail length')
+    expect(markup).toContain('Largest chunk width, shard line length, or spark trail length')
+    expect(markup).not.toContain('>Size<')
   })
 
   it('separates arc breakup, fragments, and preview seed controls', () => {

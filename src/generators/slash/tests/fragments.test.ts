@@ -13,11 +13,46 @@ describe('fragment generation', () => {
     ])
   })
 
+  it('draws every fragment size as a uniform integer within the configured range', () => {
+    for (const fragmentMode of ['pixelChunks', 'directionalShards', 'energySparks'] as const) {
+      for (const [minimum, maximum] of [[1, 1], [1, 4], [1, 16], [4, 16], [16, 16]] as const) {
+        const fragments = generateFragments({
+          ...DEFAULT_SLASH_PARAMETERS,
+          fragmentMode,
+          fragmentAmount: 1,
+          fragmentMinSize: minimum,
+          fragmentMaxSize: maximum,
+        })
+        expect(fragments).toHaveLength(24)
+        expect(fragments.every((fragment) => fragment.size >= minimum && fragment.size <= maximum)).toBe(true)
+      }
+    }
+  })
+
+  it('covers both configured endpoints across deterministic seeds', () => {
+    const seeds = [1, 1337, 4242, 999_999, 0xdeadbeef]
+    for (const fragmentMode of ['pixelChunks', 'directionalShards', 'energySparks'] as const) {
+      const sizes = seeds.flatMap((seed) =>
+        generateFragments({
+          ...DEFAULT_SLASH_PARAMETERS,
+          fragmentMode,
+          fragmentAmount: 1,
+          fragmentMinSize: 1,
+          fragmentMaxSize: 16,
+          seed,
+        }).map((fragment) => fragment.size),
+      )
+      expect(Math.min(...sizes)).toBe(1)
+      expect(Math.max(...sizes)).toBe(16)
+    }
+  })
+
   it('generates bounded fragments with continuous lifetime descriptors', () => {
     const parameters: SlashParameters = {
       ...DEFAULT_SLASH_PARAMETERS,
       fragmentAmount: 1,
-      fragmentSize: 3,
+      fragmentMinSize: 1,
+      fragmentMaxSize: 3,
     }
     const fragments = generateFragments(parameters)
 
@@ -32,7 +67,8 @@ describe('fragment generation', () => {
     const parameters: SlashParameters = {
       ...DEFAULT_SLASH_PARAMETERS,
       fragmentAmount: 1,
-      fragmentSize: 3,
+      fragmentMinSize: 1,
+      fragmentMaxSize: 3,
     }
     for (const fragmentMode of ['directionalShards', 'energySparks'] as const) {
       const fragments = generateFragments({ ...parameters, fragmentMode })
@@ -41,21 +77,6 @@ describe('fragment generation', () => {
       expect(fragments.every((fragment) => fragment.lifetime > 0 && fragment.size >= 1 && fragment.size <= 3)).toBe(true)
       expect(generateFragments({ ...parameters, fragmentMode })).toEqual(fragments)
       expect(generateFragments({ ...parameters, fragmentMode, seed: parameters.seed + 1 })).not.toEqual(fragments)
-    }
-  })
-
-  it('keeps modern fragment sizes within the configured inclusive maximum', () => {
-    for (const fragmentMode of ['directionalShards', 'energySparks'] as const) {
-      for (const fragmentSize of [1, 2, 3]) {
-        const fragments = generateFragments({
-          ...DEFAULT_SLASH_PARAMETERS,
-          fragmentMode,
-          fragmentAmount: 1,
-          fragmentSize,
-        })
-        expect(fragments.every((fragment) => fragment.size >= 1 && fragment.size <= fragmentSize)).toBe(true)
-        expect(Math.max(...fragments.map((fragment) => fragment.size))).toBe(fragmentSize)
-      }
     }
   })
 })

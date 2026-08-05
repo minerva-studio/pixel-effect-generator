@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
 import { hexToRgb, rgbToHex } from '../../shared/pixel/color'
-import { frameLimits } from './model'
+import { MAX_FRAGMENT_SIZE, frameLimits, updateFragmentMaxSize, updateFragmentMinSize } from './model'
 import { insertPaletteColor, removePaletteColor } from './palette'
 import { MAX_SWEEP_DEGREES } from './model'
 import type { SlashCategory } from './module'
@@ -96,7 +96,8 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
             onChange={(value) => update('fragmentMode', value)}
           />
           <NumberControl label="Amount" description="Amount of colored debris released as the trailing edge passes." value={parameters.fragmentAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentAmount', value)} />
-          <NumberControl label="Size" description="Maximum chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentSize} minimum={1} maximum={limits.maxFragmentSize} unit="px" onChange={(value) => update('fragmentSize', value)} />
+          <NumberControl label="Minimum size" description="Smallest chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentMinSize} minimum={1} maximum={MAX_FRAGMENT_SIZE} unit="px" onChange={(value) => onChange(updateFragmentMinSize(parameters, value))} />
+          <NumberControl label="Maximum size" description="Largest chunk width, shard line length, or spark trail length for the selected fragment mode." value={parameters.fragmentMaxSize} minimum={1} maximum={MAX_FRAGMENT_SIZE} unit="px" onChange={(value) => onChange(updateFragmentMaxSize(parameters, value))} />
           <NumberControl label="Tangent speed" description="Motion along the direction of the sweep per animation cycle." value={parameters.fragmentTangentSpeed} minimum={0} maximum={limits.maxFragmentTangentSpeed} unit="px" onChange={(value) => update('fragmentTangentSpeed', value)} />
           <NumberControl label="Outward speed" description="Motion away from the slash center per animation cycle." value={parameters.fragmentOutwardSpeed} minimum={0} maximum={limits.maxFragmentOutwardSpeed} unit="px" onChange={(value) => update('fragmentOutwardSpeed', value)} />
           <NumberControl label="Lifetime" description="Fraction of the animation for which detached fragments remain alive." value={parameters.fragmentLifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fragmentLifetime', value)} />

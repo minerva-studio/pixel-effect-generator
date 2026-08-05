@@ -1,4 +1,4 @@
-import { clamp01, createXorshift32, hashUnit, lerp, smoothStep } from '../../shared/pixel/rng'
+import { clamp01, createXorshift32, lerp, smoothStep } from '../../shared/pixel/rng'
 import type { SlashParameters } from './model'
 import { bayerThreshold } from './breakup'
 import type { RgbColor } from '../../shared/pixel/color'
@@ -34,6 +34,8 @@ function generatePixelChunks(parameters: SlashParameters): readonly FragmentDesc
   const random = () => next() / 0x100000000
   const tailStart = trailStartTime(parameters.trailLength)
   const outerPaletteStart = Math.floor(parameters.palette.length / 2)
+  const minSize = parameters.fragmentMinSize
+  const maxSize = parameters.fragmentMaxSize
 
   return Array.from({ length: count }, () => {
     const spawnTime = lerp(tailStart, 0.9, random())
@@ -42,7 +44,7 @@ function generatePixelChunks(parameters: SlashParameters): readonly FragmentDesc
       spawnTime,
       arcProgress,
       radius: parameters.radius - random() * parameters.thickness * 0.35,
-      size: 1 + Math.floor(random() * parameters.fragmentSize),
+      size: minSize + Math.floor(random() * (maxSize - minSize + 1)),
       tangentSpeed: parameters.fragmentTangentSpeed * lerp(0.7, 1.3, random()),
       outwardSpeed: parameters.fragmentOutwardSpeed * lerp(0.7, 1.3, random()),
       lifetime: parameters.fragmentLifetime * lerp(0.75, 1.25, random()),
@@ -60,6 +62,8 @@ function generateModernFragments(parameters: SlashParameters): readonly Fragment
   const random = () => next() / 0x100000000
   const tailStart = trailStartTime(parameters.trailLength)
   const outerPaletteStart = Math.floor(parameters.palette.length / 2)
+  const minSize = parameters.fragmentMinSize
+  const maxSize = parameters.fragmentMaxSize
 
   return Array.from({ length: count }, () => {
     const spawnTime = lerp(tailStart, 0.9, random())
@@ -68,7 +72,7 @@ function generateModernFragments(parameters: SlashParameters): readonly Fragment
       spawnTime,
       arcProgress,
       radius: parameters.radius - random() * parameters.thickness * 0.35,
-      size: 1 + Math.floor(random() * parameters.fragmentSize),
+      size: minSize + Math.floor(random() * (maxSize - minSize + 1)),
       tangentSpeed: parameters.fragmentTangentSpeed * lerp(0.7, 1.3, random()),
       outwardSpeed: parameters.fragmentOutwardSpeed * lerp(0.7, 1.3, random()),
       lifetime: parameters.fragmentLifetime * lerp(0.75, 1.25, random()),
@@ -205,7 +209,7 @@ function renderDirectionalShards(
   }
 }
 
-/** Renders fast, short-lived single or double pixel sparks. */
+/** Renders fast, short-lived sparks as fixed-length tangential pixel trails. */
 function renderEnergySparks(
   pixels: Uint8ClampedArray,
   frameWidth: number,
@@ -222,8 +226,7 @@ function renderEnergySparks(
   const centerY = frameHeight / 2
   const directionSign = parameters.direction === 'clockwise' ? 1 : -1
 
-  for (let fragmentIndex = 0; fragmentIndex < fragments.length; fragmentIndex += 1) {
-    const fragment = fragments[fragmentIndex]
+  for (const fragment of fragments) {
     const age = sampleTime - fragment.spawnTime
     const effectiveLifetime = fragment.lifetime * 0.55
     if (age < 0 || age > effectiveLifetime) {
@@ -246,18 +249,15 @@ function renderEnergySparks(
     const screenX = Math.round(centerX + localX * rotationCosine - localY * rotationSine)
     const screenY = Math.round(centerY + localX * rotationSine + localY * rotationCosine)
     const color = parameters.palette[fragment.colorIndex]
-    const trailHash = hashUnit(parameters.seed ^ 0x165667b1, fragmentIndex, 0)
-
-    writePixel(pixels, frameWidth, frameHeight, screenX, screenY, color)
-    if (fragment.size >= 2 && trailHash < 0.55) {
-      const trailX = tangentX * rotationCosine - tangentY * tiltScale * rotationSine
-      const trailY = tangentX * rotationSine + tangentY * tiltScale * rotationCosine
+    const trailX = tangentX * rotationCosine - tangentY * tiltScale * rotationSine
+    const trailY = tangentX * rotationSine + tangentY * tiltScale * rotationCosine
+    for (let step = 0; step < fragment.size; step += 1) {
       writePixel(
         pixels,
         frameWidth,
         frameHeight,
-        Math.round(screenX + trailX),
-        Math.round(screenY + trailY),
+        Math.round(screenX + trailX * step),
+        Math.round(screenY + trailY * step),
         color,
       )
     }

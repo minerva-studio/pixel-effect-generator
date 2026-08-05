@@ -8,6 +8,7 @@ export const MAX_CANVAS_SIZE = 512
 export const MIN_FRAME_COUNT = 5
 export const MAX_FRAME_COUNT = 24
 export const MAX_SWEEP_DEGREES = 720
+export const MAX_FRAGMENT_SIZE = 16
 
 export type SlashDirection = 'clockwise' | 'counterClockwise'
 export type DissolveMode = 'ordered' | 'clusteredNoise' | 'directionalStreaks'
@@ -36,7 +37,8 @@ export interface SlashParameters {
   readonly fragmentAmount: number
   readonly seed: number
   readonly edgeDepth: number
-  readonly fragmentSize: number
+  readonly fragmentMinSize: number
+  readonly fragmentMaxSize: number
   readonly fragmentTangentSpeed: number
   readonly fragmentOutwardSpeed: number
   readonly fragmentLifetime: number
@@ -57,12 +59,12 @@ export function defaultSlashCanvasSize(): FrameSize {
 
 /** Computes derived numeric limits from an explicit canvas size. */
 export function frameLimits(size: FrameSize): SlashFrameLimits {
-  const shortSide = Math.min(size.width, size.height)
-  const scale = shortSide / FRAME_SIZE
+  const maxRadius = Math.max(2, Math.floor(Math.max(size.width, size.height) / 2))
+  const scale = Math.min(size.width, size.height) / FRAME_SIZE
   return {
-    maxRadius: Math.max(2, Math.floor(shortSide / 2) - 1),
-    maxThickness: Math.max(2, Math.floor(shortSide / 2) - 1),
-    maxFragmentSize: Math.max(1, Math.round(3 * scale)),
+    maxRadius,
+    maxThickness: maxRadius,
+    maxFragmentSize: MAX_FRAGMENT_SIZE,
     maxFragmentTangentSpeed: Math.max(0, Math.round(32 * scale)),
     maxFragmentOutwardSpeed: Math.max(0, Math.round(24 * scale)),
   }
@@ -101,17 +103,24 @@ export function resizeSlashCanvas(parameters: SlashParameters, nextSize: FrameSi
   )
   const nextThicknessBase = scaleEffect ? parameters.thickness * scale : parameters.thickness
   const nextThickness = clampInteger(nextThicknessBase, 1, nextRadius)
+  const scaledMinSize = clampInteger(
+    scaleEffect ? parameters.fragmentMinSize * scale : parameters.fragmentMinSize,
+    1,
+    MAX_FRAGMENT_SIZE,
+  )
+  const scaledMaxSize = clampInteger(
+    scaleEffect ? parameters.fragmentMaxSize * scale : parameters.fragmentMaxSize,
+    1,
+    MAX_FRAGMENT_SIZE,
+  )
   return {
     ...parameters,
     canvasWidth: scaledSize.width,
     canvasHeight: scaledSize.height,
     radius: nextRadius,
     thickness: nextThickness,
-    fragmentSize: clampInteger(
-      scaleEffect ? parameters.fragmentSize * scale : parameters.fragmentSize,
-      1,
-      limits.maxFragmentSize,
-    ),
+    fragmentMinSize: Math.min(scaledMinSize, scaledMaxSize),
+    fragmentMaxSize: Math.max(scaledMinSize, scaledMaxSize),
     fragmentTangentSpeed: clampInteger(
       scaleEffect ? parameters.fragmentTangentSpeed * scale : parameters.fragmentTangentSpeed,
       0,
@@ -122,6 +131,26 @@ export function resizeSlashCanvas(parameters: SlashParameters, nextSize: FrameSi
       0,
       limits.maxFragmentOutwardSpeed,
     ),
+  }
+}
+
+/** Updates the minimum fragment size, raising the maximum so the range stays valid. */
+export function updateFragmentMinSize(parameters: SlashParameters, value: number): SlashParameters {
+  const minimum = clampInteger(value, 1, MAX_FRAGMENT_SIZE)
+  return {
+    ...parameters,
+    fragmentMinSize: minimum,
+    fragmentMaxSize: Math.max(minimum, parameters.fragmentMaxSize),
+  }
+}
+
+/** Updates the maximum fragment size, lowering the minimum so the range stays valid. */
+export function updateFragmentMaxSize(parameters: SlashParameters, value: number): SlashParameters {
+  const maximum = clampInteger(value, 1, MAX_FRAGMENT_SIZE)
+  return {
+    ...parameters,
+    fragmentMaxSize: maximum,
+    fragmentMinSize: Math.min(maximum, parameters.fragmentMinSize),
   }
 }
 
@@ -151,7 +180,8 @@ export const DEFAULT_SLASH_PARAMETERS: SlashParameters = {
   fragmentAmount: 0.2,
   seed: 1337,
   edgeDepth: 0.24,
-  fragmentSize: 1,
+  fragmentMinSize: 1,
+  fragmentMaxSize: 2,
   fragmentTangentSpeed: 14,
   fragmentOutwardSpeed: 7,
   fragmentLifetime: 0.38,
@@ -183,7 +213,11 @@ export function assertValidParameters(parameters: SlashParameters): void {
   assertInRange(parameters.fragmentAmount, 0, 1, 'fragmentAmount')
   assertInRange(parameters.seed, 0, 0xffffffff, 'seed')
   assertInRange(parameters.edgeDepth, 0.05, 0.5, 'edgeDepth')
-  assertInRange(parameters.fragmentSize, 1, limits.maxFragmentSize, 'fragmentSize')
+  assertInRange(parameters.fragmentMinSize, 1, MAX_FRAGMENT_SIZE, 'fragmentMinSize')
+  assertInRange(parameters.fragmentMaxSize, 1, MAX_FRAGMENT_SIZE, 'fragmentMaxSize')
+  if (parameters.fragmentMinSize > parameters.fragmentMaxSize) {
+    throw new RangeError('fragmentMinSize must not exceed fragmentMaxSize.')
+  }
   assertInRange(parameters.fragmentTangentSpeed, 0, limits.maxFragmentTangentSpeed, 'fragmentTangentSpeed')
   assertInRange(parameters.fragmentOutwardSpeed, 0, limits.maxFragmentOutwardSpeed, 'fragmentOutwardSpeed')
   assertInRange(parameters.fragmentLifetime, 0.1, 1, 'fragmentLifetime')
@@ -194,9 +228,10 @@ export function assertValidParameters(parameters: SlashParameters): void {
     || !Number.isInteger(parameters.radius)
     || !Number.isInteger(parameters.thickness)
     || !Number.isInteger(parameters.seed)
-    || !Number.isInteger(parameters.fragmentSize)
+    || !Number.isInteger(parameters.fragmentMinSize)
+    || !Number.isInteger(parameters.fragmentMaxSize)
   ) {
-    throw new RangeError('frameCount, canvas sizes, radius, thickness, seed, and fragmentSize must be integers.')
+    throw new RangeError('frameCount, canvas sizes, radius, thickness, seed, and fragment sizes must be integers.')
   }
   if (parameters.direction !== 'clockwise' && parameters.direction !== 'counterClockwise') {
     throw new RangeError('direction is invalid.')

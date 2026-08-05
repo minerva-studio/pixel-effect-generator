@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { PixelFrame } from '../../../shared/pixel/frame'
+import type { FragmentDescriptor } from '../fragments'
+import { renderFragments } from '../fragments'
 import {
+  MAX_FRAGMENT_SIZE,
   DEFAULT_SLASH_PARAMETERS,
   FRAME_SIZE,
+  assertValidParameters,
   frameLimits,
   resizeSlashCanvas,
   type DissolveMode,
@@ -58,7 +62,8 @@ describe('renderSlashFrames', () => {
         ...quietParameters(),
         radius: baseLimits.maxRadius,
         thickness: baseLimits.maxRadius,
-        fragmentSize: 3,
+        fragmentMinSize: 2,
+        fragmentMaxSize: 16,
         fragmentTangentSpeed: 12,
         fragmentOutwardSpeed: 8,
       },
@@ -67,7 +72,9 @@ describe('renderSlashFrames', () => {
     )
     expect(resized.radius).toBeLessThanOrEqual(frameLimits({ width: 64, height: 32 }).maxRadius)
     expect(resized.thickness).toBeLessThanOrEqual(resized.radius)
-    expect(resized.fragmentSize).toBeLessThanOrEqual(frameLimits({ width: 64, height: 32 }).maxFragmentSize)
+    expect(resized.fragmentMinSize).toBeGreaterThanOrEqual(1)
+    expect(resized.fragmentMaxSize).toBeLessThanOrEqual(MAX_FRAGMENT_SIZE)
+    expect(resized.fragmentMinSize).toBeLessThanOrEqual(resized.fragmentMaxSize)
     expect(resized.fragmentTangentSpeed).toBeLessThanOrEqual(frameLimits({ width: 64, height: 32 }).maxFragmentTangentSpeed)
   })
 
@@ -165,6 +172,8 @@ describe('renderSlashFrames', () => {
       dissolveMode: 'ordered',
       edgeBreakupMode: 'blockChips',
       fragmentMode: 'pixelChunks',
+      fragmentMinSize: 1,
+      fragmentMaxSize: 1,
     })
     const hashes = frames.map((frame) => legacyHash(frame.pixels))
     const golden = [
@@ -185,14 +194,62 @@ describe('renderSlashFrames', () => {
     const golden = [
       '430b12b70d366d79',
       '61e83e45b16976e3',
-      '6dc7109351d02005',
-      'c09118affb204fd9',
-      '169d60a7cb7de0d9',
+      'deb590b1d6a4722f',
+      'c8bd27b5c24751bb',
+      '2ee2f7dd144b792b',
       'c12bdaefe2a10d99',
-      '288a561b50d209dd',
+      '52bd94ad5550820b',
       '5e509dc5602c0193',
     ]
     expect(hashes).toEqual(golden)
+  })
+
+  it('accepts radius 128 on a 256x128 canvas and renders a visible body under tilt', () => {
+    const parameters = {
+      ...DEFAULT_SLASH_PARAMETERS,
+      canvasWidth: 256,
+      canvasHeight: 128,
+      radius: 128,
+      thickness: 12,
+      tiltDegrees: 30,
+      frameCount: 8,
+    }
+    expect(() => assertValidParameters(parameters)).not.toThrow()
+    const frames = renderSlashFrames(parameters)
+
+    expect(countOpaquePixels(frames[3])).toBeGreaterThan(0)
+  })
+
+  it('renders fixed fragment sizes as the expected square, line, and trail lengths', () => {
+    for (const size of [1, 4, 16]) {
+      const chunks = renderFragmentFrame({ ...DEFAULT_SLASH_PARAMETERS, fragmentMode: 'pixelChunks' }, size)
+      expect(countOpaquePixels(chunks)).toBe(size * size)
+
+      const shards = renderFragmentFrame({ ...DEFAULT_SLASH_PARAMETERS, fragmentMode: 'directionalShards' }, size)
+      expect(countOpaquePixels(shards)).toBe(size)
+
+      const sparks = renderFragmentFrame({ ...DEFAULT_SLASH_PARAMETERS, fragmentMode: 'energySparks' }, size)
+      expect(countOpaquePixels(sparks)).toBe(size)
+    }
+  })
+
+  it('changes the visible output when the maximum or minimum fragment size changes', () => {
+    for (const fragmentMode of FRAGMENT_MODES) {
+      const base = {
+        ...quietParameters(),
+        fragmentMode,
+        fragmentAmount: 1,
+        fragmentMinSize: 1,
+        fragmentMaxSize: 1,
+        frameCount: 5,
+      }
+      const baseSignature = framesSignature(renderSlashFrames(base))
+      const raisedMaximum = framesSignature(renderSlashFrames({ ...base, fragmentMaxSize: 2 }))
+      const raisedMinimum = framesSignature(renderSlashFrames({ ...base, fragmentMinSize: 2, fragmentMaxSize: 2 }))
+
+      expect(raisedMaximum).not.toBe(baseSignature)
+      expect(raisedMinimum).not.toBe(baseSignature)
+    }
   })
 
   it('renders every mode combination at minimum and maximum parameter values', () => {
@@ -208,7 +265,8 @@ describe('renderSlashFrames', () => {
             edgeBreakup: 0,
             edgeDepth: 0.05,
             fragmentAmount: 0,
-            fragmentSize: 1,
+            fragmentMinSize: 1,
+            fragmentMaxSize: 1,
           })
           const maximum = renderSlashFrames({
             ...DEFAULT_SLASH_PARAMETERS,
@@ -219,7 +277,8 @@ describe('renderSlashFrames', () => {
             edgeBreakup: 1,
             edgeDepth: 0.5,
             fragmentAmount: 1,
-            fragmentSize: 3,
+            fragmentMinSize: 3,
+            fragmentMaxSize: 3,
             sweepDegrees: 720,
             tiltDegrees: 90,
             frameCount: 24,
@@ -269,7 +328,8 @@ describe('renderSlashFrames', () => {
         edgeBreakup: 0.45,
         edgeDepth: 0.3,
         fragmentAmount: 0.8,
-        fragmentSize: 3,
+        fragmentMinSize: 3,
+        fragmentMaxSize: 3,
         frameCount: 5,
       })
       return frames.map((frame) => legacyHash(frame.pixels)).join('/')
@@ -349,6 +409,37 @@ function quietParameters(): SlashParameters {
     edgeBreakup: 0,
     fragmentAmount: 0,
   }
+}
+
+/** Renders one centered fragment pass into an empty 256x256 buffer at age zero. */
+function renderFragmentFrame(parameters: SlashParameters, size: number): PixelFrame {
+  const frameWidth = 256
+  const frameHeight = 256
+  const pixels = new Uint8ClampedArray(frameWidth * frameHeight * 4)
+  const fragment: FragmentDescriptor = {
+    spawnTime: 0.1,
+    arcProgress: 0,
+    radius: 0,
+    size,
+    tangentSpeed: 0,
+    outwardSpeed: 0,
+    lifetime: 1,
+    colorIndex: 0,
+    ditherOffsetX: 0,
+    ditherOffsetY: 0,
+  }
+  renderFragments(
+    pixels,
+    frameWidth,
+    frameHeight,
+    { ...parameters, canvasWidth: frameWidth, canvasHeight: frameHeight },
+    [fragment],
+    fragment.spawnTime,
+    0,
+    1,
+    0,
+  )
+  return { width: frameWidth, height: frameHeight, pixels }
 }
 
 function frameBytes(frames: readonly PixelFrame[]): number[][] {
