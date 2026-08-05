@@ -1,7 +1,6 @@
-import { useEffect, useState, type ComponentType } from 'react'
+import { useEffect, type ComponentType } from 'react'
 import type {
   GeneratorModule,
-  RenderedFrameSet,
   GeneratorSession,
   GeneratorSessionAction,
   RegisteredGeneratorAction,
@@ -14,8 +13,7 @@ import {
   generatorDisplayKeys,
 } from '../i18n/messages'
 import { useI18n } from '../i18n/I18nProvider'
-import { encodeAnimation, type AnimationFormat } from '../shared/pixel/animation'
-import { downloadBytes, exportHorizontalSpriteSheet } from './export'
+import { ExportPanel } from './ExportPanel'
 import { Preview } from './Preview'
 
 interface RegisteredWorkspaceProps {
@@ -112,16 +110,11 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           tools={PreviewTools ? (
             <PreviewTools parameters={typedSession.parameters} onChange={dispatchParameters} onResize={onResize} />
           ) : undefined}
-          footer={(
-            <ExportBar
-              frameSet={typedSession.frames}
-              frameCount={frameCount}
-              frameWidth={frameWidth}
-              frameHeight={frameHeight}
-              previewFps={typedSession.previewFps}
-              generatorName={generatorName}
-            />
-          )}
+        />
+        <ExportPanel
+          frameSet={typedSession.frames}
+          previewFps={typedSession.previewFps}
+          generatorName={generatorName}
         />
       </section>
     )
@@ -230,126 +223,5 @@ function ControlsPanel<Parameters, Category extends string>({
         <Controls category={session.activeCategory} parameters={session.parameters} onChange={onParameters} />
       </section>
     </aside>
-  )
-}
-
-/** Horizontal sprite-sheet export row shared by every generator. */
-function ExportBar({
-  frameSet,
-  frameCount,
-  frameWidth,
-  frameHeight,
-  previewFps,
-  generatorName,
-}: {
-  readonly frameSet: RenderedFrameSet
-  readonly frameCount: number
-  readonly frameWidth: number
-  readonly frameHeight: number
-  readonly previewFps: number
-  readonly generatorName: string
-}) {
-  const { t } = useI18n()
-  const [loop, setLoop] = useState(true)
-  const [encoding, setEncoding] = useState<AnimationFormat | null>(null)
-  const [exportError, setExportError] = useState<string | null>(null)
-  const fileNameFor = (format: AnimationFormat): string => {
-    const params = {
-      name: generatorName,
-      width: frameWidth,
-      height: frameHeight,
-      frameCount,
-      fps: previewFps,
-    }
-    return format === 'gif'
-      ? t('export.gifFileName', params)
-      : t('export.apngFileName', params)
-  }
-  const encodeAndDownload = (format: AnimationFormat) => {
-    if (encoding !== null) {
-      return
-    }
-    setEncoding(format)
-    setExportError(null)
-    window.setTimeout(() => {
-      try {
-        const result = encodeAnimation({
-          format,
-          frames: frameSet.read(),
-          fps: previewFps,
-          loop,
-        })
-        downloadBytes(result.bytes, fileNameFor(format), result.mime)
-      } catch {
-        setExportError(t('export.error'))
-      } finally {
-        setEncoding(null)
-      }
-    }, 0)
-  }
-
-  return (
-    <div className="export-block">
-      <div className="export-row">
-        <div>
-          <strong>{t('workspace.exportTitle')}</strong>
-          <span>{t('workspace.exportDimensions', { width: frameCount * frameWidth, height: frameHeight })}</span>
-        </div>
-        <button
-          className="primary-button"
-          type="button"
-          onClick={() => exportHorizontalSpriteSheet(
-            frameSet.read(),
-            t('export.fileName', {
-              name: generatorName,
-              width: frameWidth,
-              height: frameHeight,
-              frameCount,
-            }),
-          )}
-        >
-          {t('workspace.exportButton')}
-        </button>
-      </div>
-      <div className="export-row">
-        <div>
-          <strong>{t('export.animatedTitle')}</strong>
-          <span>{t('export.animatedDescription', {
-            width: frameWidth,
-            height: frameHeight,
-            frameCount,
-            fps: previewFps,
-          })}</span>
-          <label className="loop-toggle">
-            <input
-              aria-label={t('export.loopLabel')}
-              type="checkbox"
-              checked={loop}
-              onChange={(event) => setLoop(event.target.checked)}
-            />
-            <span>{t('export.loop')}</span>
-          </label>
-        </div>
-        <div className="export-actions">
-          <button
-            className="primary-button"
-            type="button"
-            disabled={encoding !== null}
-            onClick={() => encodeAndDownload('gif')}
-          >
-            {encoding === 'gif' ? t('export.encoding') : t('export.gifButton')}
-          </button>
-          <button
-            className="primary-button"
-            type="button"
-            disabled={encoding !== null}
-            onClick={() => encodeAndDownload('apng')}
-          >
-            {encoding === 'apng' ? t('export.encoding') : t('export.apngButton')}
-          </button>
-        </div>
-      </div>
-      {exportError ? <p className="export-error" role="alert">{exportError}</p> : null}
-    </div>
   )
 }

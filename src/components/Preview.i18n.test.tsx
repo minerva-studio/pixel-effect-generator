@@ -60,4 +60,13 @@ describe('Preview localized markup', () => {
     expect(markup).toContain('播放帧率')
     expect(markup).toContain('12 FPS 预览')
   })
+
+  it('does not render any export content', () => {
+    const markup = previewMarkup('en')
+    expect(markup).not.toContain('Export PNG')
+    expect(markup).not.toContain('Sprite sheet')
+    expect(markup).not.toContain('Animated image')
+    expect(markup).not.toContain('Export GIF')
+    expect(markup).not.toContain('Export APNG')
+  })
 })

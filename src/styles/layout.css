@@ -4,7 +4,7 @@
   padding: 38px 0 52px;
 }
 
-.hero, .panel-heading, .export-row, .playback, .navigation-heading {
+.hero, .panel-heading, .playback, .navigation-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -47,9 +47,19 @@ h1 { margin-bottom: 8px; font-size: clamp(2rem, 4vw, 3.5rem); letter-spacing: -0
 .workspace {
   display: grid;
   grid-template-columns: 205px 390px minmax(460px, 1fr);
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "generators parameters preview"
+    ". export export";
   align-items: stretch;
   gap: 16px;
+  min-width: 0;
 }
+
+.generator-panel { grid-area: generators; min-width: 0; }
+.controls-panel { grid-area: parameters; min-width: 0; }
+.preview-panel { grid-area: preview; min-width: 0; }
+.export-panel { grid-area: export; min-width: 0; }
 
 .panel {
   overflow: hidden;

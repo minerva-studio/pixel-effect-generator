@@ -87,16 +87,21 @@
 .preview-seed-control label { color: var(--muted); font-size: 0.68rem; font-weight: 700; }
 .preview-seed-control .seed-inputs { grid-template-columns: minmax(0, 1fr) auto; }
 .icon-button { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-high); }
-.export-block { border-top: 1px solid var(--border); }
-.export-row { gap: 20px; padding: 16px 22px; flex-wrap: wrap; }
-.export-row + .export-row { border-top: 1px solid var(--border); }
-.export-row > div { display: grid; gap: 5px; }
-.export-row .export-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
-.export-row strong { font-size: 0.8rem; }
-.export-row span { color: var(--muted); font-size: 0.7rem; }
+.export-panel { padding: 18px 20px 20px; min-width: 0; }
+.export-heading { margin-bottom: 14px; }
+.export-heading > div { display: grid; gap: 6px; }
+.export-summary { margin: 0; color: var(--muted); font-size: 0.72rem; overflow-wrap: anywhere; }
+.export-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.export-card { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 15px 16px; border: 1px solid var(--border); border-radius: 12px; background: rgba(17, 20, 29, 0.6); }
+.export-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.export-card-head strong { font-size: 0.82rem; }
+.export-card-meta { display: grid; gap: 5px; }
+.export-card-meta span { color: var(--muted); font-size: 0.7rem; overflow-wrap: anywhere; }
+.export-card-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: auto; min-width: 0; }
+.export-card.animated .primary-button { flex: 1 1 0; }
 .loop-toggle { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 0.72rem; }
 .loop-toggle input { accent-color: var(--accent); }
-.export-error { margin: 0; padding: 0 22px 14px; color: #ff9d9d; font-size: 0.72rem; }
+.export-card-error { margin: 0; color: #ff9d9d; font-size: 0.72rem; }
 .primary-button { padding: 11px 17px; border-radius: 9px; color: #0c1120; background: linear-gradient(135deg, #aebeff, #7798ff); font-size: 0.76rem; font-weight: 800; box-shadow: 0 8px 24px rgba(92, 124, 240, 0.24); }
 .primary-button:hover { filter: brightness(1.08); }
 .primary-button:disabled { cursor: default; filter: none; opacity: 0.55; }

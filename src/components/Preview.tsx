@@ -21,10 +21,13 @@ interface PreviewProps {
   readonly onPreviewFps: (previewFps: number) => void
   readonly onFrameCount: (frameCount: number) => void
   readonly tools?: ReactNode
-  readonly footer?: ReactNode
 }
 
-/** Owns the canvas display, playback loop, frame scrubbing, and preview timing. */
+/**
+ * Owns only the canvas display, playback loop, frame scrubbing, and preview
+ * timing. Exporting is owned by the separate ExportPanel, which shares the
+ * same rendered frame set instead of living inside this panel.
+ */
 export function Preview({
   frameSet,
   previewTitle,
@@ -41,7 +44,6 @@ export function Preview({
   onPreviewFps,
   onFrameCount,
   tools,
-  footer,
 }: PreviewProps) {
   const { t } = useI18n()
   const previewCanvas = useRef<HTMLCanvasElement>(null)
@@ -143,7 +145,6 @@ export function Preview({
         </div>
         {tools ? <div className="preview-tools" aria-label={t('preview.generatorTools')}>{tools}</div> : null}
       </div>
-      {footer}
     </section>
   )
 }

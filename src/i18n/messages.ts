@@ -17,7 +17,6 @@ const enTree = {
     reset: 'Reset',
     categoryTabsLabel: '{name} parameter categories',
     categoryControls: '{label} controls',
-    exportTitle: 'Horizontal sprite sheet',
     exportDimensions: '{width} × {height} px · transparent PNG',
     exportButton: 'Export PNG',
   },
@@ -114,6 +113,10 @@ const enTree = {
   },
   export: {
     fileName: 'pixel-{name}-{width}x{height}-{frameCount}-frames.png',
+    sectionLabel: 'EXPORT',
+    title: 'Export frames',
+    summary: '{width} × {height} canvas · {frameCount} frames · {fps} FPS',
+    spriteSheetTitle: 'Sprite sheet',
     animatedTitle: 'Animated image',
     animatedDescription: '{width} × {height} px · {frameCount} frames · {fps} FPS',
     loop: 'Loop',
@@ -167,7 +170,6 @@ export const zhCN: MessageTree = {
     reset: '重置',
     categoryTabsLabel: '{name} 参数分类',
     categoryControls: '{label} 控件',
-    exportTitle: '横向精灵图',
     exportDimensions: '{width} × {height} px · 透明 PNG',
     exportButton: '导出 PNG',
   },
@@ -264,6 +266,10 @@ export const zhCN: MessageTree = {
   },
   export: {
     fileName: 'pixel-{name}-{width}x{height}-{frameCount}-帧.png',
+    sectionLabel: '导出',
+    title: '导出帧',
+    summary: '{width} × {height} 画布 · {frameCount} 帧 · {fps} FPS',
+    spriteSheetTitle: '精灵图',
     animatedTitle: '动图',
     animatedDescription: '{width} × {height} px · {frameCount} 帧 · {fps} FPS',
     loop: '循环',
@@ -285,6 +291,7 @@ export interface MessageParams {
   'workspace.categoryTabsLabel': { name: string }
   'workspace.categoryControls': { label: string }
   'workspace.exportDimensions': { width: number; height: number }
+  'export.summary': { width: number; height: number; frameCount: number; fps: number }
   'preview.fpsPreview': { fps: number }
   'controls.about': { label: string }
   'controls.value': { label: string }
