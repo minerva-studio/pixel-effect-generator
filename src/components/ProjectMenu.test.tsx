@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { I18nProvider } from '../i18n/I18nProvider'
 import { serializeProjectDocument } from '../shared/project/document'
@@ -51,9 +52,25 @@ function fileOperations(activeTask: WorkspaceFileTask | null = null) {
 
 function dependencies(overrides: Partial<ProjectMenuDependencies> = {}): ProjectMenuDependencies {
   return {
-    downloadText: vi.fn(),
-    readFileAsText: vi.fn(async () => '{}'),
+    fileDelivery: projectDelivery(),
     serializeJson: vi.fn((document) => JSON.stringify(document)),
+    ...overrides,
+  }
+}
+
+interface ProjectDeliveryMock {
+  readonly isDesktop: boolean
+  readonly saveBytes: Mock
+  readonly saveText: Mock
+  readonly openProjectText: Mock
+}
+
+function projectDelivery(overrides: Partial<ProjectDeliveryMock> = {}): ProjectDeliveryMock {
+  return {
+    isDesktop: false,
+    saveBytes: vi.fn(async (_kind: string, _name: string, _bytes: ArrayBuffer) => 'saved' as const),
+    saveText: vi.fn(async (_kind: string, _name: string, _text: string) => 'saved' as const),
+    openProjectText: vi.fn(async () => ({ status: 'cancelled' } as const)),
     ...overrides,
   }
 }
@@ -161,12 +178,12 @@ describe('Project menu state', () => {
 })
 
 describe('runProjectSave', () => {
-  it('saves the latest parameters, FPS, PPU, and GUID without rendering', () => {
-    const downloadText = vi.fn()
+  it('saves the latest parameters, FPS, PPU, and GUID without rendering', async () => {
+    const saveText = vi.fn(async () => 'saved' as const)
     const serializeJson = vi.fn((document: EffectProjectV1) => JSON.stringify(document))
     const importProject = vi.fn()
-    const deps = dependencies({ downloadText, serializeJson })
-    const result = runProjectSave(
+    const deps = dependencies({ fileDelivery: projectDelivery({ saveText }), serializeJson })
+    const result = await runProjectSave(
       bridge(importProject),
       { pixelsPerUnit: 64, stableGuid: '  B93362E4-A2B3-BC24-0B45-2B57B97A4147  ' },
       'project.json',
@@ -175,27 +192,34 @@ describe('runProjectSave', () => {
 
     expect(result.ok).toBe(true)
     expect(importProject).not.toHaveBeenCalled()
-    expect(downloadText).toHaveBeenCalledTimes(1)
-    const [text, fileName, mime] = downloadText.mock.calls[0] as [string, string, string]
+    expect(saveText).toHaveBeenCalledTimes(1)
+    const [kind, fileName, text] = saveText.mock.calls[0] as unknown as [string, string, string]
+    expect(kind).toBe('project-json')
     expect(fileName).toBe('project.json')
-    expect(mime).toBe('application/json')
     expect(JSON.parse(text).export.unity.guid).toBe('b93362e4a2b3bc240b452b57b97a4147')
     expect(JSON.parse(text).export.unity.pixelsPerUnit).toBe(64)
   })
 
-  it('rejects invalid PPU and GUID without downloading', () => {
-    const downloadText = vi.fn()
-    const deps = dependencies({ downloadText })
-    expect(runProjectSave(bridge(), { pixelsPerUnit: 0, stableGuid: '' }, 'p.json', deps))
-      .toMatchObject({ ok: false, error: { code: 'INVALID_PPU' } })
-    expect(runProjectSave(bridge(), { pixelsPerUnit: 32, stableGuid: 'nope' }, 'p.json', deps))
-      .toMatchObject({ ok: false, error: { code: 'INVALID_GUID' } })
-    expect(downloadText).not.toHaveBeenCalled()
+  it('treats a cancelled native dialog as a normal outcome', async () => {
+    const saveText = vi.fn(async () => 'cancelled' as const)
+    const deps = dependencies({ fileDelivery: projectDelivery({ saveText }) })
+    expect(await runProjectSave(bridge(), unitySettings, 'p.json', deps)).toEqual({ ok: true })
+    expect(saveText).toHaveBeenCalledTimes(1)
   })
 
-  it('reports download failures when serialization or download throws', () => {
+  it('rejects invalid PPU and GUID without saving', async () => {
+    const saveText = vi.fn(async () => 'saved' as const)
+    const deps = dependencies({ fileDelivery: projectDelivery({ saveText }) })
+    expect(await runProjectSave(bridge(), { pixelsPerUnit: 0, stableGuid: '' }, 'p.json', deps))
+      .toMatchObject({ ok: false, error: { code: 'INVALID_PPU' } })
+    expect(await runProjectSave(bridge(), { pixelsPerUnit: 32, stableGuid: 'nope' }, 'p.json', deps))
+      .toMatchObject({ ok: false, error: { code: 'INVALID_GUID' } })
+    expect(saveText).not.toHaveBeenCalled()
+  })
+
+  it('reports failures when serialization throws', async () => {
     const failingBridge = { ...bridge(), buildDocument: () => { throw new Error('boom') } }
-    const result = runProjectSave(failingBridge, unitySettings, 'p.json', dependencies())
+    const result = await runProjectSave(failingBridge, unitySettings, 'p.json', dependencies())
     expect(result).toMatchObject({ ok: false, error: { code: 'DOWNLOAD_FAILED' } })
   })
 })

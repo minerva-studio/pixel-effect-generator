@@ -21,7 +21,8 @@ import type {
 import { normalizeGuid, randomGuid } from '../shared/unity/guid'
 import { UNITY_MAX_ATLAS_SIZE } from '../shared/unity/textureSize'
 import { buildFrameZip, buildUnityZip, type FrameZipInput, type UnityZipInput } from '../shared/zip/zip'
-import { downloadBytes, drawFrame, exportHorizontalSpriteSheet } from './export'
+import { drawFrame, exportHorizontalSpriteSheet } from './export'
+import { createFileDelivery, getDesktopFileApi, type FileDelivery } from './fileDelivery'
 import type { FileOperationController, WorkspaceFileTask } from './fileOperations'
 import type { UnityExportSettingsState } from './unitySettings'
 
@@ -106,11 +107,11 @@ export function exportPanelReducer(state: ExportPanelState, action: ExportPanelA
 export interface ExportDependencies {
   readonly downloadSpriteSheet: (frames: readonly PixelFrame[], fileName: string) => void
   readonly encodeAnimation: (input: AnimationEncodeInput) => AnimationResult
-  readonly downloadBytes: (bytes: Uint8Array, fileName: string, mime: string) => void
   readonly encodePng: (frame: PixelFrame) => Uint8Array
   readonly buildFrameZip: (input: FrameZipInput) => Uint8Array
   readonly buildUnityZip: (input: UnityZipInput) => Uint8Array
   readonly randomGuid: () => string
+  readonly fileDelivery: FileDelivery
   readonly packSpriteSheet: (
     frames: readonly PixelFrame[],
     layout: SpriteSheetLayout,
@@ -121,54 +122,55 @@ export interface ExportDependencies {
 const EXPORT_DEPENDENCIES: ExportDependencies = {
   downloadSpriteSheet: exportHorizontalSpriteSheet,
   encodeAnimation,
-  downloadBytes,
   encodePng,
   buildFrameZip,
   buildUnityZip,
   randomGuid,
+  fileDelivery: createFileDelivery(getDesktopFileApi()),
   packSpriteSheet,
 }
 
 /** Runs one sprite-sheet export against the current frame set. */
-export function runSpriteSheetExport(
+export async function runSpriteSheetExport(
   frameSet: RenderedFrameSet,
   layout: SpriteSheetLayout,
   fileName: string,
   dependencies: ExportDependencies,
-): boolean {
+): Promise<boolean> {
   try {
-    if (layout === 'horizontal') {
+    if (!dependencies.fileDelivery.isDesktop && layout === 'horizontal') {
       dependencies.downloadSpriteSheet(frameSet.read(), fileName)
-    } else {
-      const packed = packSpriteSheet(frameSet.read(), 'compact', 'frame')
-      dependencies.downloadBytes(dependencies.encodePng(packed.frame), fileName, PNG_MIME)
+      return true
     }
-    return true
+    const packed = packSpriteSheet(frameSet.read(), layout, 'frame')
+    const bytes = dependencies.encodePng(packed.frame)
+    const result = await dependencies.fileDelivery.saveBytes('spritesheet-png', fileName, toArrayBuffer(bytes))
+    return result === 'saved'
   } catch {
     return false
   }
 }
 
 /** Encodes and downloads one animation; returns false when encoding fails. */
-export function runAnimationExport(
+export async function runAnimationExport(
   format: AnimationFormat,
   frameSet: RenderedFrameSet,
   fps: number,
   loop: boolean,
   fileName: string,
   dependencies: ExportDependencies,
-): boolean {
+): Promise<boolean> {
   try {
     const result = dependencies.encodeAnimation({ format, frames: frameSet.read(), fps, loop })
-    dependencies.downloadBytes(result.bytes, fileName, result.mime)
-    return true
+    const saved = await dependencies.fileDelivery.saveBytes(format, fileName, toArrayBuffer(result.bytes))
+    return saved === 'saved'
   } catch {
     return false
   }
 }
 
 /** Builds and downloads one Unity 6 atlas ZIP. */
-export function runUnityExport(
+export async function runUnityExport(
   frameSet: RenderedFrameSet,
   layout: SpriteSheetLayout,
   fps: number,
@@ -179,7 +181,7 @@ export function runUnityExport(
   imageName: string,
   zipFileName: string,
   dependencies: ExportDependencies,
-): boolean {
+): Promise<boolean> {
   try {
     const zip = dependencies.buildUnityZip({
       generatorId: document.generator,
@@ -192,15 +194,15 @@ export function runUnityExport(
       folderName,
       imageName,
     })
-    dependencies.downloadBytes(zip, zipFileName, ZIP_MIME)
-    return true
+    const saved = await dependencies.fileDelivery.saveBytes('unity-zip', zipFileName, toArrayBuffer(zip))
+    return saved === 'saved'
   } catch {
     return false
   }
 }
 
 /** Builds and downloads one per-frame transparent PNG ZIP. */
-export function runFrameZipExport(
+export async function runFrameZipExport(
   frameSet: RenderedFrameSet,
   fps: number,
   document: EffectProjectV1,
@@ -208,7 +210,7 @@ export function runFrameZipExport(
   frameNamePrefix: string,
   fileName: string,
   dependencies: ExportDependencies,
-): boolean {
+): Promise<boolean> {
   try {
     const zip = dependencies.buildFrameZip({
       generatorId: document.generator,
@@ -218,8 +220,8 @@ export function runFrameZipExport(
       folderName,
       frameNamePrefix,
     })
-    dependencies.downloadBytes(zip, fileName, ZIP_MIME)
-    return true
+    const saved = await dependencies.fileDelivery.saveBytes('frame-zip', fileName, toArrayBuffer(zip))
+    return saved === 'saved'
   } catch {
     return false
   }
@@ -744,27 +746,28 @@ export function ExportPanel({
     return buildDocument({ pixelsPerUnit: unitySettings.pixelsPerUnit, guid })
   }
 
-  const handleExport = (
+  const handleExport = async (
     task: WorkspaceFileTask,
-    run: () => boolean,
+    run: () => Promise<boolean>,
     category: ExportCategory,
   ) => {
     if (!fileOperations.tryStart(task)) {
       return
     }
     dispatch({ type: 'clearCategoryError', category })
-    window.setTimeout(() => {
+    try {
       let succeeded = false
       try {
-        succeeded = run()
+        succeeded = await run()
       } catch {
         succeeded = false
       }
       if (!succeeded) {
         dispatch({ type: 'categoryError', category, message: t('export.errors.exportFailed') })
       }
+    } finally {
       fileOperations.finish(task)
-    }, 0)
+    }
   }
 
   const handleExportUnity = () => {
@@ -906,4 +909,9 @@ function clearCategoryError(
   const next = { ...errors }
   delete next[category]
   return next
+}
+
+/** Copies a typed array into an exact-sized ArrayBuffer for IPC and Blobs. */
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
 }

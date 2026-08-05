@@ -43,9 +43,46 @@ not the preset library, and Reset never deletes custom presets.
 ## Commands
 
 - `npm run dev` starts the local Vite development server.
+- `npm run desktop:start` starts the Electron development environment.
 - `npm run test` runs renderer, preset, storage, and export tests.
 - `npm run typecheck` validates TypeScript.
 - `npm run build` creates the production web build.
+- `npm run desktop:package` creates an unpacked desktop build for local checks.
+- `npm run desktop:make` creates the Windows x64 portable ZIP plus SHA-256.
+
+## Desktop app (Electron)
+
+The desktop build wraps the same React/Vite renderer in Electron Forge. The
+main process owns the window lifecycle and native file dialogs; a sandboxed
+preload exposes only a minimal `window.pixelEffectDesktop` bridge. The renderer
+keeps no Node.js, filesystem, or generic IPC access.
+
+Portable usage:
+
+1. Run `npm run desktop:make` (or download the release ZIP) and extract
+   `PixelEffectGenerator-<version>-win32-x64.zip` anywhere.
+2. Launch `PixelEffectGenerator.exe`. No installation, registry writes, or
+   administrator rights are required.
+
+Notes:
+
+- The first release is **not code-signed**, so Windows SmartScreen may show a
+  warning; this is expected until signing is added.
+- The portable ZIP does not mean the configuration is fully portable: UI
+  preferences and custom presets live in the Electron user-data directory.
+  Project JSON files are the portable project format and can be moved freely.
+- In the desktop app every export and Project open uses the native Windows
+  file dialog; in the browser the existing download links and hidden file
+  inputs are used unchanged.
+
+Publishing:
+
+- Pushing a `v*` tag runs the `desktop-release` workflow: it verifies the tag
+  equals `v${package.json.version}`, runs tests, typecheck, and the web build,
+  then builds the Windows x64 ZIP, uploads it as a CI artifact, and creates a
+  GitHub Release with the ZIP and SHA-256. A `workflow_dispatch` run only
+  uploads the artifact and never creates a Release. Releasing an existing tag
+  fails instead of overwriting it.
 
 ## Architecture
 

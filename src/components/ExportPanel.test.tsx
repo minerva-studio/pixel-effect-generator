@@ -209,49 +209,62 @@ describe('export panel actions', () => {
   const frames = [sampleFrame(128, 128, 255), sampleFrame(128, 128, 0)]
   const frameSet = new RenderedFrameSet(frames)
 
-  it('exports a horizontal sprite sheet exactly once with the current frames', () => {
+  it('exports a horizontal sprite sheet through the browser canvas path exactly once', async () => {
     const downloadSpriteSheet = vi.fn()
-    const ok = runSpriteSheetExport(frameSet, 'horizontal', 'sheet.png', dependencies({ downloadSpriteSheet }))
+    const deps = dependencies({ downloadSpriteSheet })
+    const ok = await runSpriteSheetExport(frameSet, 'horizontal', 'sheet.png', deps)
     expect(ok).toBe(true)
     expect(downloadSpriteSheet).toHaveBeenCalledTimes(1)
     expect(downloadSpriteSheet).toHaveBeenCalledWith(frames, 'sheet.png')
+    expect(deps.fileDelivery.saveBytes).not.toHaveBeenCalled()
   })
 
-  it('encodes compact sheets through the pure PNG path', () => {
-    const encodePng = vi.fn((frame: PixelFrame) => new Uint8Array([frame.width, frame.height]))
-    const downloadBytes = vi.fn()
-    const ok = runSpriteSheetExport(frameSet, 'compact', 'compact.png', dependencies({ encodePng, downloadBytes }))
+  it('encodes compact sheets through the pure PNG path and browser delivery', async () => {
+    const encodePng = vi.fn((_frame: PixelFrame) => new Uint8Array([7, 8]))
+    const fileDelivery = browserDelivery()
+    const ok = await runSpriteSheetExport(frameSet, 'compact', 'compact.png', dependencies({ encodePng, fileDelivery }))
     expect(ok).toBe(true)
     expect(encodePng).toHaveBeenCalledTimes(1)
-    expect(downloadBytes).toHaveBeenCalledWith(new Uint8Array([128, 256]), 'compact.png', 'image/png')
+    expect(fileDelivery.saveBytes).toHaveBeenCalledWith('spritesheet-png', 'compact.png', expect.any(ArrayBuffer))
+    const buffer = fileDelivery.saveBytes.mock.calls[0][2] as unknown as ArrayBuffer
+    expect(Array.from(new Uint8Array(buffer))).toEqual([7, 8])
   })
 
-  it('encodes and downloads GIF and APNG with the loop state and FPS', () => {
+  it('routes every desktop export through native save with the matching kind', async () => {
+    const fileDelivery = desktopDelivery()
+    const deps = dependencies({ fileDelivery })
+    const ok = await runSpriteSheetExport(frameSet, 'horizontal', 'sheet.png', deps)
+    expect(ok).toBe(true)
+    expect(fileDelivery.saveBytes).toHaveBeenCalledWith('spritesheet-png', 'sheet.png', expect.any(ArrayBuffer))
+    expect(deps.downloadSpriteSheet).not.toHaveBeenCalled()
+  })
+
+  it('encodes and saves GIF and APNG with the loop state and FPS', async () => {
     const encodeAnimation = vi.fn(() => ({
       format: 'gif' as const,
       mime: 'image/gif',
       extension: 'gif',
       bytes: new Uint8Array([1, 2, 3]),
     }))
-    const downloadBytes = vi.fn()
-    const ok = runAnimationExport('gif', frameSet, 12, false, 'clip.gif', dependencies({ encodeAnimation, downloadBytes }))
+    const fileDelivery = browserDelivery()
+    const ok = await runAnimationExport('gif', frameSet, 12, false, 'clip.gif', dependencies({ encodeAnimation, fileDelivery }))
 
     expect(ok).toBe(true)
     expect(encodeAnimation).toHaveBeenCalledWith({ format: 'gif', frames, fps: 12, loop: false })
-    expect(downloadBytes).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'clip.gif', 'image/gif')
+    expect(fileDelivery.saveBytes).toHaveBeenCalledWith('gif', 'clip.gif', expect.any(ArrayBuffer))
   })
 
-  it('reports failure without downloading when animation encoding throws', () => {
+  it('reports failure without saving when animation encoding throws', async () => {
     const encodeAnimation = vi.fn(() => { throw new Error('encode failed') })
-    const downloadBytes = vi.fn()
-    const ok = runAnimationExport('apng', frameSet, 24, true, 'clip.png', dependencies({ encodeAnimation, downloadBytes }))
+    const fileDelivery = browserDelivery()
+    const ok = await runAnimationExport('apng', frameSet, 24, true, 'clip.png', dependencies({ encodeAnimation, fileDelivery }))
     expect(ok).toBe(false)
-    expect(downloadBytes).not.toHaveBeenCalled()
+    expect(fileDelivery.saveBytes).not.toHaveBeenCalled()
   })
 
-  it('builds and downloads a Unity ZIP with the current frames and settings', () => {
+  it('builds and saves a Unity ZIP with the current frames and settings', async () => {
     const buildUnityZip = vi.fn(() => new Uint8Array([9]))
-    const downloadBytes = vi.fn()
+    const fileDelivery = browserDelivery()
     const document = {
       schema: 'minerva.pixel-effect' as const,
       version: 1 as const,
@@ -260,7 +273,7 @@ describe('export panel actions', () => {
       playback: { fps: 12 },
       export: { unity: { pixelsPerUnit: 100, guid: 'b93362e4a2b3bc240b452b57b97a4147' } },
     }
-    const ok = runUnityExport(
+    const ok = await runUnityExport(
       frameSet,
       'compact',
       12,
@@ -270,7 +283,7 @@ describe('export panel actions', () => {
       'folder',
       'atlas.png',
       'atlas.zip',
-      dependencies({ buildUnityZip, downloadBytes }),
+      dependencies({ buildUnityZip, fileDelivery }),
     )
     expect(ok).toBe(true)
     expect(buildUnityZip).toHaveBeenCalledWith(expect.objectContaining({
@@ -283,12 +296,12 @@ describe('export panel actions', () => {
       folderName: 'folder',
       imageName: 'atlas.png',
     }))
-    expect(downloadBytes).toHaveBeenCalledWith(new Uint8Array([9]), 'atlas.zip', 'application/zip')
+    expect(fileDelivery.saveBytes).toHaveBeenCalledWith('unity-zip', 'atlas.zip', expect.any(ArrayBuffer))
   })
 
-  it('builds and downloads a frame ZIP with the current frames', () => {
+  it('builds and saves a frame ZIP with the current frames', async () => {
     const buildFrameZip = vi.fn(() => new Uint8Array([7]))
-    const downloadBytes = vi.fn()
+    const fileDelivery = browserDelivery()
     const document = {
       schema: 'minerva.pixel-effect' as const,
       version: 1 as const,
@@ -297,7 +310,7 @@ describe('export panel actions', () => {
       playback: { fps: 12 },
       export: { unity: { pixelsPerUnit: 32, guid: null } },
     }
-    const ok = runFrameZipExport(frameSet, 12, document, 'frames', 'slash', 'frames.zip', dependencies({ buildFrameZip, downloadBytes }))
+    const ok = await runFrameZipExport(frameSet, 12, document, 'frames', 'slash', 'frames.zip', dependencies({ buildFrameZip, fileDelivery }))
     expect(ok).toBe(true)
     expect(buildFrameZip).toHaveBeenCalledWith(expect.objectContaining({
       generatorId: 'slash',
@@ -306,10 +319,10 @@ describe('export panel actions', () => {
       folderName: 'frames',
       frameNamePrefix: 'slash',
     }))
-    expect(downloadBytes).toHaveBeenCalledWith(new Uint8Array([7]), 'frames.zip', 'application/zip')
+    expect(fileDelivery.saveBytes).toHaveBeenCalledWith('frame-zip', 'frames.zip', expect.any(ArrayBuffer))
   })
 
-  it('reads the frame set at export time instead of caching stale frames', () => {
+  it('reads the frame set at export time instead of caching stale frames', async () => {
     let latest = [frames[0]]
     const frameSetAtCallTime = { read: () => latest } as unknown as RenderedFrameSet
     const encodeAnimation = vi.fn(() => ({
@@ -319,14 +332,32 @@ describe('export panel actions', () => {
       bytes: new Uint8Array([3]),
     }))
 
-    runAnimationExport('gif', frameSetAtCallTime, 12, true, 'a.gif', dependencies({ encodeAnimation }))
+    await runAnimationExport('gif', frameSetAtCallTime, 12, true, 'a.gif', dependencies({ encodeAnimation }))
     latest = frames
-    runAnimationExport('gif', frameSetAtCallTime, 12, true, 'b.gif', dependencies({ encodeAnimation }))
+    await runAnimationExport('gif', frameSetAtCallTime, 12, true, 'b.gif', dependencies({ encodeAnimation }))
 
     expect(encodeAnimation).toHaveBeenNthCalledWith(1, { format: 'gif', frames: [frames[0]], fps: 12, loop: true })
     expect(encodeAnimation).toHaveBeenNthCalledWith(2, { format: 'gif', frames, fps: 12, loop: true })
   })
 })
+
+function browserDelivery() {
+  return {
+    isDesktop: false,
+    saveBytes: vi.fn(async (_kind: string, _name: string, _bytes: ArrayBuffer) => 'saved' as const),
+    saveText: vi.fn(async (_kind: string, _name: string, _text: string) => 'saved' as const),
+    openProjectText: vi.fn(async () => ({ status: 'cancelled' } as const)),
+  }
+}
+
+function desktopDelivery() {
+  return {
+    isDesktop: true,
+    saveBytes: vi.fn(async (_kind: string, _name: string, _bytes: ArrayBuffer) => 'saved' as const),
+    saveText: vi.fn(async (_kind: string, _name: string, _text: string) => 'saved' as const),
+    openProjectText: vi.fn(async () => ({ status: 'cancelled' } as const)),
+  }
+}
 
 describe('resolveStableGuid', () => {
   it('trims surrounding whitespace before normalizing valid GUIDs', () => {
@@ -550,11 +581,11 @@ function dependencies(overrides: Partial<ExportDependencies> = {}): ExportDepend
   return {
     downloadSpriteSheet: vi.fn(),
     encodeAnimation: vi.fn(),
-    downloadBytes: vi.fn(),
     encodePng: vi.fn((frame: PixelFrame) => new Uint8Array([frame.width])),
     buildFrameZip: vi.fn(() => new Uint8Array([1, 2, 3])),
     buildUnityZip: vi.fn(() => new Uint8Array([4, 5, 6])),
     randomGuid: vi.fn(() => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+    fileDelivery: browserDelivery(),
     packSpriteSheet: vi.fn(),
     ...overrides,
   }

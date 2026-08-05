@@ -1,5 +1,17 @@
+# Dependencies
 node_modules/
+
+# Generated web, Electron, and test output
 dist/
+.vite/
+out/
 coverage/
+
+# Local development state and logs
 *.local
-/.codex
+*.log
+/.codex/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db

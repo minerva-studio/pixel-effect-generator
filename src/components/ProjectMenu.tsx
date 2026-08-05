@@ -10,12 +10,10 @@ import type {
   ProjectExportSettings,
 } from '../shared/project/types'
 import { normalizeGuid } from '../shared/unity/guid'
-import { downloadText } from './export'
+import { createFileDelivery, getDesktopFileApi, type FileDelivery } from './fileDelivery'
 import type { FileOperationController } from './fileOperations'
 import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
 import type { UnityExportSettingsState } from './unitySettings'
-
-export const JSON_MIME = 'application/json'
 
 /** Local UI state of the Project menu; never shared with the generator session. */
 export interface ProjectMenuState {
@@ -55,14 +53,12 @@ export function projectMenuReducer(state: ProjectMenuState, action: ProjectMenuA
 
 /** Injectable file operations kept apart from React so behavior is testable. */
 export interface ProjectMenuDependencies {
-  readonly downloadText: (text: string, fileName: string, mime: string) => void
-  readonly readFileAsText: (file: File) => Promise<string>
+  readonly fileDelivery: FileDelivery
   readonly serializeJson: (document: EffectProjectV1) => string
 }
 
 const PROJECT_MENU_DEPENDENCIES: ProjectMenuDependencies = {
-  downloadText,
-  readFileAsText: (file) => file.text(),
+  fileDelivery: createFileDelivery(getDesktopFileApi()),
   serializeJson: serializeJsonValue,
 }
 
@@ -84,20 +80,20 @@ export function resolveProjectSaveSettings(
   return { ok: true, exportSettings: { pixelsPerUnit: settings.pixelsPerUnit, guid: normalized } }
 }
 
-/** Builds and downloads the current project document as stable JSON. */
-export function runProjectSave(
+/** Builds and saves the current project document as stable JSON. */
+export async function runProjectSave(
   bridge: ProjectBridge,
   unitySettings: UnityExportSettingsState,
   fileName: string,
   dependencies: ProjectMenuDependencies,
-): { readonly ok: true } | { readonly ok: false; readonly error: ExportError } {
+): Promise<{ readonly ok: true } | { readonly ok: false; readonly error: ExportError }> {
   const resolved = resolveProjectSaveSettings(unitySettings)
   if (!resolved.ok) {
     return resolved
   }
   try {
     const document = bridge.buildDocument(resolved.exportSettings)
-    dependencies.downloadText(dependencies.serializeJson(document), fileName, JSON_MIME)
+    await dependencies.fileDelivery.saveText('project-json', fileName, dependencies.serializeJson(document))
     return { ok: true }
   } catch (error) {
     return { ok: false, error: { code: 'DOWNLOAD_FAILED', detail: describeError(error) } }
@@ -266,13 +262,13 @@ export function ProjectMenu({
     }
   }, [state.open])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!fileOperations.tryStart('projectSave')) {
       return
     }
     dispatch({ type: 'operationStarted' })
     try {
-      const result = runProjectSave(bridge, unitySettings, fileName, dependencies)
+      const result = await runProjectSave(bridge, unitySettings, fileName, dependencies)
       if (!result.ok) {
         dispatch({ type: 'operationFailed', message: projectErrorMessage(t, result.error.code) })
       }
@@ -284,7 +280,38 @@ export function ProjectMenu({
   }
 
   const handleOpenClick = () => {
-    fileInputRef.current?.click()
+    if (dependencies.fileDelivery.isDesktop) {
+      void handleDesktopOpen()
+    } else {
+      fileInputRef.current?.click()
+    }
+  }
+
+  const handleProjectText = (text: string) => {
+    const result = importProjectFromText(text, bridge.codec, bridge.importProject)
+    if (result.ok) {
+      dispatch({ type: 'operationSucceeded' })
+    } else {
+      dispatch({ type: 'operationFailed', message: projectErrorMessage(t, result.error.code) })
+    }
+  }
+
+  const handleDesktopOpen = async () => {
+    if (!fileOperations.tryStart('projectLoad')) {
+      return
+    }
+    dispatch({ type: 'operationStarted' })
+    try {
+      const result = await dependencies.fileDelivery.openProjectText()
+      if (result.status === 'cancelled') {
+        return
+      }
+      handleProjectText(result.text)
+    } catch {
+      dispatch({ type: 'operationFailed', message: projectErrorMessage(t, 'PROJECT_FILE_UNREADABLE') })
+    } finally {
+      fileOperations.finish('projectLoad')
+    }
   }
 
   const handleFileChange = async (file: File) => {
@@ -293,13 +320,8 @@ export function ProjectMenu({
     }
     dispatch({ type: 'operationStarted' })
     try {
-      const text = await dependencies.readFileAsText(file)
-      const result = importProjectFromText(text, bridge.codec, bridge.importProject)
-      if (result.ok) {
-        dispatch({ type: 'operationSucceeded' })
-      } else {
-        dispatch({ type: 'operationFailed', message: projectErrorMessage(t, result.error.code) })
-      }
+      const text = await file.text()
+      handleProjectText(text)
     } catch {
       dispatch({ type: 'operationFailed', message: projectErrorMessage(t, 'PROJECT_FILE_UNREADABLE') })
     } finally {
