@@ -1,7 +1,7 @@
-import { useReducer, useRef, type RefObject } from 'react'
+import { useReducer } from 'react'
 import type { RenderedFrameSet } from '../generators/contract'
 import { useI18n } from '../i18n/I18nProvider'
-import type { MessageKey } from '../i18n/messages'
+import type { MessageKey, TranslateFunction } from '../i18n/messages'
 import {
   encodeAnimation,
   type AnimationEncodeInput,
@@ -11,29 +11,26 @@ import {
 import { chooseCompactColumns, packSpriteSheet, type SpriteSheetLayout } from '../shared/pixel/atlas'
 import type { PixelFrame } from '../shared/pixel/frame'
 import { encodePng } from '../shared/pixel/png'
-import { serializeJsonValue, parseProjectDocument } from '../shared/project/document'
 import type {
   EffectProjectV1,
   ExportError,
   ExportErrorCode,
-  GeneratorProjectCodec,
   ProjectExportSettings,
 } from '../shared/project/types'
-import { randomGuid } from '../shared/unity/guid'
-import { normalizeGuid } from '../shared/unity/guid'
+import { normalizeGuid, randomGuid } from '../shared/unity/guid'
 import { UNITY_MAX_ATLAS_SIZE } from '../shared/unity/textureSize'
 import { buildFrameZip, buildUnityZip, type FrameZipInput, type UnityZipInput } from '../shared/zip/zip'
-import { downloadBytes, downloadText, exportHorizontalSpriteSheet } from './export'
+import { downloadBytes, exportHorizontalSpriteSheet } from './export'
+import type { FileOperationController, WorkspaceFileTask } from './fileOperations'
+import type { UnityExportSettingsState } from './unitySettings'
 
 export const PNG_MIME = 'image/png'
 export const ZIP_MIME = 'application/zip'
-export const JSON_MIME = 'application/json'
 
-/** The four export categories; Project is hidden for generators without codecs. */
-export type ExportCategory = 'project' | 'spriteSheet' | 'animation' | 'frameZip'
+/** Asset-only export categories; project JSON lives in the parameter header. */
+export type ExportCategory = 'spriteSheet' | 'animation' | 'frameZip'
 
 export type SpriteTarget = 'png' | 'unity'
-export type ExportTask = 'projectJson' | 'spriteSheet' | 'unityPackage' | 'gif' | 'apng' | 'frameZip' | null
 
 /** Local UI state of the export panel; never shared with the generator session. */
 export interface ExportPanelState {
@@ -42,11 +39,7 @@ export interface ExportPanelState {
   readonly spriteTarget: SpriteTarget
   readonly animationFormat: AnimationFormat
   readonly loop: boolean
-  readonly pixelsPerUnit: number
-  readonly stableGuid: string
-  readonly activeTask: ExportTask
   readonly categoryErrors: Readonly<Partial<Record<ExportCategory, string>>>
-  readonly projectImportStatus: 'idle' | 'success' | 'error'
 }
 
 /** State transitions driven by the export controls. */
@@ -56,26 +49,10 @@ export type ExportPanelAction =
   | { readonly type: 'setSpriteTarget'; readonly target: SpriteTarget }
   | { readonly type: 'setAnimationFormat'; readonly format: AnimationFormat }
   | { readonly type: 'toggleLoop'; readonly checked: boolean }
-  | { readonly type: 'setPixelsPerUnit'; readonly value: number }
-  | { readonly type: 'setStableGuid'; readonly value: string }
-  | { readonly type: 'startTask'; readonly task: Exclude<ExportTask, null> }
-  | { readonly type: 'taskSucceeded'; readonly task: Exclude<ExportTask, null> }
-  | { readonly type: 'taskFailed'; readonly task: Exclude<ExportTask, null>; readonly category: ExportCategory; readonly message: string }
   | { readonly type: 'categoryError'; readonly category: ExportCategory; readonly message: string }
-  | { readonly type: 'importSucceeded'; readonly pixelsPerUnit: number; readonly guid: string }
-  | { readonly type: 'importFailed'; readonly message: string }
+  | { readonly type: 'clearCategoryError'; readonly category: ExportCategory }
 
-/** Category owning each heavy task; errors stay inside that category. */
-export const TASK_CATEGORY: Readonly<Record<Exclude<ExportTask, null>, ExportCategory>> = {
-  projectJson: 'project',
-  spriteSheet: 'spriteSheet',
-  unityPackage: 'spriteSheet',
-  gif: 'animation',
-  apng: 'animation',
-  frameZip: 'frameZip',
-}
-
-/** Export panel starts on Sprite Sheet with Unity defaults and no task. */
+/** Export panel starts on Sprite Sheet with PNG output and no errors. */
 export function createInitialExportPanelState(): ExportPanelState {
   return {
     activeCategory: 'spriteSheet',
@@ -83,11 +60,7 @@ export function createInitialExportPanelState(): ExportPanelState {
     spriteTarget: 'png',
     animationFormat: 'gif',
     loop: true,
-    pixelsPerUnit: 32,
-    stableGuid: '',
-    activeTask: null,
     categoryErrors: {},
-    projectImportStatus: 'idle',
   }
 }
 
@@ -104,49 +77,15 @@ export function exportPanelReducer(state: ExportPanelState, action: ExportPanelA
       return { ...state, animationFormat: action.format }
     case 'toggleLoop':
       return { ...state, loop: action.checked }
-    case 'setPixelsPerUnit':
-      return { ...state, pixelsPerUnit: action.value }
-    case 'setStableGuid':
-      return { ...state, stableGuid: action.value }
-    case 'startTask':
-      if (state.activeTask !== null) {
-        return state
-      }
-      return {
-        ...state,
-        activeTask: action.task,
-        categoryErrors: clearCategoryError(state.categoryErrors, TASK_CATEGORY[action.task]),
-      }
-    case 'taskSucceeded':
-      return state.activeTask === action.task ? { ...state, activeTask: null } : state
-    case 'taskFailed':
-      return state.activeTask === action.task
-        ? {
-            ...state,
-            activeTask: null,
-            categoryErrors: { ...state.categoryErrors, [action.category]: action.message },
-          }
-        : state
     case 'categoryError':
       return {
         ...state,
         categoryErrors: { ...state.categoryErrors, [action.category]: action.message },
       }
-    case 'importSucceeded':
+    case 'clearCategoryError':
       return {
         ...state,
-        activeTask: null,
-        pixelsPerUnit: action.pixelsPerUnit,
-        stableGuid: action.guid,
-        projectImportStatus: 'success',
-        categoryErrors: clearCategoryError(state.categoryErrors, 'project'),
-      }
-    case 'importFailed':
-      return {
-        ...state,
-        activeTask: null,
-        projectImportStatus: 'error',
-        categoryErrors: { ...state.categoryErrors, project: action.message },
+        categoryErrors: clearCategoryError(state.categoryErrors, action.category),
       }
   }
 }
@@ -156,24 +95,20 @@ export interface ExportDependencies {
   readonly downloadSpriteSheet: (frames: readonly PixelFrame[], fileName: string) => void
   readonly encodeAnimation: (input: AnimationEncodeInput) => AnimationResult
   readonly downloadBytes: (bytes: Uint8Array, fileName: string, mime: string) => void
-  readonly downloadText: (text: string, fileName: string, mime: string) => void
   readonly encodePng: (frame: PixelFrame) => Uint8Array
   readonly buildFrameZip: (input: FrameZipInput) => Uint8Array
   readonly buildUnityZip: (input: UnityZipInput) => Uint8Array
   readonly randomGuid: () => string
-  readonly readFileAsText: (file: File) => Promise<string>
 }
 
 const EXPORT_DEPENDENCIES: ExportDependencies = {
   downloadSpriteSheet: exportHorizontalSpriteSheet,
   encodeAnimation,
   downloadBytes,
-  downloadText,
   encodePng,
   buildFrameZip,
   buildUnityZip,
   randomGuid,
-  readFileAsText: (file) => file.text(),
 }
 
 /** Runs one sprite-sheet export against the current frame set. */
@@ -208,20 +143,6 @@ export function runAnimationExport(
   try {
     const result = dependencies.encodeAnimation({ format, frames: frameSet.read(), fps, loop })
     dependencies.downloadBytes(result.bytes, fileName, result.mime)
-    return true
-  } catch {
-    return false
-  }
-}
-
-/** Downloads the current project document as stable JSON. */
-export function runProjectJsonExport(
-  document: EffectProjectV1,
-  fileName: string,
-  dependencies: ExportDependencies,
-): boolean {
-  try {
-    dependencies.downloadText(serializeJsonValue(document), fileName, JSON_MIME)
     return true
   } catch {
     return false
@@ -286,42 +207,6 @@ export function runFrameZipExport(
   }
 }
 
-/** Request contract between ExportPanel and the typed generator workspace. */
-export type ImportProjectHandler = (request: {
-  readonly parameters: unknown
-  readonly fps: number
-}) => { readonly ok: true } | { readonly ok: false; readonly error: ExportError }
-
-/**
- * Parses project JSON, validates it through the codec, and asks the workspace
- * to render the imported parameters. Rendering happens exactly once and only
- * commits after every step succeeds.
- */
-export function importProjectFromText(
-  text: string,
-  codec: GeneratorProjectCodec<unknown>,
-  importProject: ImportProjectHandler,
-): { readonly ok: true; readonly exportSettings: ProjectExportSettings } | { readonly ok: false; readonly error: ExportError } {
-  let value: unknown
-  try {
-    value = JSON.parse(text)
-  } catch {
-    return { ok: false, error: { code: 'INVALID_JSON', detail: 'The file is not valid JSON.' } }
-  }
-  const parsed = parseProjectDocument(value, codec)
-  if (!parsed.ok) {
-    return { ok: false, error: parsed.error }
-  }
-  const rendered = importProject({
-    parameters: parsed.project.project.parameters,
-    fps: parsed.project.fps,
-  })
-  if (!rendered.ok) {
-    return { ok: false, error: rendered.error }
-  }
-  return { ok: true, exportSettings: parsed.project.exportSettings }
-}
-
 /** Resolves a stable GUID input to normalized form; empty input means null. */
 export function resolveStableGuid(
   stableGuid: string,
@@ -337,7 +222,7 @@ export function resolveStableGuid(
   return { ok: true, guid: normalized }
 }
 
-/** Validates local Unity settings before a Unity export starts. */
+/** Validates shared Unity settings before a Unity export starts. */
 export function resolveUnitySettings(
   pixelsPerUnit: number,
   stableGuid: string,
@@ -397,68 +282,51 @@ export interface ExportPanelMetadata {
   readonly generatorName: string
 }
 
-/** Typed bridge into the generator workspace for project documents. */
-export interface ProjectExportBridge {
-  readonly codec: GeneratorProjectCodec<unknown>
-  readonly buildDocument: (settings: ProjectExportSettings) => EffectProjectV1
-  readonly importProject: ImportProjectHandler
-}
-
 interface ExportPanelViewProps {
   readonly state: ExportPanelState
   readonly metadata: ExportPanelMetadata
-  readonly hasProjectSupport: boolean
+  readonly unitySettings: UnityExportSettingsState
   readonly normalizedGuid: string
-  readonly fileInputRef: RefObject<HTMLInputElement | null>
+  readonly activeTask: WorkspaceFileTask | null
+  readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
   readonly onSelectCategory: (category: ExportCategory) => void
   readonly onSetLayout: (layout: SpriteSheetLayout) => void
   readonly onSetTarget: (target: SpriteTarget) => void
   readonly onSetFormat: (format: AnimationFormat) => void
   readonly onToggleLoop: (checked: boolean) => void
-  readonly onSetPixelsPerUnit: (value: number) => void
-  readonly onSetStableGuid: (value: string) => void
-  readonly onSaveProject: () => void
-  readonly onLoadProjectClick: () => void
-  readonly onLoadProjectFile: (file: File) => void
   readonly onExportSpriteSheet: () => void
   readonly onExportUnity: () => void
   readonly onExportAnimation: () => void
   readonly onExportFrameZip: () => void
 }
 
-/** Presentational export panel; rendering depends only on state and metadata. */
+/** Presentational export panel; rendering depends only on state and props. */
 export function ExportPanelView({
   state,
   metadata,
-  hasProjectSupport,
+  unitySettings,
   normalizedGuid,
-  fileInputRef,
+  activeTask,
+  onUnitySettingsChange,
   onSelectCategory,
   onSetLayout,
   onSetTarget,
   onSetFormat,
   onToggleLoop,
-  onSetPixelsPerUnit,
-  onSetStableGuid,
-  onSaveProject,
-  onLoadProjectClick,
-  onLoadProjectFile,
   onExportSpriteSheet,
   onExportUnity,
   onExportAnimation,
   onExportFrameZip,
 }: ExportPanelViewProps) {
   const { t } = useI18n()
-  const busy = state.activeTask !== null
+  const busy = activeTask !== null
   const preparing = t('export.preparing')
   const encoding = t('export.encoding')
-  const allTabs: readonly { readonly id: ExportCategory; readonly key: MessageKey }[] = [
-    { id: 'project', key: 'export.tabs.project' },
+  const tabs: readonly { readonly id: ExportCategory; readonly key: MessageKey }[] = [
     { id: 'spriteSheet', key: 'export.tabs.spriteSheet' },
     { id: 'animation', key: 'export.tabs.animation' },
     { id: 'frameZip', key: 'export.tabs.frameZip' },
   ]
-  const tabs = hasProjectSupport ? allTabs : allTabs.filter((tab) => tab.id !== 'project')
 
   return (
     <section className="panel export-panel" aria-label={t('export.title')}>
@@ -488,45 +356,6 @@ export function ExportPanelView({
           </button>
         ))}
       </div>
-
-      {state.activeCategory === 'project' && hasProjectSupport ? (
-        <div className="export-category">
-          <p className="export-category-summary">{t('export.project.summary', {
-            name: metadata.generatorName,
-            width: metadata.width,
-            height: metadata.height,
-            frameCount: metadata.frameCount,
-            fps: metadata.fps,
-          })}</p>
-          <div className="export-category-actions equal">
-            <button className="primary-button" type="button" disabled={busy} onClick={onSaveProject}>
-              {state.activeTask === 'projectJson' ? preparing : t('export.project.save')}
-            </button>
-            <button className="primary-button" type="button" disabled={busy} onClick={onLoadProjectClick}>
-              {t('export.project.load')}
-            </button>
-            <input
-              ref={fileInputRef}
-              className="export-file-input"
-              type="file"
-              accept=".json,application/json"
-              aria-label={t('export.project.fileLabel')}
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  onLoadProjectFile(file)
-                }
-              }}
-            />
-          </div>
-          {state.projectImportStatus === 'success' ? (
-            <p className="export-card-success" role="status">{t('export.project.imported')}</p>
-          ) : null}
-          {state.categoryErrors.project ? (
-            <p className="export-card-error" role="alert">{state.categoryErrors.project}</p>
-          ) : null}
-        </div>
-      ) : null}
 
       {state.activeCategory === 'spriteSheet' ? (
         <div className="export-category">
@@ -568,8 +397,11 @@ export function ExportPanelView({
                   max={1024}
                   step={1}
                   aria-label={t('export.spriteSheet.pixelsPerUnit')}
-                  value={state.pixelsPerUnit}
-                  onChange={(event) => onSetPixelsPerUnit(Number(event.target.value))}
+                  value={unitySettings.pixelsPerUnit}
+                  onChange={(event) => onUnitySettingsChange({
+                    ...unitySettings,
+                    pixelsPerUnit: Number(event.target.value),
+                  })}
                 />
               </label>
               <label className="export-field">
@@ -579,8 +411,11 @@ export function ExportPanelView({
                   spellCheck={false}
                   aria-label={t('export.spriteSheet.stableGuid')}
                   placeholder={t('export.spriteSheet.stableGuidPlaceholder')}
-                  value={state.stableGuid}
-                  onChange={(event) => onSetStableGuid(event.target.value)}
+                  value={unitySettings.stableGuid}
+                  onChange={(event) => onUnitySettingsChange({
+                    ...unitySettings,
+                    stableGuid: event.target.value,
+                  })}
                 />
               </label>
               <p className="export-hint">{t('export.spriteSheet.unityHint')}</p>
@@ -594,7 +429,7 @@ export function ExportPanelView({
           ) : null}
           <div className="export-category-actions">
             <button className="primary-button" type="button" disabled={busy} onClick={state.spriteTarget === 'unity' ? onExportUnity : onExportSpriteSheet}>
-              {state.activeTask === 'spriteSheet' || state.activeTask === 'unityPackage'
+              {activeTask === 'spriteSheet' || activeTask === 'unityPackage'
                 ? preparing
                 : state.spriteTarget === 'unity'
                   ? t('export.spriteSheet.exportUnityZip')
@@ -644,7 +479,7 @@ export function ExportPanelView({
               disabled={busy}
               onClick={onExportAnimation}
             >
-              {state.activeTask === state.animationFormat
+              {activeTask === state.animationFormat
                 ? encoding
                 : state.animationFormat === 'gif'
                   ? t('export.animation.exportGif')
@@ -668,7 +503,7 @@ export function ExportPanelView({
           ) : null}
           <div className="export-category-actions">
             <button className="primary-button" type="button" disabled={busy} onClick={onExportFrameZip}>
-              {state.activeTask === 'frameZip' ? preparing : t('export.frameZip.exportButton')}
+              {activeTask === 'frameZip' ? preparing : t('export.frameZip.exportButton')}
             </button>
           </div>
         </div>
@@ -682,20 +517,34 @@ interface ExportPanelProps {
   readonly previewFps: number
   readonly generatorId: string
   readonly generatorName: string
-  readonly projectBridge?: ProjectExportBridge
+  readonly unitySettings: UnityExportSettingsState
+  readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
+  readonly fileOperations: FileOperationController
+  /** Builds the manifest project document; absent for generators without codecs. */
+  readonly buildProjectDocument?: (settings: ProjectExportSettings) => EffectProjectV1
   readonly dependencies?: ExportDependencies
 }
 
 /**
- * Standalone export panel for the active generator session. It consumes the
+ * Asset-only export panel for the active generator session. It consumes the
  * same already-rendered `RenderedFrameSet` as the Preview without copying
- * frames or re-rendering; category, loop, and task state stay local to this
- * panel so parameter edits and Reset never disturb in-flight exports.
+ * frames or re-rendering. Category and loop state stay local; Unity settings
+ * and the file operation lock live in the workspace so ProjectMenu and this
+ * panel never disagree about in-flight work.
  */
-export function ExportPanel({ frameSet, previewFps, generatorId, generatorName, projectBridge, dependencies = EXPORT_DEPENDENCIES }: ExportPanelProps) {
+export function ExportPanel({
+  frameSet,
+  previewFps,
+  generatorId,
+  generatorName,
+  unitySettings,
+  onUnitySettingsChange,
+  fileOperations,
+  buildProjectDocument: buildDocument,
+  dependencies = EXPORT_DEPENDENCIES,
+}: ExportPanelProps) {
   const { t } = useI18n()
   const [state, dispatch] = useReducer(exportPanelReducer, undefined, createInitialExportPanelState)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const frames = frameSet.read()
   const metadata: ExportPanelMetadata = {
     width: frames[0]?.width ?? 0,
@@ -706,7 +555,7 @@ export function ExportPanel({ frameSet, previewFps, generatorId, generatorName, 
     sheetHeight: computeSheetSize(frames.length, frames[0]?.width ?? 0, frames[0]?.height ?? 0, state.spriteLayout).height,
     generatorName,
   }
-  const normalizedGuid = normalizeGuid(state.stableGuid.trim()) ?? ''
+  const normalizedGuid = normalizeGuid(unitySettings.stableGuid.trim()) ?? ''
 
   const spriteSheetFileName = t('export.fileName', {
     name: generatorName,
@@ -715,12 +564,6 @@ export function ExportPanel({ frameSet, previewFps, generatorId, generatorName, 
     frameCount: metadata.frameCount,
   })
   const compactPngFileName = t('export.fileNames.compactPng', {
-    name: generatorId,
-    width: metadata.width,
-    height: metadata.height,
-    frameCount: metadata.frameCount,
-  })
-  const projectFileName = t('export.fileNames.project', {
     name: generatorId,
     width: metadata.width,
     height: metadata.height,
@@ -774,57 +617,37 @@ export function ExportPanel({ frameSet, previewFps, generatorId, generatorName, 
   }
 
   const currentDocument = (guid: string | null): EffectProjectV1 => {
-    if (!projectBridge) {
-      throw new Error('Project export requires a project bridge.')
+    if (!buildDocument) {
+      throw new Error('Project document requires a generator project codec.')
     }
-    return projectBridge.buildDocument({
-      pixelsPerUnit: state.pixelsPerUnit,
-      guid,
-    })
+    return buildDocument({ pixelsPerUnit: unitySettings.pixelsPerUnit, guid })
   }
 
   const handleExport = (
-    task: Exclude<ExportTask, null>,
+    task: WorkspaceFileTask,
     run: () => boolean,
     category: ExportCategory,
   ) => {
-    if (state.activeTask !== null) {
+    if (!fileOperations.tryStart(task)) {
       return
     }
-    dispatch({ type: 'startTask', task })
-    window.setTimeout(() => {
-      const succeeded = run()
-      dispatch(succeeded
-        ? { type: 'taskSucceeded', task }
-        : { type: 'taskFailed', task, category, message: t(ERROR_MESSAGE_KEYS.DOWNLOAD_FAILED) })
-    }, 0)
-  }
-
-  const handleSaveProject = () => {
-    if (!projectBridge || state.activeTask !== null) {
-      return
-    }
-    const resolvedGuid = resolveStableGuid(state.stableGuid)
-    if (!resolvedGuid.ok) {
-      dispatch({ type: 'categoryError', category: 'project', message: t(ERROR_MESSAGE_KEYS.INVALID_GUID) })
-      return
-    }
-    dispatch({ type: 'startTask', task: 'projectJson' })
+    dispatch({ type: 'clearCategoryError', category })
     window.setTimeout(() => {
       let succeeded = false
       try {
-        succeeded = runProjectJsonExport(currentDocument(resolvedGuid.guid), projectFileName, dependencies)
+        succeeded = run()
       } catch {
         succeeded = false
       }
-      dispatch(succeeded
-        ? { type: 'taskSucceeded', task: 'projectJson' }
-        : { type: 'taskFailed', task: 'projectJson', category: 'project', message: t(ERROR_MESSAGE_KEYS.DOWNLOAD_FAILED) })
+      if (!succeeded) {
+        dispatch({ type: 'categoryError', category, message: t('export.errors.exportFailed') })
+      }
+      fileOperations.finish(task)
     }, 0)
   }
 
   const handleExportUnity = () => {
-    if (!projectBridge || state.activeTask !== null) {
+    if (fileOperations.activeTask !== null || !buildDocument) {
       return
     }
     const atlasCheck = checkUnityAtlasSize(metadata.frameCount, metadata.width, metadata.height, state.spriteLayout)
@@ -839,16 +662,16 @@ export function ExportPanel({ frameSet, previewFps, generatorId, generatorName, 
       })
       return
     }
-    const settings = resolveUnitySettings(state.pixelsPerUnit, state.stableGuid, dependencies.randomGuid())
+    const settings = resolveUnitySettings(unitySettings.pixelsPerUnit, unitySettings.stableGuid, dependencies.randomGuid())
     if (!settings.ok) {
-      dispatch({ type: 'categoryError', category: 'spriteSheet', message: t(ERROR_MESSAGE_KEYS[settings.error.code]) })
+      dispatch({ type: 'categoryError', category: 'spriteSheet', message: exportErrorMessage(t, settings.error.code) })
       return
     }
     handleExport('unityPackage', () => runUnityExport(
       frameSet,
       state.spriteLayout,
       previewFps,
-      projectBridge.buildDocument({ pixelsPerUnit: settings.pixelsPerUnit, guid: settings.guid }),
+      buildDocument({ pixelsPerUnit: settings.pixelsPerUnit, guid: settings.guid }),
       settings.pixelsPerUnit,
       settings.guid,
       unityFolderName,
@@ -859,12 +682,12 @@ export function ExportPanel({ frameSet, previewFps, generatorId, generatorName, 
   }
 
   const handleExportFrameZip = () => {
-    if (!projectBridge || state.activeTask !== null) {
+    if (fileOperations.activeTask !== null || !buildDocument) {
       return
     }
-    const resolvedGuid = resolveStableGuid(state.stableGuid)
+    const resolvedGuid = resolveStableGuid(unitySettings.stableGuid)
     if (!resolvedGuid.ok) {
-      dispatch({ type: 'categoryError', category: 'frameZip', message: t(ERROR_MESSAGE_KEYS.INVALID_GUID) })
+      dispatch({ type: 'categoryError', category: 'frameZip', message: exportErrorMessage(t, resolvedGuid.error.code) })
       return
     }
     handleExport('frameZip', () => runFrameZipExport(
@@ -879,7 +702,7 @@ export function ExportPanel({ frameSet, previewFps, generatorId, generatorName, 
   }
 
   const handleAnimationExport = (format: AnimationFormat) => {
-    if (state.activeTask !== null) {
+    if (fileOperations.activeTask !== null) {
       return
     }
     handleExport(format, () => runAnimationExport(
@@ -892,47 +715,19 @@ export function ExportPanel({ frameSet, previewFps, generatorId, generatorName, 
     ), 'animation')
   }
 
-  const handleLoadProjectFile = (file: File) => {
-    if (!projectBridge || state.activeTask !== null) {
-      return
-    }
-    dispatch({ type: 'startTask', task: 'projectJson' })
-    dependencies.readFileAsText(file).then(
-      (text) => {
-        const result = importProjectFromText(text, projectBridge.codec, projectBridge.importProject)
-        if (result.ok) {
-          dispatch({ type: 'importSucceeded', pixelsPerUnit: result.exportSettings.pixelsPerUnit, guid: result.exportSettings.guid ?? '' })
-        } else {
-          dispatch({ type: 'importFailed', message: t(ERROR_MESSAGE_KEYS[result.error.code]) })
-        }
-      },
-      () => {
-        dispatch({ type: 'importFailed', message: t(ERROR_MESSAGE_KEYS.PROJECT_FILE_UNREADABLE) })
-      },
-    ).finally(() => {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    })
-  }
-
   return (
     <ExportPanelView
       state={state}
       metadata={metadata}
-      hasProjectSupport={projectBridge !== undefined}
+      unitySettings={unitySettings}
       normalizedGuid={normalizedGuid}
-      fileInputRef={fileInputRef}
+      activeTask={fileOperations.activeTask}
+      onUnitySettingsChange={onUnitySettingsChange}
       onSelectCategory={(category) => dispatch({ type: 'selectCategory', category })}
       onSetLayout={(layout) => dispatch({ type: 'setSpriteLayout', layout })}
       onSetTarget={(target) => dispatch({ type: 'setSpriteTarget', target })}
       onSetFormat={(format) => dispatch({ type: 'setAnimationFormat', format })}
       onToggleLoop={(checked) => dispatch({ type: 'toggleLoop', checked })}
-      onSetPixelsPerUnit={(value) => dispatch({ type: 'setPixelsPerUnit', value })}
-      onSetStableGuid={(value) => dispatch({ type: 'setStableGuid', value })}
-      onSaveProject={handleSaveProject}
-      onLoadProjectClick={() => fileInputRef.current?.click()}
-      onLoadProjectFile={handleLoadProjectFile}
       onExportSpriteSheet={() => handleExport(
         'spriteSheet',
         () => runSpriteSheetExport(frameSet, state.spriteLayout, state.spriteLayout === 'horizontal' ? spriteSheetFileName : compactPngFileName, dependencies),
@@ -945,23 +740,16 @@ export function ExportPanel({ frameSet, previewFps, generatorId, generatorName, 
   )
 }
 
-/** Localized message key for every user-distinguishable export error. */
-const ERROR_MESSAGE_KEYS: Readonly<Record<ExportErrorCode, MessageKey>> = {
-  PROJECT_FILE_UNREADABLE: 'export.errors.projectFileUnreadable',
-  INVALID_JSON: 'export.errors.invalidJson',
-  UNSUPPORTED_SCHEMA: 'export.errors.unsupportedSchema',
-  UNSUPPORTED_VERSION: 'export.errors.unsupportedVersion',
-  WRONG_GENERATOR: 'export.errors.wrongGenerator',
-  INVALID_PARAMETERS: 'export.errors.invalidParameters',
-  INVALID_FPS: 'export.errors.invalidFps',
+/** Localized message key for every export-flow error. */
+const EXPORT_ERROR_KEYS: Readonly<Partial<Record<ExportErrorCode, MessageKey>>> = {
   INVALID_PPU: 'export.errors.invalidPpu',
   INVALID_GUID: 'export.errors.invalidGuid',
   UNITY_ATLAS_TOO_LARGE: 'export.errors.unityAtlasTooLarge',
-  RENDER_FAILED: 'export.errors.renderFailed',
-  PNG_ENCODING_FAILED: 'export.errors.exportFailed',
-  ZIP_ENCODING_FAILED: 'export.errors.exportFailed',
-  ANIMATION_ENCODING_FAILED: 'export.errors.exportFailed',
   DOWNLOAD_FAILED: 'export.errors.exportFailed',
+}
+
+function exportErrorMessage(translate: TranslateFunction, code: ExportErrorCode): string {
+  return translate(EXPORT_ERROR_KEYS[code] ?? 'export.errors.exportFailed')
 }
 
 /** Computes the expected sheet size for the selected layout. */

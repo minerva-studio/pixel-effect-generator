@@ -36,6 +36,7 @@
 @media (max-width: 520px) {
   .hero { align-items: flex-start; gap: 20px; }
   .status-chip { display: none; }
+  .project-menu-button, .project-menu-item { min-height: 44px; }
   .controls-heading, .category-content { padding-left: 17px; padding-right: 17px; }
   .parameter-field { grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
   .field-inputs { grid-template-columns: 1fr 70px; gap: 9px; }

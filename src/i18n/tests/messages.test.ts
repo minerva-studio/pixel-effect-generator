@@ -43,20 +43,27 @@ describe('translation resources', () => {
 
   it('interpolates project, ZIP, and Unity file names with generator ids', () => {
     const params = { name: 'slash', width: 128, height: 128, frameCount: 8 }
-    expect(translate(en, 'export.fileNames.project', params)).toBe('pixel-slash-128x128-8-frames.json')
+    expect(translate(en, 'project.fileName', params)).toBe('pixel-slash-128x128-8-frames.json')
     expect(translate(en, 'export.fileNames.compactPng', params)).toBe('pixel-slash-128x128-8-frames-compact.png')
     expect(translate(en, 'export.fileNames.frameZip', params)).toBe('pixel-slash-128x128-8-frames.zip')
     expect(translate(en, 'export.fileNames.unityZip', { ...params, layout: 'compact' })).toBe('pixel-slash-128x128-8-frames-compact-unity6.zip')
-    expect(translate(messagesForLocale('zh-CN'), 'export.fileNames.project', params)).toBe('pixel-slash-128x128-8-帧.json')
+    expect(translate(messagesForLocale('zh-CN'), 'project.fileName', params)).toBe('pixel-slash-128x128-8-帧.json')
   })
 
   it('interpolates export category summaries in both languages', () => {
-    const summary = { name: 'Slash', width: 256, height: 128, frameCount: 8, fps: 12 }
-    expect(translate(en, 'export.project.summary', summary)).toBe('Slash · 256 × 128 · 8 frames · 12 FPS')
     expect(translate(en, 'export.frameZip.summary', { frameCount: 8, width: 256, height: 128, fps: 12 }))
       .toBe('8 frames · 256 × 128 px · 12 FPS')
     expect(translate(messagesForLocale('zh-CN'), 'export.frameZip.summary', { frameCount: 8, width: 256, height: 128, fps: 12 }))
       .toBe('8 帧 · 256 × 128 px · 12 FPS')
+  })
+
+  it('interpolates Project menu labels and errors in both languages', () => {
+    expect(translate(en, 'project.menu')).toBe('Project')
+    expect(translate(en, 'project.open')).toBe('Open project…')
+    expect(translate(en, 'project.save')).toBe('Save project')
+    expect(translate(messagesForLocale('zh-CN'), 'project.menu')).toBe('项目')
+    expect(translate(messagesForLocale('zh-CN'), 'project.open')).toBe('打开项目…')
+    expect(translate(messagesForLocale('zh-CN'), 'project.errors.invalidJson')).toBe('文件不是有效的 JSON。')
   })
 
   it('interpolates the Unity atlas size error in both languages', () => {

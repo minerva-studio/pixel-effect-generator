@@ -1,10 +1,61 @@
-.controls-panel { display: flex; flex-direction: column; min-height: 720px; }
-.controls-heading { padding: 22px 22px 18px; }
+.controls-panel { display: flex; flex-direction: column; min-height: 720px; overflow: visible; }
+.controls-heading { flex-wrap: wrap; align-items: flex-start; padding: 22px 22px 18px; }
+.controls-heading-copy { flex: 1 1 auto; min-width: 0; }
+.controls-heading-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .panel-heading { gap: 16px; }
 .panel-heading h2 { margin-bottom: 0; font-size: 1.12rem; }
 .text-button, .icon-button, .primary-button, .secondary-button, .remove-button { cursor: pointer; border: 0; }
 .text-button { padding: 6px; color: var(--muted); background: transparent; }
 .text-button:hover { color: white; }
+
+.project-menu { position: relative; min-width: 0; }
+.project-menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 12px;
+  cursor: pointer;
+  border: 1px solid rgba(122, 156, 255, 0.32);
+  border-radius: 8px;
+  color: #d9e0ff;
+  background: rgba(122, 156, 255, 0.1);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.project-menu-button:hover { background: rgba(122, 156, 255, 0.18); }
+.project-menu-chevron { color: var(--muted); font-size: 0.6rem; }
+.project-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  display: grid;
+  gap: 4px;
+  min-width: 220px;
+  max-width: calc(100vw - 32px);
+  padding: 8px;
+  border: 1px solid #3b4355;
+  border-radius: 10px;
+  background: #11151e;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+.project-menu-item {
+  min-height: 36px;
+  padding: 8px 10px;
+  cursor: pointer;
+  border: 0;
+  border-radius: 7px;
+  text-align: left;
+  color: #d6dae5;
+  background: transparent;
+  font-size: 0.74rem;
+}
+.project-menu-item:hover:not(:disabled) { background: rgba(122, 156, 255, 0.12); }
+.project-menu-item:disabled { cursor: not-allowed; opacity: 0.45; }
+.project-menu-status { margin: 6px 2px 2px; color: var(--success); font-size: 0.68rem; }
+.project-menu-error { margin: 6px 2px 2px; color: #ff9d9d; font-size: 0.68rem; }
+.project-file-input { display: none; }
 
 .category-tabs {
   display: grid;

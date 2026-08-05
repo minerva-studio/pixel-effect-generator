@@ -1,4 +1,4 @@
-import { useEffect, type ComponentType } from 'react'
+import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import type {
   GeneratorModule,
   GeneratorSession,
@@ -15,8 +15,43 @@ import {
 import { useI18n } from '../i18n/I18nProvider'
 import { buildProjectDocument } from '../shared/project/document'
 import type { GeneratorProjectCodec, ProjectExportSettings } from '../shared/project/types'
-import { ExportPanel, type ImportProjectHandler, type ProjectExportBridge } from './ExportPanel'
+import { ExportPanel } from './ExportPanel'
+import { useFileOperationController } from './fileOperations'
 import { Preview } from './Preview'
+import { ProjectMenu } from './ProjectMenu'
+import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
+import { DEFAULT_UNITY_EXPORT_SETTINGS, type UnityExportSettingsState } from './unitySettings'
+
+/**
+ * Creates the workspace import handler. The full session action is built
+ * before any state mutation so renderer failures leave both the session and
+ * the shared Unity settings untouched; React batches the two commits.
+ */
+export function createProjectImportHandler<Id extends string, Parameters, Category extends string>(
+  module: GeneratorModule<Id, Parameters, Category>,
+  onSessionAction: (action: RegisteredGeneratorAction<Id>) => void,
+  onUnitySettingsChange: (settings: UnityExportSettingsState) => void,
+): (project: ParsedProjectImport) => ProjectImportResult {
+  return ({ parameters, fps, exportSettings }) => {
+    try {
+      const action = createImportedProjectAction(module, parameters as Parameters, fps)
+      onSessionAction({
+        generatorId: module.definition.id,
+        action: action as GeneratorSessionAction<unknown, string>,
+      })
+      onUnitySettingsChange({
+        pixelsPerUnit: exportSettings.pixelsPerUnit,
+        stableGuid: exportSettings.guid ?? '',
+      })
+      return { ok: true }
+    } catch (error) {
+      return {
+        ok: false,
+        error: { code: 'RENDER_FAILED', detail: describeError(error) },
+      }
+    }
+  }
+}
 
 interface RegisteredWorkspaceProps {
   readonly session: RegisteredGeneratorSession<string>
@@ -39,6 +74,8 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
 
   const BoundWorkspace = ({ session, selectedGeneratorId, onSelectGenerator, onSessionAction, onReset }: RegisteredWorkspaceProps) => {
     const { t, locale } = useI18n()
+    const [unitySettings, setUnitySettings] = useState<UnityExportSettingsState>(DEFAULT_UNITY_EXPORT_SETTINGS)
+    const fileOperations = useFileOperationController()
     const dispatch = (action: GeneratorSessionAction<Parameters, Category>) => {
       onSessionAction({
         generatorId: module.definition.id,
@@ -74,22 +111,8 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
       description: categoryKeys ? t(categoryKeys.description) : category.description,
     }
     const projectCodec = module.projectCodec
-    const importProject: ImportProjectHandler = ({ parameters, fps }) => {
-      try {
-        const action = createImportedProjectAction(module, parameters as Parameters, fps)
-        onSessionAction({
-          generatorId: module.definition.id,
-          action: action as GeneratorSessionAction<unknown, string>,
-        })
-        return { ok: true }
-      } catch (error) {
-        return {
-          ok: false,
-          error: { code: 'RENDER_FAILED', detail: describeError(error) },
-        }
-      }
-    }
-    const projectBridge: ProjectExportBridge | undefined = projectCodec ? {
+    const importProject = createProjectImportHandler(module, onSessionAction, setUnitySettings)
+    const projectBridge: ProjectBridge | undefined = projectCodec ? {
       codec: projectCodec as unknown as GeneratorProjectCodec<unknown>,
       buildDocument: (settings: ProjectExportSettings) => buildProjectDocument(
         projectCodec as unknown as GeneratorProjectCodec<unknown>,
@@ -99,6 +122,20 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
       ),
       importProject,
     } : undefined
+    const projectFileName = projectBridge ? t('project.fileName', {
+      name: module.definition.id,
+      width: frameWidth,
+      height: frameHeight,
+      frameCount,
+    }) : undefined
+    const projectMenu = projectBridge && projectFileName ? (
+      <ProjectMenu
+        bridge={projectBridge}
+        fileName={projectFileName}
+        unitySettings={unitySettings}
+        fileOperations={fileOperations}
+      />
+    ) : undefined
 
     useEffect(() => {
       if (typedSession.frameIndex >= frameCount) {
@@ -114,6 +151,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           session={typedSession}
           generatorName={generatorName}
           category={activeCategory}
+          projectMenu={projectMenu}
           onReset={onReset}
           onParameters={dispatchParameters}
           onCategory={(nextCategory) => dispatch({ type: 'category', category: nextCategory })}
@@ -144,7 +182,10 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           previewFps={typedSession.previewFps}
           generatorId={module.definition.id}
           generatorName={generatorName}
-          projectBridge={projectBridge}
+          unitySettings={unitySettings}
+          onUnitySettingsChange={setUnitySettings}
+          fileOperations={fileOperations}
+          buildProjectDocument={projectBridge?.buildDocument}
         />
       </section>
     )
@@ -204,6 +245,7 @@ function ControlsPanel<Parameters, Category extends string>({
   session,
   generatorName,
   category,
+  projectMenu,
   onReset,
   onParameters,
   onCategory,
@@ -212,6 +254,7 @@ function ControlsPanel<Parameters, Category extends string>({
   readonly session: GeneratorSession<Parameters, Category>
   readonly generatorName: string
   readonly category: { readonly id: Category; readonly label: string; readonly description: string }
+  readonly projectMenu?: ReactNode
   readonly onReset: () => void
   readonly onParameters: (parameters: Parameters) => void
   readonly onCategory: (category: Category) => void
@@ -222,11 +265,14 @@ function ControlsPanel<Parameters, Category extends string>({
   return (
     <aside className="panel controls-panel">
       <div className="panel-heading controls-heading">
-        <div>
+        <div className="controls-heading-copy">
           <p className="section-label">{t('workspace.generatorSectionLabel', { index: String(module.definition.index).padStart(2, '0'), name: sectionName })}</p>
           <h2>{t('workspace.parametersTitle', { name: generatorName })}</h2>
         </div>
-        <button className="text-button" type="button" onClick={onReset}>{t('workspace.reset')}</button>
+        <div className="controls-heading-actions">
+          {projectMenu}
+          <button className="text-button" type="button" onClick={onReset}>{t('workspace.reset')}</button>
+        </div>
       </div>
 
       <div className="category-tabs" role="tablist" aria-label={t('workspace.categoryTabsLabel', { name: generatorName })}>

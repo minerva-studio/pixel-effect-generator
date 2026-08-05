@@ -111,6 +111,29 @@ const enTree = {
       presetCustom: 'Custom',
     },
   },
+  project: {
+    menu: 'Project',
+    open: 'Open project…',
+    save: 'Save project',
+    opening: 'Opening…',
+    saving: 'Saving…',
+    imported: 'Project imported successfully.',
+    fileLabel: 'Project JSON file',
+    fileName: 'pixel-{name}-{width}x{height}-{frameCount}-frames.json',
+    errors: {
+      projectFileUnreadable: 'Could not read the selected file.',
+      invalidJson: 'The file is not valid JSON.',
+      unsupportedSchema: 'This is not a Pixel Effect project.',
+      unsupportedVersion: 'This project version is not supported.',
+      wrongGenerator: 'This project was saved for a different generator.',
+      invalidParameters: 'The project parameters are invalid.',
+      invalidFps: 'The playback FPS is not supported.',
+      invalidPpu: 'Pixels Per Unit must be an integer from 1 to 1024.',
+      invalidGuid: 'Stable GUID must be empty or a valid GUID.',
+      renderFailed: 'The project could not be rendered.',
+      downloadFailed: 'Save failed. Please try again.',
+    },
+  },
   export: {
     fileName: 'pixel-{name}-{width}x{height}-{frameCount}-frames.png',
     sectionLabel: 'EXPORT',
@@ -118,17 +141,9 @@ const enTree = {
     summary: '{width} × {height} canvas · {frameCount} frames · {fps} FPS',
     tabsLabel: 'Export categories',
     tabs: {
-      project: 'Project',
       spriteSheet: 'Sprite Sheet',
       animation: 'Animation',
       frameZip: 'Frame ZIP',
-    },
-    project: {
-      summary: '{name} · {width} × {height} · {frameCount} frames · {fps} FPS',
-      save: 'Save JSON',
-      load: 'Load JSON',
-      fileLabel: 'Project JSON file',
-      imported: 'Project imported successfully.',
     },
     spriteSheet: {
       layout: 'Layout',
@@ -164,21 +179,12 @@ const enTree = {
     preparing: 'Preparing…',
     encoding: 'Encoding…',
     errors: {
-      projectFileUnreadable: 'Could not read the selected file.',
-      invalidJson: 'The file is not valid JSON.',
-      unsupportedSchema: 'This is not a Pixel Effect project.',
-      unsupportedVersion: 'This project version is not supported.',
-      wrongGenerator: 'This project was saved for a different generator.',
-      invalidParameters: 'The project parameters are invalid.',
-      invalidFps: 'The playback FPS is not supported.',
       invalidPpu: 'Pixels Per Unit must be an integer from 1 to 1024.',
       invalidGuid: 'Stable GUID must be empty or a valid GUID.',
       unityAtlasTooLarge: 'The Unity atlas is {width} × {height} px; Unity 6 supports up to 16384 px per side.',
-      renderFailed: 'The project could not be rendered.',
       exportFailed: 'Export failed. Please try again.',
     },
     fileNames: {
-      project: 'pixel-{name}-{width}x{height}-{frameCount}-frames.json',
       compactPng: 'pixel-{name}-{width}x{height}-{frameCount}-frames-compact.png',
       frameZip: 'pixel-{name}-{width}x{height}-{frameCount}-frames.zip',
       folderSequence: 'pixel-{name}-{width}x{height}-{frameCount}-frames',
@@ -325,6 +331,29 @@ export const zhCN: MessageTree = {
       presetCustom: '自定义',
     },
   },
+  project: {
+    menu: '项目',
+    open: '打开项目…',
+    save: '保存项目',
+    opening: '打开中…',
+    saving: '保存中…',
+    imported: '项目导入成功。',
+    fileLabel: '项目 JSON 文件',
+    fileName: 'pixel-{name}-{width}x{height}-{frameCount}-帧.json',
+    errors: {
+      projectFileUnreadable: '无法读取所选文件。',
+      invalidJson: '文件不是有效的 JSON。',
+      unsupportedSchema: '这不是像素特效项目。',
+      unsupportedVersion: '不支持此项目版本。',
+      wrongGenerator: '此项目保存自其他生成器。',
+      invalidParameters: '项目参数无效。',
+      invalidFps: '不支持的播放帧率。',
+      invalidPpu: '每单位像素必须为 1 到 1024 的整数。',
+      invalidGuid: '固定 GUID 必须为空或有效 GUID。',
+      renderFailed: '项目无法渲染。',
+      downloadFailed: '保存失败，请重试。',
+    },
+  },
   export: {
     fileName: 'pixel-{name}-{width}x{height}-{frameCount}-帧.png',
     sectionLabel: '导出',
@@ -332,17 +361,9 @@ export const zhCN: MessageTree = {
     summary: '{width} × {height} 画布 · {frameCount} 帧 · {fps} FPS',
     tabsLabel: '导出分类',
     tabs: {
-      project: '项目',
       spriteSheet: '精灵图',
       animation: '动图',
       frameZip: '逐帧 ZIP',
-    },
-    project: {
-      summary: '{name} · {width} × {height} · {frameCount} 帧 · {fps} FPS',
-      save: '保存 JSON',
-      load: '加载 JSON',
-      fileLabel: '项目 JSON 文件',
-      imported: '项目导入成功。',
     },
     spriteSheet: {
       layout: '布局',
@@ -378,21 +399,12 @@ export const zhCN: MessageTree = {
     preparing: '准备中…',
     encoding: '编码中…',
     errors: {
-      projectFileUnreadable: '无法读取所选文件。',
-      invalidJson: '文件不是有效的 JSON。',
-      unsupportedSchema: '这不是像素特效项目。',
-      unsupportedVersion: '不支持此项目版本。',
-      wrongGenerator: '此项目保存自其他生成器。',
-      invalidParameters: '项目参数无效。',
-      invalidFps: '不支持的播放帧率。',
       invalidPpu: '每单位像素必须为 1 到 1024 的整数。',
       invalidGuid: '固定 GUID 必须为空或有效 GUID。',
       unityAtlasTooLarge: 'Unity 图集为 {width} × {height} px；Unity 6 每边上限为 16384 px。',
-      renderFailed: '项目无法渲染。',
       exportFailed: '导出失败，请重试。',
     },
     fileNames: {
-      project: 'pixel-{name}-{width}x{height}-{frameCount}-帧.json',
       compactPng: 'pixel-{name}-{width}x{height}-{frameCount}-帧-compact.png',
       frameZip: 'pixel-{name}-{width}x{height}-{frameCount}-帧.zip',
       folderSequence: 'pixel-{name}-{width}x{height}-{frameCount}-帧',
@@ -414,7 +426,6 @@ export interface MessageParams {
   'workspace.categoryControls': { label: string }
   'workspace.exportDimensions': { width: number; height: number }
   'export.summary': { width: number; height: number; frameCount: number; fps: number }
-  'export.project.summary': { name: string; width: number; height: number; frameCount: number; fps: number }
   'export.spriteSheet.expectedSize': { width: number; height: number }
   'export.spriteSheet.stableGuidValue': { guid: string }
   'export.errors.unityAtlasTooLarge': { width: number; height: number }
@@ -428,7 +439,7 @@ export interface MessageParams {
   'slash.canvas.presetSquare': { width: number; height: number }
   'slash.canvas.presetHorizontal': { width: number; height: number }
   'export.fileName': { name: string; width: number; height: number; frameCount: number }
-  'export.fileNames.project': { name: string; width: number; height: number; frameCount: number }
+  'project.fileName': { name: string; width: number; height: number; frameCount: number }
   'export.fileNames.compactPng': { name: string; width: number; height: number; frameCount: number }
   'export.fileNames.frameZip': { name: string; width: number; height: number; frameCount: number }
   'export.fileNames.folderSequence': { name: string; width: number; height: number; frameCount: number }
