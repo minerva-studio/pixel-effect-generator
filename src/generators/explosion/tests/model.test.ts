@@ -43,6 +43,33 @@ describe('combustion explosion parameter model', () => {
     })).toThrow(/dissolveStart/i)
   })
 
+  it('rejects invalid shockwave modes, color modes, and field ranges', () => {
+    expect(() => assertValidExplosionParameters({
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, mode: 'arcs' as never },
+    })).toThrow(/shockwave\.mode/i)
+    expect(() => assertValidExplosionParameters({
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, colorMode: 'stripes' as never },
+    })).toThrow(/shockwave\.colorMode/i)
+    expect(() => assertValidExplosionParameters({
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, ringCount: 5 },
+    })).toThrow(/shockwave\.ringCount/i)
+    expect(() => assertValidExplosionParameters({
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, ringSpacing: 1.5 },
+    })).toThrow(/shockwave\.ringSpacing/i)
+    expect(() => assertValidExplosionParameters({
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, squash: -0.1 },
+    })).toThrow(/shockwave\.squash/i)
+    expect(() => assertValidExplosionParameters({
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, squashAngle: 360 },
+    })).toThrow(/shockwave\.squashAngle/i)
+  })
+
   it('exposes per-shape direction counts and size-dependent limits', () => {
     expect(explosionShapeCount('billowingFireball')).toBe(8)
     expect(explosionShapeCount('pressureBurst')).toBe(6)

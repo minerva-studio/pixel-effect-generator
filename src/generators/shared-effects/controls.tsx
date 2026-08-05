@@ -81,26 +81,47 @@ function ShockwaveSection({
       label={label}
       description={t(`${family}.controls.shockwave.description`)}
       enabled={enabled}
-      onChangeEnabled={(nextEnabled) => onChange({ ...shockwave, mode: nextEnabled ? (shockwave.mode === 'none' ? 'lobeArcs' : shockwave.mode) : 'none' })}
+      onChangeEnabled={(nextEnabled) => onChange({ ...shockwave, mode: nextEnabled ? (shockwave.mode === 'none' ? 'multiRing' : shockwave.mode) : 'none' })}
       status={enabled ? t(`${family}.effects.enabled`) : t(`${family}.effects.disabled`)}
     >
+      <ShockwaveControls family={family} t={t} shockwave={shockwave} onChange={onChange} />
+    </FeatureSection>
+  )
+}
+
+/** Renders the shockwave parameter fields, exposed for focused control tests. */
+export function ShockwaveControls({
+  family, t, shockwave, onChange,
+}: { readonly family: string; readonly t: FamilyTranslate; readonly shockwave: SharedShockwaveParameters; readonly onChange: (shockwave: SharedShockwaveParameters) => void }) {
+  return (
+    <>
       <SelectControl label={t(`${family}.controls.shockwaveMode.label`)} description={t(`${family}.controls.shockwaveMode.description`)} value={shockwave.mode} options={[
         { value: 'none', label: t(`${family}.options.shockwaveNone`) },
-        { value: 'lobeArcs', label: t(`${family}.options.shockwaveLobeArcs`) },
         { value: 'ring', label: t(`${family}.options.shockwaveRing`) },
+        { value: 'multiRing', label: t(`${family}.options.shockwaveMultiRing`) },
       ]} onChange={(mode) => onChange({ ...shockwave, mode })} />
+      <SelectControl label={t(`${family}.controls.shockwaveColorMode.label`)} description={t(`${family}.controls.shockwaveColorMode.description`)} value={shockwave.colorMode} options={[
+        { value: 'flat', label: t(`${family}.options.shockwaveColorFlat`) },
+        { value: 'gradient', label: t(`${family}.options.shockwaveColorGradient`) },
+      ]} onChange={(colorMode) => onChange({ ...shockwave, colorMode })} />
       <NumberControl label={t(`${family}.controls.shockwaveThickness.label`)} description={t(`${family}.controls.shockwaveThickness.description`)} value={shockwave.thickness} minimum={1} maximum={MAX_SHOCKWAVE_THICKNESS} unit="px" onChange={(thickness) => onChange({ ...shockwave, thickness })} />
       <NumberControl label={t(`${family}.controls.shockwaveStartRadius.label`)} description={t(`${family}.controls.shockwaveStartRadius.description`)} value={shockwave.startRadiusScale} minimum={0} maximum={2} step={0.01} scale={100} unit="%" onChange={(startRadiusScale) => onChange({ ...shockwave, startRadiusScale: Math.min(startRadiusScale, shockwave.endRadiusScale) })} />
       <NumberControl label={t(`${family}.controls.shockwaveEndRadius.label`)} description={t(`${family}.controls.shockwaveEndRadius.description`)} value={shockwave.endRadiusScale} minimum={0.25} maximum={2.5} step={0.01} scale={100} unit="%" onChange={(endRadiusScale) => onChange({ ...shockwave, endRadiusScale: Math.max(endRadiusScale, shockwave.startRadiusScale) })} />
       <NumberControl label={t(`${family}.controls.shockwaveStartTime.label`)} description={t(`${family}.controls.shockwaveStartTime.description`)} value={shockwave.startTime} minimum={0} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(startTime) => onChange({ ...shockwave, startTime })} />
       <NumberControl label={t(`${family}.controls.shockwaveDuration.label`)} description={t(`${family}.controls.shockwaveDuration.description`)} value={shockwave.duration} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(duration) => onChange({ ...shockwave, duration })} />
-      {shockwave.mode === 'lobeArcs' ? (
+      {shockwave.mode === 'multiRing' ? (
         <>
-          <NumberControl label={t(`${family}.controls.shockwaveArcCount.label`)} description={t(`${family}.controls.shockwaveArcCount.description`)} value={shockwave.arcCount} minimum={1} maximum={shapeCount} onChange={(arcCount) => onChange({ ...shockwave, arcCount })} />
-          <NumberControl label={t(`${family}.controls.shockwaveArcSpan.label`)} description={t(`${family}.controls.shockwaveArcSpan.description`)} value={shockwave.arcSpan} minimum={10} maximum={120} unit="°" onChange={(arcSpan) => onChange({ ...shockwave, arcSpan })} />
+          <NumberControl label={t(`${family}.controls.shockwaveRingCount.label`)} description={t(`${family}.controls.shockwaveRingCount.description`)} value={shockwave.ringCount} minimum={1} maximum={4} onChange={(ringCount) => onChange({ ...shockwave, ringCount })} />
+          <NumberControl label={t(`${family}.controls.shockwaveRingSpacing.label`)} description={t(`${family}.controls.shockwaveRingSpacing.description`)} value={shockwave.ringSpacing} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(ringSpacing) => onChange({ ...shockwave, ringSpacing })} />
         </>
       ) : null}
-    </FeatureSection>
+      {shockwave.mode !== 'none' ? (
+        <>
+          <NumberControl label={t(`${family}.controls.shockwaveSquash.label`)} description={t(`${family}.controls.shockwaveSquash.description`)} value={shockwave.squash} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(squash) => onChange({ ...shockwave, squash })} />
+          <NumberControl label={t(`${family}.controls.shockwaveSquashAngle.label`)} description={t(`${family}.controls.shockwaveSquashAngle.description`)} value={shockwave.squashAngle} minimum={0} maximum={359} unit="°" onChange={(squashAngle) => onChange({ ...shockwave, squashAngle })} />
+        </>
+      ) : null}
+    </>
   )
 }
 

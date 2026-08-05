@@ -92,6 +92,31 @@ describe('energy bloom built-in presets', () => {
     expect(renderBloomFrames(restored).map(({ pixels }) => Array.from(pixels))).toEqual(renderBloomFrames(source).map(({ pixels }) => Array.from(pixels)))
   })
 
+  it('normalizes legacy lobe-arc V4 payloads and falls back missing fields', () => {
+    const payload = captureBloomPreset(DEFAULT_BLOOM_PARAMETERS) as Record<string, unknown>
+    const result = validateBloomPreset({
+      ...payload,
+      shockwave: {
+        mode: 'lobeArcs',
+        thickness: 2,
+        startRadiusScale: 0.72,
+        endRadiusScale: 1.38,
+        startTime: 0.12,
+        duration: 0.5,
+      },
+    })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      const shockwave = (result.payload as Record<string, unknown>).shockwave as Record<string, unknown>
+      expect(shockwave.mode).toBe('multiRing')
+      expect(shockwave.colorMode).toBe('flat')
+      expect(shockwave.ringCount).toBe(3)
+      expect(shockwave.ringSpacing).toBe(0.55)
+      expect(shockwave.squash).toBe(0)
+      expect(shockwave.squashAngle).toBe(0)
+    }
+  })
+
   it('exposes translated names and an unmodified applied baseline', () => {
     for (const preset of BLOOM_BUILTIN_PRESETS) {
       const keys = presetDisplayKeys('energyBloom', preset.id)!

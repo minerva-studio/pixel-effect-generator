@@ -95,27 +95,95 @@ describe('renderExplosionFrames', () => {
     expect(maximumRadius(frame)).toBeLessThan(parameters.body.radius * 0.9 + parameters.tongues.length * 1.3)
   })
 
-  it('renders centered directional arcs and a complete ring from the same radial path', () => {
+  it('renders multiple complete rings chasing along the same radial path', () => {
     const base = quietParameters({
       surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, mode: 'lobeArcs', thickness: 2, arcCount: 3, arcSpan: 28 },
+      shockwave: {
+        ...DEFAULT_EXPLOSION_PARAMETERS.shockwave,
+        mode: 'multiRing',
+        colorMode: 'flat',
+        thickness: 2,
+        ringCount: 3,
+        ringSpacing: 0.55,
+        squash: 0,
+        squashAngle: 0,
+      },
     })
-    const arcs = renderExplosionFrames(base)[3]
-    const ring = renderExplosionFrames({ ...base, shockwave: { ...base.shockwave, mode: 'ring' } })[3]
-    expect(occupiedAngleRuns(arcs, 72)).toBe(3)
-    expect(occupiedAngleBins(arcs, 72)).toBeLessThan(occupiedAngleBins(ring, 72) / 2)
-    expect(occupiedAngleBins(ring, 72)).toBeGreaterThan(64)
-    expect(Math.abs(meanOpaqueRadius(arcs) - meanOpaqueRadius(ring))).toBeLessThan(1)
+    const frame = renderExplosionFrames(base)[4]
+    const bands = radialBands(frame)
+    expect(bands).toHaveLength(3)
+    expect(bands.every((band) => band.angleBins >= 64)).toBe(true)
+    expect(occupiedAngleBins(frame, 72)).toBeGreaterThan(64)
+  })
+
+  it('maps gradient rings from palette[0] at the outer edge to palette[last] inward', () => {
+    const base = quietParameters({
+      surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
+      shockwave: {
+        ...DEFAULT_EXPLOSION_PARAMETERS.shockwave,
+        mode: 'ring',
+        colorMode: 'gradient',
+        thickness: 6,
+        squash: 0,
+        squashAngle: 0,
+      },
+    })
+    const frame = renderExplosionFrames(base)[4]
+    const outermost = opaqueSamples(frame).sort((a, b) => b.radius - a.radius)[0]
+    const innermost = opaqueSamples(frame).sort((a, b) => a.radius - b.radius)[0]
+    expect(outermost.color).toBe(`${base.palette[0].r},${base.palette[0].g},${base.palette[0].b}`)
+    expect(innermost.color).toBe(`${base.palette.at(-1)!.r},${base.palette.at(-1)!.g},${base.palette.at(-1)!.b}`)
+  })
+
+  it('keeps flat rings in a single palette color', () => {
+    const base = quietParameters({
+      surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
+      shockwave: {
+        ...DEFAULT_EXPLOSION_PARAMETERS.shockwave,
+        mode: 'multiRing',
+        colorMode: 'flat',
+        ringCount: 3,
+        ringSpacing: 0.55,
+        squash: 0,
+        squashAngle: 0,
+      },
+    })
+    const frame = renderExplosionFrames(base)[4]
+    const flatColor = `${base.palette[1].r},${base.palette[1].g},${base.palette[1].b}`
+    const opaque = opaqueSamples(frame)
+    expect(opaque.length).toBeGreaterThan(0)
+    expect([...new Set(opaque.map((sample) => sample.color))]).toEqual([flatColor])
+  })
+
+  it('squashes rings elliptically and keeps squash 0 circular', () => {
+    const base = quietParameters({
+      surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
+      shockwave: {
+        ...DEFAULT_EXPLOSION_PARAMETERS.shockwave,
+        mode: 'ring',
+        colorMode: 'flat',
+        thickness: 2,
+        squash: 0.5,
+        squashAngle: 0,
+      },
+    })
+    const squashed = renderExplosionFrames(base)[4]
+    const round = renderExplosionFrames({ ...base, shockwave: { ...base.shockwave, squash: 0 } })[4]
+    const ratio = axisRadiusRatio(squashed, 72)
+    expect(ratio).toBeGreaterThan(1.18)
+    expect(ratio).toBeLessThan(1.32)
+    expect(axisRadiusRatio(round, 72)).toBeLessThan(1.05)
   })
 
   it('changes shockwave thickness without creating rays or changing angular coverage', () => {
     const base = quietParameters({
       surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, mode: 'lobeArcs', arcCount: 3, arcSpan: 30 },
+      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, mode: 'ring', colorMode: 'flat', squash: 0, squashAngle: 0 },
     })
     const thin = renderExplosionFrames({ ...base, shockwave: { ...base.shockwave, thickness: 1 } })[3]
     const thick = renderExplosionFrames({ ...base, shockwave: { ...base.shockwave, thickness: 6 } })[3]
-    expect(Math.abs(occupiedAngleBins(thin, 72) - occupiedAngleBins(thick, 72))).toBeLessThanOrEqual(3)
+    expect(occupiedAngleBins(thin, 72)).toBeGreaterThanOrEqual(64)
+    expect(occupiedAngleBins(thick, 72)).toBeGreaterThanOrEqual(64)
     expect(Math.abs(meanOpaqueRadius(thin) - meanOpaqueRadius(thick))).toBeLessThan(1)
     expect(maximumRadius(thick)).toBeLessThanOrEqual(DEFAULT_EXPLOSION_PARAMETERS.body.radius * base.shockwave.endRadiusScale + 4)
   })
@@ -223,17 +291,62 @@ function occupiedAngleBins(frame: PixelFrame, bins: number): number {
   return occupied.size
 }
 
-/** Counts contiguous occupied angular sectors on a circular histogram. */
-function occupiedAngleRuns(frame: PixelFrame, bins: number): number {
-  const occupied = Array.from({ length: bins }, () => false)
+/** Splits opaque pixels into contiguous radial bands with their angular coverage. */
+function radialBands(frame: PixelFrame): { readonly angleBins: number }[] {
+  const occupied = new Map<number, Set<number>>()
   for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
     if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    const radius = Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2)
     const angle = Math.atan2(y + 0.5 - frame.height / 2, x + 0.5 - frame.width / 2) + Math.PI
-    occupied[Math.min(bins - 1, Math.floor(angle / (Math.PI * 2) * bins))] = true
+    const bucket = Math.floor(radius)
+    const bins = occupied.get(bucket) ?? new Set<number>()
+    bins.add(Math.min(71, Math.floor(angle / (Math.PI * 2) * 72)))
+    occupied.set(bucket, bins)
   }
-  let runs = 0
-  for (let index = 0; index < bins; index += 1) if (occupied[index] && !occupied[(index - 1 + bins) % bins]) runs += 1
-  return runs
+  const buckets = [...occupied.keys()].sort((a, b) => a - b)
+  const bands: { readonly angleBins: number }[] = []
+  let current = new Set<number>()
+  let previous = Number.NaN
+  for (const bucket of buckets) {
+    if (!Number.isNaN(previous) && bucket > previous + 1) {
+      bands.push({ angleBins: current.size })
+      current = new Set<number>()
+    }
+    occupied.get(bucket)!.forEach((bin) => current.add(bin))
+    previous = bucket
+  }
+  if (current.size > 0) bands.push({ angleBins: current.size })
+  return bands
+}
+
+/** Collects every opaque sample with its radial distance and serialized color. */
+function opaqueSamples(frame: PixelFrame): { readonly radius: number; readonly color: string }[] {
+  const samples: { readonly radius: number; readonly color: string }[] = []
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    const offset = (y * frame.width + x) * 4
+    if (frame.pixels[offset + 3] === 0) continue
+    samples.push({
+      radius: Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2),
+      color: Array.from(frame.pixels.subarray(offset, offset + 3)).join(','),
+    })
+  }
+  return samples
+}
+
+/** Ratio between the largest and smallest angular-bin mean opaque radii. */
+function axisRadiusRatio(frame: PixelFrame, bins: number): number {
+  const totals = new Array<number>(bins).fill(0)
+  const counts = new Array<number>(bins).fill(0)
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    const radius = Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2)
+    const angle = Math.atan2(y + 0.5 - frame.height / 2, x + 0.5 - frame.width / 2) + Math.PI
+    const bin = Math.min(bins - 1, Math.floor(angle / (Math.PI * 2) * bins))
+    totals[bin] += radius
+    counts[bin] += 1
+  }
+  const means = totals.map((total, index) => total / Math.max(1, counts[index])).filter((value, index) => counts[index] > 0)
+  return Math.max(...means) / Math.max(1, Math.min(...means))
 }
 
 /** Measures the average opaque radius. */

@@ -51,10 +51,9 @@ function renderExplosionFrame(
   if (legacyBody) renderLegacyPixelNoiseBody(pixels, width, height, parameters, time)
   else renderModernBody(pixels, width, height, parameters, blobs, time)
   const views = shapeViews(parameters, blobs, time)
-  const directions = views.map((view) => view.angle)
   renderShockwave(
     pixels, width, height, parameters.palette, parameters.motion.mode,
-    parameters.body.radius, parameters.shockwave, directions, parameters.seed, time,
+    parameters.body.radius, parameters.shockwave, time,
   )
   renderCore(pixels, width, height, parameters.palette, parameters.motion.mode, parameters.core, time)
   renderTongues(

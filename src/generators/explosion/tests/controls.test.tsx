@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../../i18n/I18nProvider'
+import { en, messagesForLocale, translate, type MessageKey } from '../../../i18n/messages'
+import { ShockwaveControls, type FamilyTranslate } from '../../shared-effects/controls'
+import type { SharedShockwaveParameters } from '../../shared-effects/types'
 import { ExplosionControls, ExplosionPreviewTools } from '../controls'
 import { DEFAULT_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
 import type { ExplosionCategory } from '../module'
@@ -72,4 +75,41 @@ describe('combustion explosion controls', () => {
     expect(tools).toContain('Canvas size')
     expect(tools).toContain('Random seed')
   })
+
+  it('exposes compound multi-ring with ring, spacing, squash, and gradient controls', () => {
+    const markup = renderShockwaveControls(MODERN_EXPLOSION_PARAMETERS.shockwave)
+    expect(markup).toContain('Compound multi-ring')
+    expect(markup).toContain('Ring count')
+    expect(markup).toContain('Ring spacing')
+    expect(markup).toContain('Squash amount')
+    expect(markup).toContain('Squash angle')
+    expect(markup).toContain('Single color')
+    expect(markup).toContain('Radial gradient')
+    expect(markup).not.toContain('Arc count')
+    expect(markup).not.toContain('Arc span')
+  })
+
+  it('shows squash for a single ring without ring-count fields', () => {
+    const markup = renderShockwaveControls({ ...MODERN_EXPLOSION_PARAMETERS.shockwave, mode: 'ring', squash: 0.2 })
+    expect(markup).toContain('Squash amount')
+    expect(markup).toContain('Squash angle')
+    expect(markup).not.toContain('Ring count')
+    expect(markup).not.toContain('Ring spacing')
+  })
+
+  it('localizes the multi-ring option label', () => {
+    vi.stubGlobal('navigator', { language: 'zh-CN' })
+    const t: FamilyTranslate = (suffix) => translate(messagesForLocale('zh-CN'), suffix as MessageKey)
+    expect(renderToStaticMarkup(
+      <I18nProvider><ShockwaveControls family="explosion" t={t} shockwave={MODERN_EXPLOSION_PARAMETERS.shockwave} onChange={() => undefined} /></I18nProvider>,
+    )).toContain('复合多环')
+  })
 })
+
+/** Renders the shockwave fields with real English translations. */
+function renderShockwaveControls(shockwave: SharedShockwaveParameters): string {
+  const t: FamilyTranslate = (suffix) => translate(en, suffix as MessageKey)
+  return renderToStaticMarkup(
+    <I18nProvider><ShockwaveControls family="explosion" t={t} shockwave={shockwave} onChange={() => undefined} /></I18nProvider>,
+  )
+}

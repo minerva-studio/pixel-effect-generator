@@ -84,14 +84,17 @@ export function parseBloomPresetPayload(value: unknown): BloomPresetFields {
       duration: readNumber(core, 'duration', 0.1, 0.9),
     },
     shockwave: {
-      mode: readEnum(shockwave, 'mode', ['none', 'lobeArcs', 'ring']),
+      mode: readShockwaveMode(shockwave, 'mode'),
+      colorMode: readOptionalEnum(shockwave, 'colorMode', ['flat', 'gradient'], 'flat'),
       thickness: readInteger(shockwave, 'thickness', 1, 6),
       startRadiusScale: readNumber(shockwave, 'startRadiusScale', 0, 2),
       endRadiusScale: readNumber(shockwave, 'endRadiusScale', 0.25, 2.5),
       startTime: readNumber(shockwave, 'startTime', 0, 0.8),
       duration: readNumber(shockwave, 'duration', 0.1, 1),
-      arcCount: readInteger(shockwave, 'arcCount', 1, 16),
-      arcSpan: readInteger(shockwave, 'arcSpan', 10, 120),
+      ringCount: readOptionalInteger(shockwave, 'ringCount', 1, 4, 3),
+      ringSpacing: readOptionalNumber(shockwave, 'ringSpacing', 0, 1, 0.55),
+      squash: readOptionalNumber(shockwave, 'squash', 0, 1, 0),
+      squashAngle: readOptionalInteger(shockwave, 'squashAngle', 0, 359, 0),
     },
     tongues: {
       enabled: readBoolean(tongues, 'enabled'),
@@ -168,7 +171,10 @@ export function clampBloomPresetParameters(parameters: BloomParameters): BloomPa
     shockwave: {
       ...parameters.shockwave,
       thickness: clampInteger(parameters.shockwave.thickness, 1, 6),
-      arcCount: clampInteger(parameters.shockwave.arcCount, 1, shapeCount),
+      ringCount: clampInteger(parameters.shockwave.ringCount, 1, 4),
+      ringSpacing: Math.min(1, Math.max(0, parameters.shockwave.ringSpacing)),
+      squash: Math.min(1, Math.max(0, parameters.shockwave.squash)),
+      squashAngle: clampInteger(parameters.shockwave.squashAngle, 0, 359),
     },
     tongues: {
       ...parameters.tongues,
@@ -345,6 +351,56 @@ function readEnum<Value extends string>(record: Readonly<Record<string, unknown>
   const value = record[key]
   if (typeof value !== 'string' || !allowed.includes(value as Value)) throw new RangeError(`${key} is invalid.`)
   return value as Value
+}
+
+/** Reads the shockwave mode, normalizing legacy lobe arcs to multi-ring. */
+function readShockwaveMode(record: Readonly<Record<string, unknown>>, key: string): 'none' | 'ring' | 'multiRing' {
+  const value = record[key]
+  if (typeof value !== 'string') throw new RangeError(`${key} is invalid.`)
+  if (value === 'lobeArcs') return 'multiRing'
+  if (value === 'none' || value === 'ring' || value === 'multiRing') return value
+  throw new RangeError(`${key} is invalid.`)
+}
+
+/** Reads one optional enum field with a fallback default. */
+function readOptionalEnum<Value extends string>(
+  record: Readonly<Record<string, unknown>>,
+  key: string,
+  allowed: readonly Value[],
+  fallback: Value,
+): Value {
+  const value = record[key]
+  if (value === undefined) return fallback
+  if (typeof value !== 'string' || !allowed.includes(value as Value)) throw new RangeError(`${key} is invalid.`)
+  return value as Value
+}
+
+/** Reads one optional bounded integer field with a fallback default. */
+function readOptionalInteger(
+  record: Readonly<Record<string, unknown>>,
+  key: string,
+  minimum: number,
+  maximum: number,
+  fallback: number,
+): number {
+  const value = record[key]
+  if (value === undefined) return fallback
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum) throw new RangeError(`${key} must be an integer between ${minimum} and ${maximum}.`)
+  return value
+}
+
+/** Reads one optional bounded finite numeric field with a fallback default. */
+function readOptionalNumber(
+  record: Readonly<Record<string, unknown>>,
+  key: string,
+  minimum: number,
+  maximum: number,
+  fallback: number,
+): number {
+  const value = record[key]
+  if (value === undefined) return fallback
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < minimum || value > maximum) throw new RangeError(`${key} must be a number between ${minimum} and ${maximum}.`)
+  return value
 }
 
 export type { BloomSurfaceParameters }

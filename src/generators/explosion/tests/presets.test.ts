@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { payloadsEqual, resolveAppliedPresetBaseline } from '../../../components/PresetBar'
 import { en, presetDisplayKeys, translate } from '../../../i18n/messages'
+import type { JsonValue } from '../../../shared/project/types'
 import { DEFAULT_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
 import { renderExplosionFrames } from '../renderer'
 import {
@@ -81,6 +82,60 @@ describe('combustion explosion built-in presets', () => {
     }
     const restored = applyExplosionPreset(source, captureExplosionPreset(source))
     expect(renderExplosionFrames(restored).map(({ pixels }) => Array.from(pixels))).toEqual(renderExplosionFrames(source).map(({ pixels }) => Array.from(pixels)))
+  })
+
+  it('round-trips shockwave fields through capture and apply', () => {
+    const source: ExplosionParameters = {
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      shockwave: {
+        mode: 'multiRing',
+        colorMode: 'gradient',
+        thickness: 2,
+        startRadiusScale: 0.78,
+        endRadiusScale: 1.32,
+        startTime: 0.12,
+        duration: 0.46,
+        ringCount: 4,
+        ringSpacing: 0.8,
+        squash: 0.35,
+        squashAngle: 120,
+      },
+    }
+    const captured = captureExplosionPreset(source) as Record<string, unknown>
+    expect(captured.shockwave).toMatchObject({
+      mode: 'multiRing',
+      colorMode: 'gradient',
+      ringCount: 4,
+      ringSpacing: 0.8,
+      squash: 0.35,
+      squashAngle: 120,
+    })
+    expect(applyExplosionPreset(source, captured as JsonValue).shockwave).toEqual(source.shockwave)
+  })
+
+  it('normalizes legacy lobe-arc V4 payloads and falls back missing fields', () => {
+    const payload = captureExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const result = validateExplosionPreset({
+      ...payload,
+      shockwave: {
+        mode: 'lobeArcs',
+        thickness: 3,
+        startRadiusScale: 0.72,
+        endRadiusScale: 1.38,
+        startTime: 0.12,
+        duration: 0.5,
+      },
+    })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      const shockwave = (result.payload as Record<string, unknown>).shockwave as Record<string, unknown>
+      expect(shockwave.mode).toBe('multiRing')
+      expect(shockwave.colorMode).toBe('flat')
+      expect(shockwave.ringCount).toBe(3)
+      expect(shockwave.ringSpacing).toBe(0.55)
+      expect(shockwave.squash).toBe(0)
+      expect(shockwave.squashAngle).toBe(0)
+    }
   })
 
   it('exposes translated names and an unmodified applied baseline', () => {

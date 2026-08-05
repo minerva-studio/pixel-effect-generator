@@ -153,14 +153,17 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
   },
   core: { enabled: true, radius: 14, duration: 0.2 },
   shockwave: {
-    mode: 'lobeArcs',
+    mode: 'multiRing',
+    colorMode: 'gradient',
     thickness: 2,
     startRadiusScale: 0.78,
     endRadiusScale: 1.32,
     startTime: 0.12,
     duration: 0.46,
-    arcCount: 3,
-    arcSpan: 26,
+    ringCount: 3,
+    ringSpacing: 0.55,
+    squash: 0.28,
+    squashAngle: 0,
   },
   tongues: { enabled: true, count: 4, length: 22, width: 3, curvature: 0.34, variation: 0.24 },
   fragments: { enabled: true, count: 26, minSize: 1, maxSize: 2, travelDistance: 30, tangentialDrift: 7, lifetime: 0.7 },
@@ -198,13 +201,16 @@ export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
   core: { enabled: true, radius: 16, duration: 0.42 },
   shockwave: {
     mode: 'ring',
+    colorMode: 'flat',
     thickness: 3,
     startRadiusScale: 0,
     endRadiusScale: 1.18,
     startTime: 0,
     duration: 1,
-    arcCount: 3,
-    arcSpan: 30,
+    ringCount: 3,
+    ringSpacing: 0.55,
+    squash: 0,
+    squashAngle: 0,
   },
   tongues: { enabled: false, count: 1, length: 0, width: 1, curvature: 0, variation: 0 },
   fragments: { enabled: true, count: 30, minSize: 1, maxSize: 3, travelDistance: 30, tangentialDrift: 9, lifetime: 0.68 },
@@ -238,8 +244,16 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   assertInRange(parameters.shockwave.endRadiusScale, 0.25, 2.5, 'shockwave.endRadiusScale')
   assertInRange(parameters.shockwave.startTime, 0, 0.8, 'shockwave.startTime')
   assertInRange(parameters.shockwave.duration, 0.1, 1, 'shockwave.duration')
-  assertInRange(parameters.shockwave.arcCount, 1, shapeCount, 'shockwave.arcCount')
-  assertInRange(parameters.shockwave.arcSpan, 10, 120, 'shockwave.arcSpan')
+  assertInRange(parameters.shockwave.ringCount, 1, 4, 'shockwave.ringCount')
+  assertInRange(parameters.shockwave.ringSpacing, 0, 1, 'shockwave.ringSpacing')
+  assertInRange(parameters.shockwave.squash, 0, 1, 'shockwave.squash')
+  assertInRange(parameters.shockwave.squashAngle, 0, 359, 'shockwave.squashAngle')
+  if (parameters.shockwave.mode !== 'none' && parameters.shockwave.mode !== 'ring' && parameters.shockwave.mode !== 'multiRing') {
+    throw new RangeError('shockwave.mode is invalid.')
+  }
+  if (parameters.shockwave.colorMode !== 'flat' && parameters.shockwave.colorMode !== 'gradient') {
+    throw new RangeError('shockwave.colorMode is invalid.')
+  }
   assertInRange(parameters.tongues.count, 1, shapeCount, 'tongues.count')
   assertInRange(parameters.tongues.length, 0, limits.maxTongueLength, 'tongues.length')
   assertInRange(parameters.tongues.width, 1, limits.maxTongueWidth, 'tongues.width')
@@ -256,7 +270,7 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   const integers = [
     parameters.canvasWidth, parameters.canvasHeight, parameters.frameCount, parameters.seed,
     parameters.body.radius, parameters.body.rotation, parameters.body.pressureWidth,
-    parameters.core.radius, parameters.shockwave.thickness, parameters.shockwave.arcCount,
+    parameters.core.radius, parameters.shockwave.thickness, parameters.shockwave.ringCount, parameters.shockwave.squashAngle,
     parameters.tongues.count, parameters.tongues.length, parameters.tongues.width,
     parameters.fragments.count, parameters.fragments.minSize, parameters.fragments.maxSize,
     parameters.fragments.travelDistance, parameters.fragments.tangentialDrift,

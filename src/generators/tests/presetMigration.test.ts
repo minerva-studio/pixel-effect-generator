@@ -24,10 +24,27 @@ describe('explosion preset family migration', () => {
     expect(bloomPayload.body).toMatchObject({ shape: 'softPetals', petalCount: 7, petalStretch: 0.58, rotation: 0 })
     expect(bloomPayload.surface).toMatchObject({ style: 'celBands' })
     expect(bloomPayload.tongues).toMatchObject({ enabled: true, count: 4, length: 22, width: 3, curvature: 0.3 })
-    expect(bloomPayload.shockwave).toMatchObject({ mode: 'lobeArcs', thickness: 3 })
+    expect(bloomPayload.shockwave).toMatchObject({
+      mode: 'multiRing',
+      colorMode: 'flat',
+      thickness: 3,
+      ringCount: 3,
+      ringSpacing: 0.55,
+      squash: 0,
+      squashAngle: 0,
+    })
     expect(bloomPayload.fragments).toMatchObject({ enabled: true, count: 30, travelDistance: 30, tangentialDrift: 9 })
     expect(bloomPayload.seed).toBe(20260805)
     expect(bloomPayload.palette).toHaveLength(4)
+
+    expect(explosionPayload.shockwave).toMatchObject({
+      mode: 'ring',
+      colorMode: 'flat',
+      ringCount: 3,
+      ringSpacing: 0.55,
+      squash: 0,
+      squashAngle: 0,
+    })
   })
 
   it('migrates flat V2 lobed payloads into the bloom family', () => {

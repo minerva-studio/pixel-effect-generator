@@ -34,6 +34,25 @@ describe('energy bloom parameter model', () => {
     })).toThrow(/corollaLayers/i)
   })
 
+  it('rejects invalid shockwave modes, color modes, and field ranges', () => {
+    expect(() => assertValidBloomParameters({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      shockwave: { ...DEFAULT_BLOOM_PARAMETERS.shockwave, mode: 'arcs' as never },
+    })).toThrow(/shockwave\.mode/i)
+    expect(() => assertValidBloomParameters({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      shockwave: { ...DEFAULT_BLOOM_PARAMETERS.shockwave, colorMode: 'stripes' as never },
+    })).toThrow(/shockwave\.colorMode/i)
+    expect(() => assertValidBloomParameters({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      shockwave: { ...DEFAULT_BLOOM_PARAMETERS.shockwave, ringCount: 0 },
+    })).toThrow(/shockwave\.ringCount/i)
+    expect(() => assertValidBloomParameters({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      shockwave: { ...DEFAULT_BLOOM_PARAMETERS.shockwave, squashAngle: -1 },
+    })).toThrow(/shockwave\.squashAngle/i)
+  })
+
   it('exposes shape-specific direction counts and size-dependent limits', () => {
     expect(bloomShapeCount(DEFAULT_BLOOM_PARAMETERS.body)).toBe(7)
     expect(bloomShapeCount({ ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'sharpStarburst' })).toBe(10)

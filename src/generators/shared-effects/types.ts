@@ -13,16 +13,19 @@ export interface SharedCoreParameters {
   readonly duration: number
 }
 
-/** Shared polar shockwave: directional arcs or a complete ring. */
+/** Shared polar shockwave: complete rings with radial color and squash. */
 export interface SharedShockwaveParameters {
-  readonly mode: 'none' | 'lobeArcs' | 'ring'
+  readonly mode: 'none' | 'ring' | 'multiRing'
+  readonly colorMode: 'flat' | 'gradient'
   readonly thickness: number
   readonly startRadiusScale: number
   readonly endRadiusScale: number
   readonly startTime: number
   readonly duration: number
-  readonly arcCount: number
-  readonly arcSpan: number
+  readonly ringCount: number
+  readonly ringSpacing: number
+  readonly squash: number
+  readonly squashAngle: number
 }
 
 /** Shared filled tapered tongue (fire jet or energy tongue) parameters. */

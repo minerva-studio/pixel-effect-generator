@@ -12,6 +12,7 @@ import { captureExplosionPreset, clampExplosionPresetParameters } from './explos
 import type { ExplosionParameters } from './explosion/model'
 import { captureBloomPreset, clampBloomPresetParameters } from './energy-bloom/presets'
 import type { BloomParameters } from './energy-bloom/model'
+import type { SharedShockwaveParameters } from './shared-effects/types'
 
 export type PresetMigrationResult =
   | { readonly migrated: true; readonly explosion: number; readonly energyBloom: number }
@@ -57,7 +58,7 @@ function toExplosionParameters(legacy: LegacyExplosionFields): ExplosionParamete
     surface,
     motion,
     core: legacy.core,
-    shockwave: legacy.shockwave,
+    shockwave: shockwaveFromLegacy(legacy.shockwave),
     tongues: legacy.tongues,
     fragments: legacy.fragments,
   })
@@ -97,10 +98,27 @@ function toBloomParameters(legacy: LegacyExplosionFields): BloomParameters {
     surface,
     motion,
     core: legacy.core,
-    shockwave: legacy.shockwave,
+    shockwave: shockwaveFromLegacy(legacy.shockwave),
     tongues: legacy.tongues,
     fragments: legacy.fragments,
   })
+}
+
+/** Maps the frozen legacy shockwave onto the current ring model. */
+function shockwaveFromLegacy(shockwave: LegacyExplosionFields['shockwave']): SharedShockwaveParameters {
+  return {
+    mode: shockwave.mode === 'lobeArcs' ? 'multiRing' : shockwave.mode,
+    colorMode: 'flat',
+    thickness: shockwave.thickness,
+    startRadiusScale: shockwave.startRadiusScale,
+    endRadiusScale: shockwave.endRadiusScale,
+    startTime: shockwave.startTime,
+    duration: shockwave.duration,
+    ringCount: 3,
+    ringSpacing: 0.55,
+    squash: 0,
+    squashAngle: 0,
+  }
 }
 
 /** Derives the shared motion group while keeping dissolve timing intact. */

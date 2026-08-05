@@ -52,10 +52,9 @@ function renderBloomFrame(
   const lifecycle = lifecycleAt(parameters.motion.mode, time)
   renderBloomBody(pixels, width, height, parameters, directions, time)
   const views = shapeViews(parameters, directions, time)
-  const angles = views.map((view) => view.angle)
   renderShockwave(
     pixels, width, height, parameters.palette, parameters.motion.mode,
-    parameters.body.radius, parameters.shockwave, angles, parameters.seed, time,
+    parameters.body.radius, parameters.shockwave, time,
   )
   renderCore(pixels, width, height, parameters.palette, parameters.motion.mode, parameters.core, time)
   renderTongues(
