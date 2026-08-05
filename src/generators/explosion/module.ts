@@ -12,14 +12,13 @@ import {
 import { explosionPresetCapability } from './presets'
 import { renderExplosionFrames } from './renderer'
 
-export type ExplosionCategory = 'shape' | 'palette' | 'motion' | 'fragments' | 'trails'
+export type ExplosionCategory = 'body' | 'motion' | 'effects' | 'palette'
 
 export const EXPLOSION_CATEGORIES = [
-  { id: 'shape', label: 'Shape', description: 'Compose the body, flash core, and shockwave.' },
+  { id: 'body', label: 'Body', description: 'Pick the fire shape and tune its size, outline, and surface material.' },
+  { id: 'motion', label: 'Motion', description: 'Control direction, formation, hold, dissolve, and the motion curve.' },
+  { id: 'effects', label: 'Effects', description: 'Toggle and tune flash core, shockwave, fire jets, and fragments.' },
   { id: 'palette', label: 'Palette', description: 'Order discrete colors from the hot core to the dark edge.' },
-  { id: 'motion', label: 'Motion', description: 'Control expansion, convergence, timing, and dissolve.' },
-  { id: 'fragments', label: 'Fragments', description: 'Scatter or gather deterministic pixel debris.' },
-  { id: 'trails', label: 'Trails', description: 'Shape energy rays or flame strands that travel with the burst.' },
 ] as const satisfies readonly { id: ExplosionCategory; label: string; description: string }[]
 
 /** Experimental layered explosion and implosion generator module. */
@@ -28,7 +27,7 @@ export const explosionModule = defineGenerator({
     id: 'explosion',
     index: 2,
     name: 'Explosion',
-    description: 'Layered pixel explosions and converging energy effects.',
+    description: 'Physical fire, pressure release, rolling fireballs, and retro blasts.',
   },
   categories: EXPLOSION_CATEGORIES,
   defaultParameters: DEFAULT_EXPLOSION_PARAMETERS,

@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react'
 import type { GeneratorPreset, GeneratorPresetCapability } from '../generators/contract'
+import { runPresetMigration } from '../generators/presetMigration'
 import { useI18n } from '../i18n/I18nProvider'
 import { presetDisplayKeys, type TranslateFunction } from '../i18n/messages'
 import type { JsonValue } from '../shared/project/types'
@@ -244,6 +245,7 @@ export function PresetBar<Parameters>({
   const managePanelId = useId()
 
   useEffect(() => {
+    runPresetMigration(generatorId, storage)
     const loaded = readCustomPresets(generatorId, storage, capability.validate)
     setCustomPresets(loaded.presets)
     setWarning(loaded.warning)

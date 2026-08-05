@@ -10,6 +10,7 @@ import {
 import { blipGenerator, blipModule } from './blipFixture'
 import { slashModule } from '../slash/module'
 import { explosionModule } from '../explosion/module'
+import { bloomModule } from '../energy-bloom/module'
 import { slashProjectCodec } from '../slash/project'
 import type { SlashParameters } from '../slash/model'
 import { packHorizontalSheet } from '../../shared/pixel/spritesheet'
@@ -22,7 +23,7 @@ describe('generator registry', () => {
   })
 
   it('registers unique ids and indexes while preserving order', () => {
-    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion'])
+    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'energyBloom'])
     expect(dualRegistry.registrations.map((registration) => registration.id)).toEqual(['blip', 'slash'])
     expect(dualRegistry.definitions.map((definition) => definition.id)).toEqual(['blip', 'slash'])
     expect(() => createGeneratorRegistry([GENERATOR_REGISTRY.get('slash'), blipGenerator] as const)).not.toThrow()
@@ -32,8 +33,10 @@ describe('generator registry', () => {
   it('infers GeneratorId as the literal registered ids, not string', () => {
     const id: GeneratorId = 'slash'
     const secondId: GeneratorId = 'explosion'
+    const thirdId: GeneratorId = 'energyBloom'
     expect(id).toBe('slash')
     expect(secondId).toBe('explosion')
+    expect(thirdId).toBe('energyBloom')
     // @ts-expect-error - only registered literal ids are valid
     const invalid: GeneratorId = 'blip'
     expect(typeof invalid).toBe('string')
@@ -47,15 +50,33 @@ describe('generator registry', () => {
     expect(slashModule.render(slashModule.defaultParameters)).toHaveLength(8)
   })
 
-  it('registers the experimental explosion with presets but no project codec', () => {
+  it('registers the combustion explosion with four tabs, presets, and no project codec', () => {
     expect(explosionModule.definition.index).toBe(2)
+    expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'effects', 'palette'])
     expect(explosionModule.projectCodec).toBeUndefined()
     expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual([
-      'modernBurst',
-      'modernImplosion',
+      'rollingFireball',
+      'pressureBurst',
       'retroBurst',
     ])
     expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(10)
+  })
+
+  it('registers the energy bloom family with independent defaults and six presets', () => {
+    expect(bloomModule.definition.index).toBe(3)
+    expect(bloomModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'effects', 'palette'])
+    expect(bloomModule.defaultParameters.body.shape).toBe('softPetals')
+    expect(bloomModule.defaultParameters.tongues.enabled).toBe(false)
+    expect(bloomModule.projectCodec).toBeUndefined()
+    expect(bloomModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual([
+      'softPetals',
+      'sharpStarburst',
+      'layeredCorolla',
+      'softPetalsImplosion',
+      'starburstImplosion',
+      'corollaImplosion',
+    ])
+    expect(bloomModule.render(bloomModule.defaultParameters)).toHaveLength(10)
   })
 })
 

@@ -5,6 +5,8 @@ import { DEFAULT_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model
 import { renderExplosionFrames } from '../renderer'
 import {
   EXPLOSION_BUILTIN_PRESETS,
+  EXPLOSION_PRESET_FAMILY,
+  EXPLOSION_PRESET_SCHEMA_VERSION,
   applyExplosionPreset,
   captureExplosionPreset,
   clampExplosionPresetParameters,
@@ -13,122 +15,82 @@ import {
   validateExplosionPreset,
 } from '../presets'
 
-function frameHash(frames: readonly { readonly pixels: Uint8ClampedArray }[]): string {
-  let hash = 2166136261
-  for (const frame of frames) {
-    for (let index = 0; index < frame.pixels.length; index += 7) {
-      hash = Math.imul(hash ^ frame.pixels[index], 16777619)
-    }
-  }
-  return (hash >>> 0).toString(16)
-}
-
-describe('Explosion built-in presets', () => {
-  it('exposes three unique preset ids', () => {
-    const ids = EXPLOSION_BUILTIN_PRESETS.map((preset) => preset.id)
-    expect(ids).toEqual(['modernBurst', 'modernImplosion', 'retroBurst'])
-    expect(new Set(ids).size).toBe(ids.length)
-  })
-
-  it('validates every built-in payload and applies it legally', () => {
+describe('combustion explosion built-in presets', () => {
+  it('exposes three unique valid V4 payloads', () => {
+    expect(EXPLOSION_BUILTIN_PRESETS.map(({ id }) => id)).toEqual(['rollingFireball', 'pressureBurst', 'retroBurst'])
     for (const preset of EXPLOSION_BUILTIN_PRESETS) {
-      const validated = validateExplosionPreset(preset.payload)
-      expect(validated.ok, `${preset.id} validation`).toBe(true)
-      const applied = applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, preset.payload)
-      expect(applied.canvasWidth).toBe(DEFAULT_EXPLOSION_PARAMETERS.canvasWidth)
-      expect(applied.canvasHeight).toBe(DEFAULT_EXPLOSION_PARAMETERS.canvasHeight)
-      expect(applied.frameCount).toBe(DEFAULT_EXPLOSION_PARAMETERS.frameCount)
-      expect(() => renderExplosionFrames(applied)).not.toThrow()
+      const payload = preset.payload as Record<string, unknown>
+      expect(payload.schemaVersion).toBe(EXPLOSION_PRESET_SCHEMA_VERSION)
+      expect(payload.family).toBe(EXPLOSION_PRESET_FAMILY)
+      expect(validateExplosionPreset(preset.payload).ok).toBe(true)
+      expect(() => renderExplosionFrames(applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, preset.payload))).not.toThrow()
     }
+    expect((EXPLOSION_BUILTIN_PRESETS[0].payload as Record<string, unknown>).body).toMatchObject({ shape: 'billowingFireball' })
+    expect((EXPLOSION_BUILTIN_PRESETS[2].payload as Record<string, unknown>).body).toMatchObject({ shape: 'legacyRadial' })
   })
 
-  it('produces distinguishable frame hashes for the three presets', () => {
-    const hashes = EXPLOSION_BUILTIN_PRESETS.map((preset) => {
-      const applied = applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, preset.payload)
-      return frameHash(renderExplosionFrames(applied))
-    })
-    expect(new Set(hashes).size).toBe(hashes.length)
-  })
-
-  it('preserves canvas size and frame count when applied to other canvases', () => {
+  it('preserves canvas size and frame count when applying presets', () => {
     const applied = applyExplosionPreset(
       { ...DEFAULT_EXPLOSION_PARAMETERS, canvasWidth: 256, canvasHeight: 128, frameCount: 16 },
       EXPLOSION_BUILTIN_PRESETS[1].payload,
     )
-    expect(applied.canvasWidth).toBe(256)
-    expect(applied.canvasHeight).toBe(128)
-    expect(applied.frameCount).toBe(16)
+    expect(applied).toMatchObject({ canvasWidth: 256, canvasHeight: 128, frameCount: 16 })
   })
 
-  it('clamps effect fields to the current canvas on small non-square canvases', () => {
-    const params: ExplosionParameters = {
+  it('clamps nested pixel fields to a small non-square canvas', () => {
+    const parameters: ExplosionParameters = {
       ...DEFAULT_EXPLOSION_PARAMETERS,
       canvasWidth: 64,
       canvasHeight: 32,
-      radius: 200,
-      coreRadius: 100,
-      shockwaveWidth: 60,
-      fragmentRadialSpeed: 99,
-      fragmentTangentialJitter: 99,
-      trailLength: 200,
-      trailWidth: 60,
+      body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, radius: 200, pressureWidth: 30 },
+      core: { ...DEFAULT_EXPLOSION_PARAMETERS.core, radius: 100 },
+      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, thickness: 60 },
+      tongues: { ...DEFAULT_EXPLOSION_PARAMETERS.tongues, length: 200, width: 60 },
+      fragments: { ...DEFAULT_EXPLOSION_PARAMETERS.fragments, travelDistance: 99, tangentialDrift: 99 },
     }
-    const clamped = clampExplosionPresetParameters(params)
-    expect(clamped.radius).toBe(16)
-    expect(clamped.coreRadius).toBe(16)
-    expect(clamped.shockwaveWidth).toBe(16)
-    expect(clamped.trailLength).toBe(24)
-    expect(clamped.trailWidth).toBe(3)
+    const clamped = clampExplosionPresetParameters(parameters)
+    expect(clamped.body.radius).toBe(16)
+    expect(clamped.body.pressureWidth).toBe(24)
+    expect(clamped.core.radius).toBe(16)
+    expect(clamped.shockwave.thickness).toBe(6)
+    expect(clamped.tongues.length).toBe(24)
+    expect(clamped.tongues.width).toBe(2)
     expect(() => renderExplosionFrames(clamped)).not.toThrow()
   })
 
-  it('rejects invalid payloads', () => {
+  it('rejects invalid or incomplete V4 payloads', () => {
     const payload = captureExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS) as Record<string, unknown>
-    expect(validateExplosionPreset({ ...payload, bodyStyle: 'chunky' }).ok).toBe(false)
-    expect(validateExplosionPreset({ ...payload, shockwaveStyle: 'wave' }).ok).toBe(false)
-    expect(validateExplosionPreset({ ...payload, trailMode: 'sparks' }).ok).toBe(false)
+    expect(validateExplosionPreset({ ...payload, body: { ...(payload.body as object), shape: 'cloud' } }).ok).toBe(false)
+    expect(validateExplosionPreset({ ...payload, surface: { ...(payload.surface as object), style: 'smooth' } }).ok).toBe(false)
+    expect(validateExplosionPreset({ ...payload, family: 'energyBloom' }).ok).toBe(false)
     const { palette: _palette, ...missingPalette } = payload
     expect(validateExplosionPreset(missingPalette).ok).toBe(false)
     expect(() => parseExplosionPresetPayload(null)).toThrow(RangeError)
   })
 
-  it('capture/apply round-trips to pixel-identical frames', () => {
+  it('capture/apply round-trips V4 to pixel-identical frames', () => {
     const source: ExplosionParameters = {
       ...DEFAULT_EXPLOSION_PARAMETERS,
       canvasWidth: 256,
       canvasHeight: 128,
-      radius: 60,
       frameCount: 12,
       seed: 424242,
-      bodyStyle: 'pixelNoise',
-      shockwaveStyle: 'fullRing',
-      trailMode: 'flameStrands',
-      trailLength: 44,
-      trailWidth: 6,
+      body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, shape: 'pressureBurst', radius: 60, rotation: 35, pressureWidth: 9 },
+      surface: { style: 'rollingSoot', coverage: 0.9, sootAmount: 0.4, sootScale: 14 },
+      tongues: { ...DEFAULT_EXPLOSION_PARAMETERS.tongues, length: 44, width: 6 },
     }
-    const payload = captureExplosionPreset(source)
-    const restored = applyExplosionPreset(source, payload)
-    const originalFrames = renderExplosionFrames(source)
-    const restoredFrames = renderExplosionFrames(restored)
-    expect(originalFrames.length).toBe(restoredFrames.length)
-    for (let index = 0; index < originalFrames.length; index += 1) {
-      expect(Array.from(restoredFrames[index].pixels)).toEqual(Array.from(originalFrames[index].pixels))
-    }
+    const restored = applyExplosionPreset(source, captureExplosionPreset(source))
+    expect(renderExplosionFrames(restored).map(({ pixels }) => Array.from(pixels))).toEqual(renderExplosionFrames(source).map(({ pixels }) => Array.from(pixels)))
   })
 
-  it('exposes translated preset names and an unmodified state after applying', () => {
+  it('exposes translated names and an unmodified applied baseline', () => {
     for (const preset of EXPLOSION_BUILTIN_PRESETS) {
-      const keys = presetDisplayKeys('explosion', preset.id)
-      expect(keys, `${preset.id} display keys`).toBeDefined()
-      expect(translate(en, keys!.name)).not.toBe('')
-      expect(translate(en, keys!.description)).not.toBe('')
+      const keys = presetDisplayKeys('explosion', preset.id)!
+      expect(translate(en, keys.name)).not.toBe('')
+      expect(translate(en, keys.description)).not.toBe('')
     }
-    const modern = EXPLOSION_BUILTIN_PRESETS[0]
-    const { parameters: applied, baseline } = resolveAppliedPresetBaseline(
-      explosionPresetCapability,
-      DEFAULT_EXPLOSION_PARAMETERS,
-      modern.payload,
-    )
+    const rolling = EXPLOSION_BUILTIN_PRESETS[0]
+    const { parameters: applied, baseline } = resolveAppliedPresetBaseline(explosionPresetCapability, DEFAULT_EXPLOSION_PARAMETERS, rolling.payload)
     expect(payloadsEqual(captureExplosionPreset(applied), baseline)).toBe(true)
   })
 })

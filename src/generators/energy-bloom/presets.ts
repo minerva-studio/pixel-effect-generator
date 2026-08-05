@@ -2,22 +2,21 @@ import { isPlainRecord } from '../../shared/project/document'
 import type { JsonValue } from '../../shared/project/types'
 import type { GeneratorPreset, GeneratorPresetCapability } from '../contract'
 import {
-  assertValidExplosionParameters,
+  assertValidBloomParameters,
+  bloomFrameLimits,
+  bloomShapeCount,
   clampInteger,
-  createExplosionSurface,
-  DEFAULT_EXPLOSION_PARAMETERS,
-  MODERN_EXPLOSION_PARAMETERS,
-  explosionFrameLimits,
-  explosionShapeCount,
-  type ExplosionParameters,
-  type ExplosionSurfaceParameters,
+  createBloomSurface,
+  DEFAULT_BLOOM_PARAMETERS,
+  type BloomParameters,
+  type BloomSurfaceParameters,
 } from './model'
 
 /** Preset fields cover the effect while excluding canvas size and frame count. */
-export type ExplosionPresetFields = Omit<ExplosionParameters, 'canvasWidth' | 'canvasHeight' | 'frameCount'>
+export type BloomPresetFields = Omit<BloomParameters, 'canvasWidth' | 'canvasHeight' | 'frameCount'>
 
-export const EXPLOSION_PRESET_SCHEMA_VERSION = 4
-export const EXPLOSION_PRESET_FAMILY = 'explosion'
+export const BLOOM_PRESET_SCHEMA_VERSION = 4
+export const BLOOM_PRESET_FAMILY = 'energyBloom'
 
 const MAX_PRESET_RADIUS = 256
 const MAX_PRESET_FRAGMENT_DISTANCE = 128
@@ -26,10 +25,10 @@ const MAX_PRESET_TONGUE_LENGTH = 256
 const MAX_PRESET_TONGUE_WIDTH = 64
 
 /** Captures a versioned V4 payload with stable nested ownership. */
-export function captureExplosionPreset(parameters: ExplosionParameters): JsonValue {
+export function captureBloomPreset(parameters: BloomParameters): JsonValue {
   return {
-    schemaVersion: EXPLOSION_PRESET_SCHEMA_VERSION,
-    family: EXPLOSION_PRESET_FAMILY,
+    schemaVersion: BLOOM_PRESET_SCHEMA_VERSION,
+    family: BLOOM_PRESET_FAMILY,
     palette: parameters.palette.map(({ r, g, b }) => ({ r, g, b })),
     mode: parameters.motion.mode,
     seed: parameters.seed,
@@ -44,10 +43,10 @@ export function captureExplosionPreset(parameters: ExplosionParameters): JsonVal
 }
 
 /** Parses one V4 payload into typed effect fields with strict bounds. */
-export function parseExplosionPresetPayload(value: unknown): ExplosionPresetFields {
+export function parseBloomPresetPayload(value: unknown): BloomPresetFields {
   if (!isPlainRecord(value)) throw new RangeError('preset payload must be an object.')
-  if (value.schemaVersion !== EXPLOSION_PRESET_SCHEMA_VERSION || value.family !== EXPLOSION_PRESET_FAMILY) {
-    throw new RangeError('preset payload is not the current explosion schema.')
+  if (value.schemaVersion !== BLOOM_PRESET_SCHEMA_VERSION || value.family !== BLOOM_PRESET_FAMILY) {
+    throw new RangeError('preset payload is not the current energy bloom schema.')
   }
   const body = readRecord(value, 'body')
   const surface = readRecord(value, 'surface')
@@ -56,18 +55,20 @@ export function parseExplosionPresetPayload(value: unknown): ExplosionPresetFiel
   const shockwave = readRecord(value, 'shockwave')
   const tongues = readRecord(value, 'tongues')
   const fragments = readRecord(value, 'fragments')
-  const shape = readEnum(body, 'shape', ['billowingFireball', 'pressureBurst', 'legacyRadial'])
   return {
     palette: readPalette(value.palette),
     seed: readInteger(value, 'seed', 0, 0xffffffff),
     body: {
-      shape,
+      shape: readEnum(body, 'shape', ['softPetals', 'sharpStarburst', 'layeredCorolla']),
       radius: readInteger(body, 'radius', 2, MAX_PRESET_RADIUS),
       rotation: readInteger(body, 'rotation', 0, 359),
       shapeIrregularity: readNumber(body, 'shapeIrregularity', 0, 1),
-      churnAmount: readNumber(body, 'churnAmount', 0, 1),
-      pressureWidth: readInteger(body, 'pressureWidth', 1, 24),
-      pressureSharpness: readNumber(body, 'pressureSharpness', 0, 1),
+      petalCount: readInteger(body, 'petalCount', 5, 9),
+      petalStretch: readNumber(body, 'petalStretch', 0, 1),
+      rayCount: readInteger(body, 'rayCount', 6, 16),
+      rayTaper: readNumber(body, 'rayTaper', 0, 1),
+      corollaLayers: readInteger(body, 'corollaLayers', 2, 3),
+      layerDelay: readNumber(body, 'layerDelay', 0, 0.4),
     },
     surface: parseV4Surface(surface),
     motion: {
@@ -89,12 +90,12 @@ export function parseExplosionPresetPayload(value: unknown): ExplosionPresetFiel
       endRadiusScale: readNumber(shockwave, 'endRadiusScale', 0.25, 2.5),
       startTime: readNumber(shockwave, 'startTime', 0, 0.8),
       duration: readNumber(shockwave, 'duration', 0.1, 1),
-      arcCount: readInteger(shockwave, 'arcCount', 1, 9),
+      arcCount: readInteger(shockwave, 'arcCount', 1, 16),
       arcSpan: readInteger(shockwave, 'arcSpan', 10, 120),
     },
     tongues: {
       enabled: readBoolean(tongues, 'enabled'),
-      count: readInteger(tongues, 'count', 1, 9),
+      count: readInteger(tongues, 'count', 1, 16),
       length: readInteger(tongues, 'length', 0, MAX_PRESET_TONGUE_LENGTH),
       width: readInteger(tongues, 'width', 1, MAX_PRESET_TONGUE_WIDTH),
       curvature: readNumber(tongues, 'curvature', 0, 1),
@@ -113,23 +114,27 @@ export function parseExplosionPresetPayload(value: unknown): ExplosionPresetFiel
 }
 
 /** Parses one V4 discriminated surface object. */
-function parseV4Surface(value: Readonly<Record<string, unknown>>): ExplosionSurfaceParameters {
-  const style = readEnum(value, 'style', ['burningLayers', 'rollingSoot', 'retroPixel'])
+function parseV4Surface(value: Readonly<Record<string, unknown>>): BloomSurfaceParameters {
+  const style = readEnum(value, 'style', ['celBands', 'moltenCavities', 'crystalShards', 'gridNoise', 'pixelNoise'])
   const coverage = readNumber(value, 'coverage', 0, 1)
   switch (style) {
-    case 'burningLayers':
+    case 'celBands':
       return { style, coverage, bandWarp: readNumber(value, 'bandWarp', 0, 1), edgeBreakup: readNumber(value, 'edgeBreakup', 0, 1) }
-    case 'rollingSoot':
-      return { style, coverage, sootAmount: readNumber(value, 'sootAmount', 0, 0.65), sootScale: readInteger(value, 'sootScale', 6, 24) }
-    case 'retroPixel':
+    case 'moltenCavities':
+      return { style, coverage, cavityAmount: readNumber(value, 'cavityAmount', 0, 0.65), cavityScale: readInteger(value, 'cavityScale', 6, 24) }
+    case 'crystalShards':
+      return { style, coverage, chunkSize: readInteger(value, 'chunkSize', 4, 16), crackWidth: readInteger(value, 'crackWidth', 1, 2) }
+    case 'gridNoise':
+      return { style, coverage }
+    case 'pixelNoise':
       return { style, coverage }
   }
 }
 
 /** Applies a preset while preserving active canvas dimensions and frame count. */
-export function applyExplosionPreset(parameters: ExplosionParameters, payload: JsonValue): ExplosionParameters {
-  const fields = parseExplosionPresetPayload(payload)
-  return clampExplosionPresetParameters({
+export function applyBloomPreset(parameters: BloomParameters, payload: JsonValue): BloomParameters {
+  const fields = parseBloomPresetPayload(payload)
+  return clampBloomPresetParameters({
     ...fields,
     canvasWidth: parameters.canvasWidth,
     canvasHeight: parameters.canvasHeight,
@@ -138,23 +143,25 @@ export function applyExplosionPreset(parameters: ExplosionParameters, payload: J
 }
 
 /** Clamps preset values to the active canvas and validates the result. */
-export function clampExplosionPresetParameters(parameters: ExplosionParameters): ExplosionParameters {
-  const limits = explosionFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
-  const shapeCount = explosionShapeCount(parameters.body.shape)
+export function clampBloomPresetParameters(parameters: BloomParameters): BloomParameters {
+  const limits = bloomFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
+  const shapeCount = bloomShapeCount(parameters.body)
   const minSize = clampInteger(parameters.fragments.minSize, 1, 8)
   const maxSize = clampInteger(parameters.fragments.maxSize, 1, 8)
   const formationDuration = Math.min(0.8, Math.max(0.1, parameters.motion.formationDuration))
   const holdDuration = Math.min(0.5, Math.max(0, parameters.motion.holdDuration), Math.max(0, parameters.motion.dissolveStart - formationDuration))
-  const surface = parameters.surface.style === 'rollingSoot'
-    ? { ...parameters.surface, sootScale: clampInteger(parameters.surface.sootScale, 6, 24) }
-    : parameters.surface
-  const clamped: ExplosionParameters = {
+  const surface = parameters.surface.style === 'moltenCavities'
+    ? { ...parameters.surface, cavityScale: clampInteger(parameters.surface.cavityScale, 6, 24) }
+    : parameters.surface.style === 'crystalShards'
+      ? {
+          ...parameters.surface,
+          chunkSize: clampInteger(parameters.surface.chunkSize, 4, 16),
+          crackWidth: clampInteger(parameters.surface.crackWidth, 1, 2),
+        }
+      : parameters.surface
+  const clamped: BloomParameters = {
     ...parameters,
-    body: {
-      ...parameters.body,
-      radius: clampInteger(parameters.body.radius, 2, limits.maxRadius),
-      pressureWidth: clampInteger(parameters.body.pressureWidth, 1, 24),
-    },
+    body: { ...parameters.body, radius: clampInteger(parameters.body.radius, 2, limits.maxRadius) },
     surface,
     motion: { ...parameters.motion, formationDuration, holdDuration },
     core: { ...parameters.core, radius: clampInteger(parameters.core.radius, 0, limits.maxRadius) },
@@ -178,109 +185,122 @@ export function clampExplosionPresetParameters(parameters: ExplosionParameters):
       tangentialDrift: clampInteger(parameters.fragments.tangentialDrift, 0, limits.maxTangentialDrift),
     },
   }
-  assertValidExplosionParameters(clamped)
+  assertValidBloomParameters(clamped)
   return clamped
 }
 
 /** Validates and canonicalizes one built-in or custom preset payload. */
-export function validateExplosionPreset(
+export function validateBloomPreset(
   payload: unknown,
 ): { readonly ok: true; readonly payload: JsonValue } | { readonly ok: false; readonly error: string } {
   try {
-    const fields = parseExplosionPresetPayload(payload)
-    const parameters = clampExplosionPresetParameters({
+    const fields = parseBloomPresetPayload(payload)
+    const parameters = clampBloomPresetParameters({
       ...fields,
       canvasWidth: 128,
       canvasHeight: 128,
       frameCount: 10,
     })
-    return { ok: true, payload: captureExplosionPreset(parameters) }
+    return { ok: true, payload: captureBloomPreset(parameters) }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
-/** Read-only built-ins for the combustion explosion family. */
-export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
+/** Read-only built-ins for the energy bloom family. */
+export const BLOOM_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
   {
-    id: 'rollingFireball',
-    name: 'Rolling Fireball',
-    description: 'Churning merged fire blobs with burning layers and fire jets.',
-    payload: captureExplosionPreset(MODERN_EXPLOSION_PARAMETERS),
+    id: 'softPetals',
+    name: 'Soft Petals',
+    description: 'Rounded cartoon petals with cel bands; tongues are off by default.',
+    payload: captureBloomPreset(DEFAULT_BLOOM_PARAMETERS),
   },
   {
-    id: 'pressureBurst',
-    name: 'Pressure Burst',
-    description: 'A compact flash releases a sharp center-connected pressure front.',
-    payload: captureExplosionPreset({
-      ...MODERN_EXPLOSION_PARAMETERS,
-      seed: 20260202,
+    id: 'sharpStarburst',
+    name: 'Sharp Starburst',
+    description: 'Controlled tapered star rays with a crystalline surface.',
+    payload: captureBloomPreset({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      seed: 20260303,
       body: {
-        ...MODERN_EXPLOSION_PARAMETERS.body,
-        shape: 'pressureBurst',
+        ...DEFAULT_BLOOM_PARAMETERS.body,
+        shape: 'sharpStarburst',
+        rayCount: 12,
+        rayTaper: 0.75,
         shapeIrregularity: 0.12,
-        pressureWidth: 8,
-        pressureSharpness: 0.95,
       },
-      surface: { style: 'rollingSoot', coverage: 0.9, sootAmount: 0.18, sootScale: 12 },
-      motion: { ...MODERN_EXPLOSION_PARAMETERS.motion, formationDuration: 0.22, holdDuration: 0.08, motionCurve: 'crisp' },
-      core: { enabled: true, radius: 18, duration: 0.14 },
-      tongues: { ...MODERN_EXPLOSION_PARAMETERS.tongues, count: 6, length: 16, width: 2 },
+      surface: { style: 'crystalShards', coverage: 0.95, chunkSize: 10, crackWidth: 1 },
+      tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: true, count: 6, length: 26, width: 2, curvature: 0.15 },
     }),
   },
   {
-    id: 'retroBurst',
-    name: 'Retro Burst',
-    description: 'The original radial ring with dense per-pixel noise.',
-    payload: captureExplosionPreset({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      palette: [
-        { r: 255, g: 250, b: 224 },
-        { r: 255, g: 201, b: 72 },
-        { r: 242, g: 95, b: 44 },
-        { r: 105, g: 42, b: 52 },
-      ],
-      seed: 20260805,
+    id: 'layeredCorolla',
+    name: 'Layered Corolla',
+    description: 'Two staggered petal layers that open in sequence.',
+    payload: captureBloomPreset({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      seed: 20260404,
       body: {
-        shape: 'legacyRadial',
-        radius: 42,
-        rotation: 0,
-        shapeIrregularity: 0.28,
-        churnAmount: 0.5,
-        pressureWidth: 6,
-        pressureSharpness: 0.8,
+        ...DEFAULT_BLOOM_PARAMETERS.body,
+        shape: 'layeredCorolla',
+        corollaLayers: 2,
+        layerDelay: 0.2,
+        petalCount: 8,
       },
-      surface: { style: 'retroPixel', coverage: 0.9 },
-      motion: {
-        mode: 'explosion',
-        formationDuration: 0.46,
-        holdDuration: 0,
-        motionCurve: 'balanced',
-        dissolveStart: 0.58,
+      surface: { style: 'moltenCavities', coverage: 0.94, cavityAmount: 0.22, cavityScale: 12 },
+      tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: true, count: 8, length: 18, width: 2 },
+    }),
+  },
+  {
+    id: 'softPetalsImplosion',
+    name: 'Soft Petals Implosion',
+    description: 'Rounded petals collapse inward onto a closing flash.',
+    payload: captureBloomPreset({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      seed: 20260101,
+      motion: { ...DEFAULT_BLOOM_PARAMETERS.motion, mode: 'implosion', formationDuration: 0.4, holdDuration: 0.08 },
+    }),
+  },
+  {
+    id: 'starburstImplosion',
+    name: 'Starburst Implosion',
+    description: 'Sharp star rays converge into the center from the rim.',
+    payload: captureBloomPreset({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      seed: 20260505,
+      body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'sharpStarburst', rayCount: 12, rayTaper: 0.8 },
+      surface: { style: 'pixelNoise', coverage: 0.92 },
+      motion: { ...DEFAULT_BLOOM_PARAMETERS.motion, mode: 'implosion', formationDuration: 0.36, holdDuration: 0.06, motionCurve: 'crisp' },
+      tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: true, count: 6, length: 30, width: 2 },
+    }),
+  },
+  {
+    id: 'corollaImplosion',
+    name: 'Corolla Implosion',
+    description: 'Staggered corolla layers close inward, outer layer first.',
+    payload: captureBloomPreset({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      seed: 20260707,
+      body: {
+        ...DEFAULT_BLOOM_PARAMETERS.body,
+        shape: 'layeredCorolla',
+        corollaLayers: 3,
+        layerDelay: 0.16,
+        petalCount: 8,
       },
-      core: { enabled: true, radius: 16, duration: 0.42 },
-      shockwave: {
-        mode: 'ring',
-        thickness: 3,
-        startRadiusScale: 0,
-        endRadiusScale: 1.18,
-        startTime: 0,
-        duration: 1,
-        arcCount: 3,
-        arcSpan: 30,
-      },
-      tongues: { enabled: false, count: 1, length: 0, width: 1, curvature: 0, variation: 0 },
-      fragments: { enabled: true, count: 30, minSize: 1, maxSize: 3, travelDistance: 30, tangentialDrift: 9, lifetime: 0.68 },
+      surface: { style: 'gridNoise', coverage: 0.9 },
+      motion: { ...DEFAULT_BLOOM_PARAMETERS.motion, mode: 'implosion', formationDuration: 0.44, holdDuration: 0.1, motionCurve: 'drifting' },
+      tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: true, count: 8, length: 22, width: 2 },
     }),
   },
 ]
 
-/** Combustion explosion preset capability registered on the generator module. */
-export const explosionPresetCapability: GeneratorPresetCapability<ExplosionParameters> = {
-  builtIns: EXPLOSION_BUILTIN_PRESETS,
-  capture: captureExplosionPreset,
-  apply: applyExplosionPreset,
-  validate: validateExplosionPreset,
+/** Energy bloom preset capability registered on the generator module. */
+export const bloomPresetCapability: GeneratorPresetCapability<BloomParameters> = {
+  builtIns: BLOOM_BUILTIN_PRESETS,
+  capture: captureBloomPreset,
+  apply: applyBloomPreset,
+  validate: validateBloomPreset,
 }
 
 /** Reads a required nested object. */
@@ -291,7 +311,7 @@ function readRecord(record: Readonly<Record<string, unknown>>, key: string): Rea
 }
 
 /** Reads a two-to-six-color palette. */
-export function readPalette(value: unknown): { readonly r: number; readonly g: number; readonly b: number }[] {
+function readPalette(value: unknown): { readonly r: number; readonly g: number; readonly b: number }[] {
   if (!Array.isArray(value) || value.length < 2 || value.length > 6) throw new RangeError('palette must be an array of 2 to 6 colors.')
   return value.map((entry, index) => {
     if (!isPlainRecord(entry)) throw new RangeError(`palette[${index}] must be an object.`)
@@ -300,32 +320,32 @@ export function readPalette(value: unknown): { readonly r: number; readonly g: n
 }
 
 /** Reads one bounded integer field. */
-export function readInteger(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number): number {
+function readInteger(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number): number {
   const value = record[key]
   if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum) throw new RangeError(`${key} must be an integer between ${minimum} and ${maximum}.`)
   return value
 }
 
 /** Reads one bounded finite numeric field. */
-export function readNumber(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number): number {
+function readNumber(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number): number {
   const value = record[key]
   if (typeof value !== 'number' || !Number.isFinite(value) || value < minimum || value > maximum) throw new RangeError(`${key} must be a number between ${minimum} and ${maximum}.`)
   return value
 }
 
 /** Reads one required boolean field. */
-export function readBoolean(record: Readonly<Record<string, unknown>>, key: string): boolean {
+function readBoolean(record: Readonly<Record<string, unknown>>, key: string): boolean {
   const value = record[key]
   if (typeof value !== 'boolean') throw new RangeError(`${key} must be a boolean.`)
   return value
 }
 
 /** Reads one string enum field. */
-export function readEnum<Value extends string>(record: Readonly<Record<string, unknown>>, key: string, allowed: readonly Value[]): Value {
+function readEnum<Value extends string>(record: Readonly<Record<string, unknown>>, key: string, allowed: readonly Value[]): Value {
   const value = record[key]
   if (typeof value !== 'string' || !allowed.includes(value as Value)) throw new RangeError(`${key} is invalid.`)
   return value as Value
 }
 
-export type { ExplosionSurfaceParameters }
-export { createExplosionSurface }
+export type { BloomSurfaceParameters }
+export { createBloomSurface }

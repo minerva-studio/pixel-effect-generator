@@ -88,7 +88,8 @@ describe('translation resources', () => {
     expect(translate(en, 'slash.presets.fullCircle.name')).toBe('Full Circle')
     expect(translate(messagesForLocale('zh-CN'), 'slash.presets.fullCircle.description')).toBe('完整的 360° 环形扫击。')
     expect(translate(en, 'explosion.presets.retroBurst.name')).toBe('Retro Burst')
-    expect(translate(messagesForLocale('zh-CN'), 'explosion.presets.modernBurst.description')).toBe('现代火焰主体，配分段冲击弧与能量射线。')
+    expect(translate(en, 'energyBloom.presets.softPetals.name')).toBe('Soft Petals')
+    expect(translate(messagesForLocale('zh-CN'), 'energyBloom.presets.softPetals.description')).toBe('赛璐璐色带的圆润卡通花瓣；默认关闭火舌。')
   })
 
   it('falls back to English for keys missing from the current locale', () => {
@@ -115,8 +116,11 @@ describe('translation resources', () => {
     expect(categoryDisplayKeys('slash', 'breakup')?.label).toBe('slash.categories.breakup.label')
     expect(categoryDisplayKeys('slash', 'missing')).toBeUndefined()
     expect(generatorDisplayKeys('explosion')?.name).toBe('explosion.name')
-    expect(categoryDisplayKeys('explosion', 'fragments')?.label).toBe('explosion.categories.fragments.label')
-    expect(categoryDisplayKeys('explosion', 'trails')?.label).toBe('explosion.categories.trails.label')
+    expect(categoryDisplayKeys('explosion', 'body')?.label).toBe('explosion.categories.body.label')
+    expect(categoryDisplayKeys('explosion', 'motion')?.label).toBe('explosion.categories.motion.label')
+    expect(categoryDisplayKeys('explosion', 'effects')?.label).toBe('explosion.categories.effects.label')
+    expect(generatorDisplayKeys('energyBloom')?.name).toBe('energyBloom.name')
+    expect(categoryDisplayKeys('energyBloom', 'palette')?.label).toBe('energyBloom.categories.palette.label')
     expect(categoryDisplayKeys('missing', 'shape')).toBeUndefined()
   })
 })
