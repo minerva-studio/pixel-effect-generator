@@ -116,10 +116,12 @@ describe('GeneratorWorkspace integration', () => {
     expect(markup).toContain('>Project</span>')
   })
 
-  it('renders the preset toolbar for generators with preset capability', () => {
+  it('renders preset header controls for generators with preset capability', () => {
     const markup = workspaceMarkup('slash')
-    expect(markup).toContain('class="preset-bar"')
-    expect(markup).toContain('Select preset…')
+    expect(markup).not.toContain('preset-panel')
+    expect(markup).not.toContain('preset-bar')
+    expect(markup).toContain('>Presets<')
+    expect(markup).toContain('preset-actions')
     expect(markup).not.toContain('preset-dialog')
   })
 
@@ -132,7 +134,8 @@ describe('GeneratorWorkspace integration', () => {
     const markup = workspaceMarkup('blip')
     expect(markup).not.toContain('project-menu')
     expect(markup).not.toContain('>Project<')
-    expect(markup).not.toContain('preset-bar')
+    expect(markup).not.toContain('Select preset…')
+    expect(markup).not.toContain('preset-actions')
   })
 
   it('keeps the Export panel first category as Sprite Sheet', () => {

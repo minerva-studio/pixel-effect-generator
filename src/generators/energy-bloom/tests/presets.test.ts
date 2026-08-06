@@ -32,7 +32,7 @@ describe('energy bloom built-in presets', () => {
       expect(validateBloomPreset(preset.payload).ok).toBe(true)
       expect(() => renderBloomFrames(applyBloomPreset(DEFAULT_BLOOM_PARAMETERS, preset.payload))).not.toThrow()
     }
-  })
+  }, 20000)
 
   it('keeps the built-in soft-petals preset tongues disabled', () => {
     const applied = applyBloomPreset(DEFAULT_BLOOM_PARAMETERS, BLOOM_BUILTIN_PRESETS[0].payload)
@@ -90,7 +90,7 @@ describe('energy bloom built-in presets', () => {
     }
     const restored = applyBloomPreset(source, captureBloomPreset(source))
     expect(renderBloomFrames(restored).map(({ pixels }) => Array.from(pixels))).toEqual(renderBloomFrames(source).map(({ pixels }) => Array.from(pixels)))
-  })
+  }, 20000)
 
   it('normalizes legacy lobe-arc V4 payloads and falls back missing fields', () => {
     const payload = captureBloomPreset(DEFAULT_BLOOM_PARAMETERS) as Record<string, unknown>

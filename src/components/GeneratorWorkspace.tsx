@@ -301,12 +301,11 @@ function ControlsPanel<Parameters, Category extends string>({
           <h2>{t('workspace.parametersTitle', { name: generatorName })}</h2>
         </div>
         <div className="controls-heading-actions">
+          {presetBar}
           {projectMenu}
           <button className="text-button" type="button" onClick={onReset}>{t('workspace.reset')}</button>
         </div>
       </div>
-
-      {presetBar}
 
       <div className="category-tabs" role="tablist" aria-label={t('workspace.categoryTabsLabel', { name: generatorName })}>
         {module.categories.map((entry) => {

@@ -95,6 +95,7 @@ export interface PresetBarViewProps {
   readonly builtInCards: readonly PresetPreviewCard[]
   readonly customCards: readonly PresetPreviewCard[]
   readonly pickerOpen: boolean
+  readonly actionsOpen: boolean
   readonly modified: boolean
   readonly storageUnavailable: boolean
   readonly warning: boolean
@@ -105,12 +106,13 @@ export interface PresetBarViewProps {
   readonly renameId: string | null
   readonly renameName: string
   readonly deleteConfirmId: string | null
-  readonly managePanelId: string
-  readonly manageRef: RefObject<HTMLDivElement | null>
-  readonly manageButtonRef: RefObject<HTMLButtonElement | null>
+  readonly actionsPanelId: string
+  readonly actionsRef: RefObject<HTMLDivElement | null>
+  readonly actionsButtonRef: RefObject<HTMLButtonElement | null>
   readonly onSelect: (presetId: string) => void
   readonly onPickerOpen: () => void
   readonly onPickerClose: () => void
+  readonly onActionsToggle: () => void
   readonly onSaveAsOpen: () => void
   readonly onSaveNameChange: (name: string) => void
   readonly onSaveAsConfirm: () => void
@@ -124,12 +126,13 @@ export interface PresetBarViewProps {
   readonly onDelete: (presetId: string) => void
 }
 
-/** Presentational preset toolbar; rendering depends only on state and props. */
+/** Presentational preset controls for the parameter panel header. */
 export function PresetBarView({
   selectedId,
   builtInCards,
   customCards,
   pickerOpen,
+  actionsOpen,
   modified,
   storageUnavailable,
   warning,
@@ -140,12 +143,13 @@ export function PresetBarView({
   renameId,
   renameName,
   deleteConfirmId,
-  managePanelId,
-  manageRef,
-  manageButtonRef,
+  actionsPanelId,
+  actionsRef,
+  actionsButtonRef,
   onSelect,
   onPickerOpen,
   onPickerClose,
+  onActionsToggle,
   onSaveAsOpen,
   onSaveNameChange,
   onSaveAsConfirm,
@@ -160,71 +164,91 @@ export function PresetBarView({
 }: PresetBarViewProps) {
   const { t } = useI18n()
   const selectedCustom = customCards.find((card) => card.id === selectedId)
-  const selectedCard = builtInCards.find((card) => card.id === selectedId)
-    ?? customCards.find((card) => card.id === selectedId)
   return (
-    <div className="preset-bar">
-      <div className="preset-bar-row">
-        <div className="preset-pick-group">
-          <span className="preset-current-name">{selectedCard?.name ?? t('presets.selectPrompt')}</span>
-          <button className="secondary-button" type="button" onClick={onPickerOpen}>
-            {t('presets.pickerOpen')}
-          </button>
-        </div>
-        {modified ? <span className="preset-modified">{t('presets.modified')}</span> : null}
-      </div>
-      <div className="preset-action-row">
-        <button className="secondary-button" type="button" disabled={storageUnavailable} onClick={onSaveAsOpen}>
-          {t('presets.saveAs')}
+    <>
+      <div className="preset-actions" ref={actionsRef}>
+        <button
+          className="project-menu-button preset-actions-toggle"
+          type="button"
+          ref={actionsButtonRef}
+          aria-expanded={actionsOpen}
+          aria-controls={actionsPanelId}
+          aria-haspopup="menu"
+          onClick={onActionsToggle}
+        >
+          {t('presets.actionsMenu')}
+          <span className="project-menu-chevron" aria-hidden="true">▾</span>
         </button>
-        <button className="secondary-button" type="button" disabled={selectedCustom === undefined || storageUnavailable} onClick={onUpdate}>
-          {t('presets.update')}
-        </button>
-        <div className="preset-manage" ref={manageRef}>
-          <button
-            className="secondary-button"
-            type="button"
-            ref={manageButtonRef}
-            aria-expanded={manageOpen}
-            aria-controls={managePanelId}
-            aria-haspopup="dialog"
-            onClick={onManageToggle}
-          >
-            {t('presets.manage')}
-          </button>
-          {manageOpen ? (
-            <div className="preset-manage-panel" id={managePanelId} role="dialog" aria-label={t('presets.manageDialogLabel')}>
-              {customCards.length === 0 ? (
-                <p className="preset-manage-empty">{t('presets.noCustom')}</p>
-              ) : (
-                customCards.map((card) => (
-                  <div className="preset-manage-item" key={card.id}>
-                    {renameId === card.id ? (
-                      <>
-                        <input
-                          aria-label={t('presets.rename')}
-                          value={renameName}
-                          maxLength={40}
-                          onChange={(event) => onRenameChange(event.target.value)}
-                        />
-                        <button className="text-button" type="button" onClick={() => onRenameConfirm(card.id)}>{t('presets.confirm')}</button>
-                        <button className="text-button" type="button" onClick={onRenameCancel}>{t('presets.cancel')}</button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="preset-manage-name">{card.name}</span>
-                        <button className="text-button" type="button" onClick={() => onRenameStart(card.id, card.name)}>{t('presets.rename')}</button>
-                        <button className="text-button danger" type="button" onClick={() => onDelete(card.id)}>
-                          {deleteConfirmId === card.id ? t('presets.confirmDelete') : t('presets.delete')}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          ) : null}
-        </div>
+        {actionsOpen ? (
+          <div className="preset-actions-panel" id={actionsPanelId} role="menu" aria-label={t('presets.actionsMenu')}>
+            {modified ? <p className="preset-modified">{t('presets.modified')}</p> : null}
+            <button className="project-menu-item" type="button" role="menuitem" onClick={onPickerOpen}>
+              {t('presets.pickerOpen')}
+            </button>
+            <button className="project-menu-item" type="button" role="menuitem" disabled={storageUnavailable} onClick={onSaveAsOpen}>
+              {t('presets.saveAs')}
+            </button>
+            <button className="project-menu-item" type="button" role="menuitem" disabled={selectedCustom === undefined || storageUnavailable} onClick={onUpdate}>
+              {t('presets.update')}
+            </button>
+            <button className="project-menu-item" type="button" role="menuitem" onClick={onManageToggle}>
+              {t('presets.manage')}
+            </button>
+            {saveOpen ? (
+              <div className="preset-save-row">
+                <input
+                  aria-label={t('presets.saveNameLabel')}
+                  value={saveName}
+                  maxLength={40}
+                  placeholder={t('presets.saveNameLabel')}
+                  onChange={(event) => onSaveNameChange(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      onSaveAsConfirm()
+                    }
+                  }}
+                />
+                <button className="secondary-button" type="button" onClick={onSaveAsConfirm}>{t('presets.saveConfirm')}</button>
+                <button className="text-button" type="button" onClick={onSaveAsCancel}>{t('presets.cancel')}</button>
+              </div>
+            ) : null}
+            {manageOpen ? (
+              <div className="preset-manage-list">
+                {customCards.length === 0 ? (
+                  <p className="preset-manage-empty">{t('presets.noCustom')}</p>
+                ) : (
+                  customCards.map((card) => (
+                    <div className="preset-manage-item" key={card.id}>
+                      {renameId === card.id ? (
+                        <>
+                          <input
+                            aria-label={t('presets.rename')}
+                            value={renameName}
+                            maxLength={40}
+                            onChange={(event) => onRenameChange(event.target.value)}
+                          />
+                          <button className="text-button" type="button" onClick={() => onRenameConfirm(card.id)}>{t('presets.confirm')}</button>
+                          <button className="text-button" type="button" onClick={onRenameCancel}>{t('presets.cancel')}</button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="preset-manage-name">{card.name}</span>
+                          <button className="text-button" type="button" onClick={() => onRenameStart(card.id, card.name)}>{t('presets.rename')}</button>
+                          <button className="text-button danger" type="button" onClick={() => onDelete(card.id)}>
+                            {deleteConfirmId === card.id ? t('presets.confirmDelete') : t('presets.delete')}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : null}
+            {error ? <p className="preset-error" role="alert">{error}</p> : null}
+            {warning ? <p className="preset-warning">{t('presets.warning')}</p> : null}
+            {storageUnavailable ? <p className="preset-hint">{t('presets.storageHint')}</p> : null}
+          </div>
+        ) : null}
       </div>
 
       {pickerOpen ? (
@@ -272,33 +296,11 @@ export function PresetBarView({
             <div className="preset-dialog-actions">
               <button className="secondary-button" type="button" onClick={onPickerClose}>{t('presets.pickerCancel')}</button>
             </div>
+            {error ? <p className="preset-error" role="alert">{error}</p> : null}
           </div>
         </div>
       ) : null}
-
-      {saveOpen ? (
-        <div className="preset-save-row">
-          <input
-            aria-label={t('presets.saveNameLabel')}
-            value={saveName}
-            maxLength={40}
-            placeholder={t('presets.saveNameLabel')}
-            onChange={(event) => onSaveNameChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                onSaveAsConfirm()
-              }
-            }}
-          />
-          <button className="secondary-button" type="button" onClick={onSaveAsConfirm}>{t('presets.saveConfirm')}</button>
-          <button className="text-button" type="button" onClick={onSaveAsCancel}>{t('presets.cancel')}</button>
-        </div>
-      ) : null}
-
-      {error ? <p className="preset-error" role="alert">{error}</p> : null}
-      {warning ? <p className="preset-warning">{t('presets.warning')}</p> : null}
-      {storageUnavailable ? <p className="preset-hint">{t('presets.storageHint')}</p> : null}
-    </div>
+    </>
   )
 }
 
@@ -383,14 +385,15 @@ export function PresetBar<Parameters>({
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [actionsOpen, setActionsOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
   const [renameId, setRenameId] = useState<string | null>(null)
   const [renameName, setRenameName] = useState('')
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const manageRef = useRef<HTMLDivElement | null>(null)
-  const manageButtonRef = useRef<HTMLButtonElement | null>(null)
-  const managePanelId = useId()
+  const actionsRef = useRef<HTMLDivElement | null>(null)
+  const actionsButtonRef = useRef<HTMLButtonElement | null>(null)
+  const actionsPanelId = useId()
   const parametersRef = useRef(parameters)
   parametersRef.current = parameters
 
@@ -403,20 +406,20 @@ export function PresetBar<Parameters>({
   }, [generatorId, storage, capability])
 
   useEffect(() => {
-    if (!manageOpen) {
+    if (!actionsOpen) {
       return undefined
     }
     const handlePointerDown = (event: PointerEvent) => {
-      if (manageRef.current && !manageRef.current.contains(event.target as Node)) {
-        setManageOpen(false)
+      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
+        setActionsOpen(false)
       }
     }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setManageOpen(false)
+        setActionsOpen(false)
         setRenameId(null)
         setDeleteConfirmId(null)
-        manageButtonRef.current?.focus()
+        actionsButtonRef.current?.focus()
       }
     }
     document.addEventListener('pointerdown', handlePointerDown)
@@ -425,7 +428,7 @@ export function PresetBar<Parameters>({
       document.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [manageOpen])
+  }, [actionsOpen])
 
   useEffect(() => {
     if (!pickerOpen) {
@@ -529,6 +532,7 @@ export function PresetBar<Parameters>({
     setAppliedPayload(payload)
     setSaveOpen(false)
     setSaveName('')
+    setActionsOpen(false)
   }
 
   const handleUpdate = () => {
@@ -585,6 +589,7 @@ export function PresetBar<Parameters>({
       builtInCards={builtInCards}
       customCards={customCards}
       pickerOpen={pickerOpen}
+      actionsOpen={actionsOpen}
       modified={modified}
       storageUnavailable={storage === null}
       warning={warning}
@@ -595,15 +600,17 @@ export function PresetBar<Parameters>({
       renameId={renameId}
       renameName={renameName}
       deleteConfirmId={deleteConfirmId}
-      managePanelId={managePanelId}
-      manageRef={manageRef}
-      manageButtonRef={manageButtonRef}
+      actionsPanelId={actionsPanelId}
+      actionsRef={actionsRef}
+      actionsButtonRef={actionsButtonRef}
       onSelect={handleSelect}
       onPickerOpen={() => {
         setError(null)
+        setActionsOpen(false)
         setPickerOpen(true)
       }}
       onPickerClose={() => setPickerOpen(false)}
+      onActionsToggle={() => setActionsOpen((open) => !open)}
       onSaveAsOpen={() => {
         setError(null)
         setSaveOpen((open) => !open)
