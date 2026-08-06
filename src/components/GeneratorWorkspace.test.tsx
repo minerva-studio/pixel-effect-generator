@@ -119,7 +119,8 @@ describe('GeneratorWorkspace integration', () => {
   it('renders the preset toolbar for generators with preset capability', () => {
     const markup = workspaceMarkup('slash')
     expect(markup).toContain('class="preset-bar"')
-    expect(markup).toContain('Clean Arc')
+    expect(markup).toContain('Select preset…')
+    expect(markup).not.toContain('preset-dialog')
   })
 
   it('renders the Project menu in Simplified Chinese', () => {

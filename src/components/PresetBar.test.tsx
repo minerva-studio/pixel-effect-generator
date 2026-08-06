@@ -4,29 +4,47 @@ import { I18nProvider } from '../i18n/I18nProvider'
 import { slashPresetCapability } from '../generators/slash/presets'
 import { DEFAULT_SLASH_PARAMETERS } from '../generators/slash/model'
 import { captureSlashPreset } from '../generators/slash/presets'
-import { createStoredPreset, type StoredPreset } from '../shared/preset/storage'
-import { payloadsEqual, PresetBar, PresetBarView, resolveAppliedPresetBaseline, type PresetBarViewProps } from './PresetBar'
+import { renderSlashFrames } from '../generators/slash/renderer'
+import { createStoredPreset } from '../shared/preset/storage'
+import {
+  payloadsEqual,
+  PresetBar,
+  PresetBarView,
+  presetPreviewKey,
+  renderPresetFrames,
+  resolveAppliedPresetBaseline,
+  type PresetBarViewProps,
+  type PresetPreviewCard,
+} from './PresetBar'
 
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const customPresets: readonly StoredPreset[] = [
-  createStoredPreset('My Arc', 'slash', { radius: 44 }, 'custom-1'),
-  createStoredPreset('Spark', 'slash', { radius: 40 }, 'custom-2'),
+function card(id: string, name: string, description: string | null = null, custom = false): PresetPreviewCard {
+  return { id, name, description, custom, buildFrames: () => [] }
+}
+
+const builtInCards: readonly PresetPreviewCard[] = [
+  card('cleanArc', 'Clean Arc', 'A clean, low-breakup arc.'),
+  card('fullCircle', 'Full Circle'),
+]
+
+const customCards: readonly PresetPreviewCard[] = [
+  card('custom-1', 'My Arc', null, true),
+  card('custom-2', 'Spark', null, true),
 ]
 
 function baseViewProps(overrides: Partial<PresetBarViewProps> = {}): PresetBarViewProps {
   return {
     selectedId: null,
-    generatorId: 'slash',
-    builtIns: slashPresetCapability.builtIns,
-    customPresets: [],
+    builtInCards,
+    customCards: [],
+    pickerOpen: false,
     modified: false,
     storageUnavailable: false,
     warning: false,
     error: null,
-    description: null,
     saveOpen: false,
     saveName: '',
     manageOpen: false,
@@ -37,6 +55,8 @@ function baseViewProps(overrides: Partial<PresetBarViewProps> = {}): PresetBarVi
     manageRef: { current: null },
     manageButtonRef: { current: null },
     onSelect: () => undefined,
+    onPickerOpen: () => undefined,
+    onPickerClose: () => undefined,
     onSaveAsOpen: () => undefined,
     onSaveNameChange: () => undefined,
     onSaveAsConfirm: () => undefined,
@@ -69,20 +89,66 @@ describe('payloadsEqual', () => {
 })
 
 describe('PresetBarView structure', () => {
-  it('renders grouped built-in and custom options with buttons', () => {
-    const markup = viewMarkup(baseViewProps({ customPresets }))
-    expect(markup).toContain('aria-label="Effect preset"')
-    expect(markup).toContain('Presets…')
-    expect(markup).toContain('Clean Arc')
-    expect(markup).toContain('My Arc')
+  it('renders a compact toolbar with the current preset name and picker button', () => {
+    const markup = viewMarkup(baseViewProps({ customCards }))
+    expect(markup).not.toContain('<select')
+    expect(markup).not.toContain('preset-card')
+    expect(markup).toContain('preset-pick-group')
+    expect(markup).toContain('preset-action-row')
+    expect(markup).toContain('No preset selected')
+    expect(markup).toContain('Select preset…')
     expect(markup).toContain('Save as…')
     expect(markup).toContain('Update')
     expect(markup).toContain('Manage')
   })
 
+  it('shows the selected preset name in the toolbar', () => {
+    const markup = viewMarkup(baseViewProps({ selectedId: 'cleanArc', builtInCards }))
+    expect(markup).toContain('Clean Arc')
+    expect(markup).not.toContain('No preset selected')
+  })
+
+  it('opens the picker dialog with grouped preview cards', () => {
+    const markup = viewMarkup(baseViewProps({ pickerOpen: true, customCards }))
+    expect(markup).toContain('preset-dialog')
+    expect(markup).toContain('preset-dialog-close')
+    expect(markup).toContain('aria-label="Close preset picker"')
+    expect(markup).toContain('>×<')
+    expect(markup).toContain('aria-label="Presets"')
+    expect(markup).toContain('aria-label="Effect presets"')
+    expect(markup).toContain('preset-card')
+    expect(markup).toContain('Clean Arc')
+    expect(markup).toContain('My Arc')
+    expect(markup).toContain('Built-in')
+    expect(markup).toContain('Custom')
+    expect(markup).toContain('Cancel')
+  })
+
+  it('does not render the picker dialog when closed', () => {
+    const markup = viewMarkup(baseViewProps())
+    expect(markup).not.toContain('preset-dialog')
+  })
+
+  it('shows built-in descriptions inside cards and keeps custom cards name-only', () => {
+    const markup = viewMarkup(baseViewProps({ pickerOpen: true, customCards }))
+    expect(markup).toContain('A clean, low-breakup arc.')
+    expect(markup).not.toContain('preset-description')
+  })
+
+  it('marks the selected card as pressed', () => {
+    const markup = viewMarkup(baseViewProps({ pickerOpen: true, selectedId: 'cleanArc' }))
+    expect(markup).toContain('aria-pressed="true"')
+    expect(markup).toContain('aria-pressed="false"')
+  })
+
   it('renders Simplified Chinese labels', () => {
-    const markup = viewMarkup(baseViewProps({ selectedId: 'cleanArc', description: '清晰、低破碎的基础刀光。' }), 'zh-CN')
+    const markup = viewMarkup(baseViewProps({
+      pickerOpen: true,
+      selectedId: 'cleanArc',
+      builtInCards: [card('cleanArc', '干净弧光', '清晰、低破碎的基础刀光。')],
+    }), 'zh-CN')
     expect(markup).toContain('效果预设')
+    expect(markup).toContain('选择预设…')
     expect(markup).toContain('干净弧光')
     expect(markup).toContain('另存为…')
     expect(markup).toContain('清晰、低破碎的基础刀光。')
@@ -93,18 +159,21 @@ describe('PresetBarView structure', () => {
     expect(plain).not.toContain('>Modified<')
     const modified = viewMarkup(baseViewProps({ modified: true }))
     expect(modified).toContain('>Modified<')
+    expect(modified.indexOf('preset-pick-group')).toBeLessThan(modified.indexOf('preset-modified'))
+    expect(modified.indexOf('preset-modified')).toBeLessThan(modified.indexOf('preset-action-row'))
   })
 
   it('disables custom actions and explains when storage is unavailable', () => {
     const markup = viewMarkup(baseViewProps({ storageUnavailable: true, warning: false }))
     expect(markup).toContain('Custom presets need browser storage; built-in presets still work.')
-    expect((markup.match(/disabled=""/g) ?? []).length).toBe(3)
+    expect((markup.match(/disabled=""/g) ?? []).length).toBe(2)
+    expect(markup).toContain('Select preset…')
   })
 
   it('renders the manage menu with rename, delete, and two-step confirm', () => {
     const markup = viewMarkup(baseViewProps({
       manageOpen: true,
-      customPresets,
+      customCards,
       deleteConfirmId: 'custom-1',
       managePanelId: 'preset-manage-panel',
     }))
@@ -128,7 +197,7 @@ describe('PresetBarView structure', () => {
 })
 
 describe('PresetBar component', () => {
-  it('renders the toolbar with the five translated built-in presets', () => {
+  it('renders the compact toolbar with the preset picker entry', () => {
     vi.stubGlobal('navigator', undefined)
     const markup = renderToStaticMarkup(
       <I18nProvider>
@@ -136,14 +205,71 @@ describe('PresetBar component', () => {
           capability={slashPresetCapability}
           generatorId="slash"
           parameters={DEFAULT_SLASH_PARAMETERS}
+          render={renderSlashFrames}
+          frameSize={{ width: DEFAULT_SLASH_PARAMETERS.canvasWidth, height: DEFAULT_SLASH_PARAMETERS.canvasHeight }}
+          frameCount={DEFAULT_SLASH_PARAMETERS.frameCount}
           onApply={vi.fn()}
         />
       </I18nProvider>,
     )
     expect(markup).toContain('class="preset-bar"')
-    expect(markup).toContain('Clean Arc')
-    expect(markup).toContain('Full Circle')
+    expect(markup).not.toContain('preset-card')
+    expect(markup).not.toContain('<select')
+    expect(markup).toContain('No preset selected')
+    expect(markup).toContain('Select preset…')
     expect(markup).toContain('Save as…')
+  })
+})
+
+describe('renderPresetFrames', () => {
+  it('renders a built-in preset on the active canvas', () => {
+    const cleanArc = slashPresetCapability.builtIns[0]
+    const frames = renderPresetFrames(
+      slashPresetCapability,
+      renderSlashFrames,
+      DEFAULT_SLASH_PARAMETERS,
+      cleanArc.payload,
+    )
+    expect(frames).toHaveLength(DEFAULT_SLASH_PARAMETERS.frameCount)
+    expect(frames[0].width).toBe(DEFAULT_SLASH_PARAMETERS.canvasWidth)
+    expect(frames[0].height).toBe(DEFAULT_SLASH_PARAMETERS.canvasHeight)
+  })
+
+  it('throws for payloads that cannot be applied', () => {
+    expect(() => renderPresetFrames(
+      slashPresetCapability,
+      renderSlashFrames,
+      DEFAULT_SLASH_PARAMETERS,
+      { radius: 'not-a-number' },
+    )).toThrow(RangeError)
+  })
+
+  it('renders a captured custom payload on the active canvas', () => {
+    const custom = captureSlashPreset(DEFAULT_SLASH_PARAMETERS)
+    const frames = renderPresetFrames(
+      slashPresetCapability,
+      renderSlashFrames,
+      { ...DEFAULT_SLASH_PARAMETERS, canvasWidth: 64, canvasHeight: 64 },
+      custom,
+    )
+    expect(frames).toHaveLength(DEFAULT_SLASH_PARAMETERS.frameCount)
+    expect(frames[0].width).toBe(64)
+  })
+})
+
+describe('presetPreviewKey', () => {
+  it('varies by generator, preset, canvas size, and frame count', () => {
+    const base = { width: 128, height: 128 }
+    expect(presetPreviewKey('slash', 'cleanArc', base, 10))
+      .toBe('slash:cleanArc:128x128x10')
+    expect(presetPreviewKey('slash', 'fullCircle', base, 10))
+      .not.toBe(presetPreviewKey('slash', 'cleanArc', base, 10))
+    expect(presetPreviewKey('slash', 'cleanArc', { width: 256, height: 256 }, 10))
+      .not.toBe(presetPreviewKey('slash', 'cleanArc', base, 10))
+    expect(presetPreviewKey('slash', 'cleanArc', base, 16))
+      .not.toBe(presetPreviewKey('slash', 'cleanArc', base, 10))
+    expect(presetPreviewKey('explosion', 'cleanArc', base, 10))
+      .not.toBe(presetPreviewKey('slash', 'cleanArc', base, 10))
   })
 })
 

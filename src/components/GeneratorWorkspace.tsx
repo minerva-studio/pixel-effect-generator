@@ -156,6 +156,9 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
         capability={module.presetCapability}
         generatorId={module.definition.id}
         parameters={typedSession.parameters}
+        render={module.render}
+        frameSize={{ width: frameWidth, height: frameHeight }}
+        frameCount={frameCount}
         onApply={dispatchParameters}
       />
     ) : undefined

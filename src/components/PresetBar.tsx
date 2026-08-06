@@ -1,10 +1,12 @@
-import { useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react'
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react'
 import type { GeneratorPreset, GeneratorPresetCapability } from '../generators/contract'
 import { runPresetMigration } from '../generators/presetMigration'
 import { useI18n } from '../i18n/I18nProvider'
 import { presetDisplayKeys, type TranslateFunction } from '../i18n/messages'
+import type { FrameSize, PixelFrame } from '../shared/pixel/frame'
 import type { JsonValue } from '../shared/project/types'
 import { randomGuid } from '../shared/unity/guid'
+import { drawFrame } from './export'
 import {
   browserPresetStorage,
   createStoredPreset,
@@ -24,9 +26,8 @@ export function payloadsEqual(left: JsonValue, right: JsonValue): boolean {
 }
 
 /**
- * Applies one preset and returns the applied parameters together with the
- * captured baseline of the actual result, so clamping on small canvases never
- * looks like a modification.
+ * Applies one preset and returns the captured baseline of the actual result,
+ * so clamping on small canvases never looks like a modification.
  */
 export function resolveAppliedPresetBaseline<Parameters>(
   capability: GeneratorPresetCapability<Parameters>,
@@ -37,23 +38,67 @@ export function resolveAppliedPresetBaseline<Parameters>(
   return { parameters: next, baseline: capability.capture(next) }
 }
 
+/**
+ * Renders one preset preview on the active canvas by applying its payload to
+ * the current parameters. Throws when the payload cannot be applied.
+ */
+export function renderPresetFrames<Parameters>(
+  capability: GeneratorPresetCapability<Parameters>,
+  render: (parameters: Parameters) => readonly PixelFrame[],
+  parameters: Parameters,
+  payload: JsonValue,
+): readonly PixelFrame[] {
+  return render(capability.apply(parameters, payload))
+}
+
+/** Cache of rendered preview frame sets keyed by generator, preset, and canvas. */
+const presetFrameCache = new Map<string, readonly PixelFrame[]>()
+
+/** Stable cache key for one preset preview on a specific canvas. */
+export function presetPreviewKey(
+  generatorId: string,
+  presetId: string,
+  frameSize: FrameSize,
+  frameCount: number,
+): string {
+  return `${generatorId}:${presetId}:${frameSize.width}x${frameSize.height}x${frameCount}`
+}
+
+/** Drops every cached preview belonging to one generator. */
+function clearPresetFrameCache(generatorId: string): void {
+  for (const key of presetFrameCache.keys()) {
+    if (key.startsWith(`${generatorId}:`)) presetFrameCache.delete(key)
+  }
+}
+
+/** One normalized preset entry rendered as a preview card. */
+export interface PresetPreviewCard {
+  readonly id: string
+  readonly name: string
+  readonly description: string | null
+  readonly custom: boolean
+  readonly buildFrames: () => readonly PixelFrame[]
+}
+
 interface PresetBarProps<Parameters> {
   readonly capability: GeneratorPresetCapability<Parameters>
   readonly generatorId: string
   readonly parameters: Parameters
+  readonly render: (parameters: Parameters) => readonly PixelFrame[]
+  readonly frameSize: FrameSize
+  readonly frameCount: number
   readonly onApply: (parameters: Parameters) => void
 }
 
 export interface PresetBarViewProps {
   readonly selectedId: string | null
-  readonly generatorId: string
-  readonly builtIns: readonly GeneratorPreset[]
-  readonly customPresets: readonly StoredPreset[]
+  readonly builtInCards: readonly PresetPreviewCard[]
+  readonly customCards: readonly PresetPreviewCard[]
+  readonly pickerOpen: boolean
   readonly modified: boolean
   readonly storageUnavailable: boolean
   readonly warning: boolean
   readonly error: string | null
-  readonly description: string | null
   readonly saveOpen: boolean
   readonly saveName: string
   readonly manageOpen: boolean
@@ -64,6 +109,8 @@ export interface PresetBarViewProps {
   readonly manageRef: RefObject<HTMLDivElement | null>
   readonly manageButtonRef: RefObject<HTMLButtonElement | null>
   readonly onSelect: (presetId: string) => void
+  readonly onPickerOpen: () => void
+  readonly onPickerClose: () => void
   readonly onSaveAsOpen: () => void
   readonly onSaveNameChange: (name: string) => void
   readonly onSaveAsConfirm: () => void
@@ -80,14 +127,13 @@ export interface PresetBarViewProps {
 /** Presentational preset toolbar; rendering depends only on state and props. */
 export function PresetBarView({
   selectedId,
-  generatorId,
-  builtIns,
-  customPresets,
+  builtInCards,
+  customCards,
+  pickerOpen,
   modified,
   storageUnavailable,
   warning,
   error,
-  description,
   saveOpen,
   saveName,
   manageOpen,
@@ -98,6 +144,8 @@ export function PresetBarView({
   manageRef,
   manageButtonRef,
   onSelect,
+  onPickerOpen,
+  onPickerClose,
   onSaveAsOpen,
   onSaveNameChange,
   onSaveAsConfirm,
@@ -111,30 +159,21 @@ export function PresetBarView({
   onDelete,
 }: PresetBarViewProps) {
   const { t } = useI18n()
-  const selectedCustom = customPresets.find((preset) => preset.id === selectedId)
+  const selectedCustom = customCards.find((card) => card.id === selectedId)
+  const selectedCard = builtInCards.find((card) => card.id === selectedId)
+    ?? customCards.find((card) => card.id === selectedId)
   return (
     <div className="preset-bar">
       <div className="preset-bar-row">
-        <select
-          className="preset-select"
-          aria-label={t('presets.selectLabel')}
-          value={selectedId ?? ''}
-          onChange={(event) => onSelect(event.target.value)}
-        >
-          <option value="" disabled>{t('presets.placeholder')}</option>
-          <optgroup label={t('presets.builtInGroup')}>
-            {builtIns.map((preset) => {
-              const keys = presetDisplayKeys(generatorId, preset.id)
-              return <option value={preset.id} key={preset.id}>{keys ? t(keys.name) : preset.name}</option>
-            })}
-          </optgroup>
-          {customPresets.length > 0 ? (
-            <optgroup label={t('presets.customGroup')}>
-              {customPresets.map((preset) => <option value={preset.id} key={preset.id}>{preset.name}</option>)}
-            </optgroup>
-          ) : null}
-        </select>
+        <div className="preset-pick-group">
+          <span className="preset-current-name">{selectedCard?.name ?? t('presets.selectPrompt')}</span>
+          <button className="secondary-button" type="button" onClick={onPickerOpen}>
+            {t('presets.pickerOpen')}
+          </button>
+        </div>
         {modified ? <span className="preset-modified">{t('presets.modified')}</span> : null}
+      </div>
+      <div className="preset-action-row">
         <button className="secondary-button" type="button" disabled={storageUnavailable} onClick={onSaveAsOpen}>
           {t('presets.saveAs')}
         </button>
@@ -155,12 +194,12 @@ export function PresetBarView({
           </button>
           {manageOpen ? (
             <div className="preset-manage-panel" id={managePanelId} role="dialog" aria-label={t('presets.manageDialogLabel')}>
-              {customPresets.length === 0 ? (
+              {customCards.length === 0 ? (
                 <p className="preset-manage-empty">{t('presets.noCustom')}</p>
               ) : (
-                customPresets.map((preset) => (
-                  <div className="preset-manage-item" key={preset.id}>
-                    {renameId === preset.id ? (
+                customCards.map((card) => (
+                  <div className="preset-manage-item" key={card.id}>
+                    {renameId === card.id ? (
                       <>
                         <input
                           aria-label={t('presets.rename')}
@@ -168,15 +207,15 @@ export function PresetBarView({
                           maxLength={40}
                           onChange={(event) => onRenameChange(event.target.value)}
                         />
-                        <button className="text-button" type="button" onClick={() => onRenameConfirm(preset.id)}>{t('presets.confirm')}</button>
+                        <button className="text-button" type="button" onClick={() => onRenameConfirm(card.id)}>{t('presets.confirm')}</button>
                         <button className="text-button" type="button" onClick={onRenameCancel}>{t('presets.cancel')}</button>
                       </>
                     ) : (
                       <>
-                        <span className="preset-manage-name">{preset.name}</span>
-                        <button className="text-button" type="button" onClick={() => onRenameStart(preset.id, preset.name)}>{t('presets.rename')}</button>
-                        <button className="text-button danger" type="button" onClick={() => onDelete(preset.id)}>
-                          {deleteConfirmId === preset.id ? t('presets.confirmDelete') : t('presets.delete')}
+                        <span className="preset-manage-name">{card.name}</span>
+                        <button className="text-button" type="button" onClick={() => onRenameStart(card.id, card.name)}>{t('presets.rename')}</button>
+                        <button className="text-button danger" type="button" onClick={() => onDelete(card.id)}>
+                          {deleteConfirmId === card.id ? t('presets.confirmDelete') : t('presets.delete')}
                         </button>
                       </>
                     )}
@@ -187,6 +226,55 @@ export function PresetBarView({
           ) : null}
         </div>
       </div>
+
+      {pickerOpen ? (
+        <div className="preset-dialog-backdrop" onClick={onPickerClose}>
+          <div
+            className="preset-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('presets.pickerTitle')}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="preset-dialog-header">
+              <h2 className="preset-dialog-title">{t('presets.pickerTitle')}</h2>
+              <button
+                className="preset-dialog-close"
+                type="button"
+                aria-label={t('presets.pickerClose')}
+                onClick={onPickerClose}
+              >
+                ×
+              </button>
+            </div>
+            <div className="preset-groups" role="group" aria-label={t('presets.selectLabel')}>
+              {builtInCards.length > 0 ? (
+                <section className="preset-group" aria-label={t('presets.builtInGroup')}>
+                  <h3 className="preset-group-title">{t('presets.builtInGroup')}</h3>
+                  <div className="preset-card-grid">
+                    {builtInCards.map((card) => (
+                      <PresetCard key={card.id} card={card} selected={card.id === selectedId} onSelect={onSelect} />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+              {customCards.length > 0 ? (
+                <section className="preset-group" aria-label={t('presets.customGroup')}>
+                  <h3 className="preset-group-title">{t('presets.customGroup')}</h3>
+                  <div className="preset-card-grid">
+                    {customCards.map((card) => (
+                      <PresetCard key={card.id} card={card} selected={card.id === selectedId} onSelect={onSelect} />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+            </div>
+            <div className="preset-dialog-actions">
+              <button className="secondary-button" type="button" onClick={onPickerClose}>{t('presets.pickerCancel')}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {saveOpen ? (
         <div className="preset-save-row">
@@ -207,13 +295,69 @@ export function PresetBarView({
         </div>
       ) : null}
 
-      {description ? <p className="preset-description">{description}</p> : null}
       {error ? <p className="preset-error" role="alert">{error}</p> : null}
       {warning ? <p className="preset-warning">{t('presets.warning')}</p> : null}
       {storageUnavailable ? <p className="preset-hint">{t('presets.storageHint')}</p> : null}
     </div>
   )
 }
+
+/** One looping preview card backed by lazily rendered preset frames. */
+const PresetCard = memo(function PresetCard({
+  card,
+  selected,
+  onSelect,
+}: {
+  readonly card: PresetPreviewCard
+  readonly selected: boolean
+  readonly onSelect: (presetId: string) => void
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const frameIndexRef = useRef(0)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return undefined
+    setFailed(false)
+    let disposed = false
+    let frames: readonly PixelFrame[] | undefined
+    let interval = 0
+    // Deferred rendering keeps dozens of preset cards from blocking first paint.
+    const timer = window.setTimeout(() => {
+      if (disposed) return
+      try {
+        frames = card.buildFrames()
+      } catch {
+        if (!disposed) setFailed(true)
+        return
+      }
+      if (disposed || frames.length === 0) return
+      drawFrame(canvas, frames[0])
+      frameIndexRef.current = 0
+      interval = window.setInterval(() => {
+        frameIndexRef.current = (frameIndexRef.current + 1) % frames!.length
+        drawFrame(canvas, frames![frameIndexRef.current])
+      }, 150)
+    }, 0)
+    return () => {
+      disposed = true
+      window.clearTimeout(timer)
+      window.clearInterval(interval)
+    }
+  }, [card.buildFrames])
+  return (
+    <button
+      className={`preset-card ${selected ? 'active' : ''} ${failed ? 'failed' : ''}`}
+      type="button"
+      aria-pressed={selected}
+      onClick={() => onSelect(card.id)}
+    >
+      <canvas ref={canvasRef} aria-hidden="true" />
+      <span className="preset-card-label">{card.name}</span>
+      {card.description ? <small className="preset-card-description">{card.description}</small> : null}
+    </button>
+  )
+})
 
 /**
  * Effect preset toolbar rendered between the parameter header and category
@@ -225,6 +369,9 @@ export function PresetBar<Parameters>({
   capability,
   generatorId,
   parameters,
+  render,
+  frameSize,
+  frameCount,
   onApply,
 }: PresetBarProps<Parameters>) {
   const { t } = useI18n()
@@ -235,6 +382,7 @@ export function PresetBar<Parameters>({
   const [appliedPayload, setAppliedPayload] = useState<JsonValue | undefined>(undefined)
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
   const [renameId, setRenameId] = useState<string | null>(null)
   const [renameName, setRenameName] = useState('')
@@ -243,9 +391,12 @@ export function PresetBar<Parameters>({
   const manageRef = useRef<HTMLDivElement | null>(null)
   const manageButtonRef = useRef<HTMLButtonElement | null>(null)
   const managePanelId = useId()
+  const parametersRef = useRef(parameters)
+  parametersRef.current = parameters
 
   useEffect(() => {
     runPresetMigration(generatorId, storage)
+    clearPresetFrameCache(generatorId)
     const loaded = readCustomPresets(generatorId, storage, capability.validate)
     setCustomPresets(loaded.presets)
     setWarning(loaded.warning)
@@ -276,10 +427,53 @@ export function PresetBar<Parameters>({
     }
   }, [manageOpen])
 
+  useEffect(() => {
+    if (!pickerOpen) {
+      return undefined
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setPickerOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [pickerOpen])
+
   const capture = useMemo(() => capability.capture(parameters), [capability, parameters])
   const modified = appliedPayload !== undefined && !payloadsEqual(capture, appliedPayload)
-  const selectedBuiltIn = capability.builtIns.find((preset) => preset.id === selectedId)
-  const description = selectedBuiltIn ? presetDescription(generatorId, selectedBuiltIn, t) : null
+
+  /**
+   * Stable preview builder per preset. It reads the latest parameters through
+   * a ref so slider drags never re-create card props; only canvas size, frame
+   * count, or the generator identity invalidate the previews.
+   */
+  const buildFrames = useCallback((presetId: string, payload: JsonValue) => {
+    const key = presetPreviewKey(generatorId, presetId, frameSize, frameCount)
+    return (): readonly PixelFrame[] => {
+      const cached = presetFrameCache.get(key)
+      if (cached) return cached
+      const frames = renderPresetFrames(capability, render, parametersRef.current, payload)
+      presetFrameCache.set(key, frames)
+      return frames
+    }
+  }, [capability, render, generatorId, frameSize.width, frameSize.height, frameCount])
+
+  const builtInCards = useMemo(() => capability.builtIns.map((preset) => ({
+    id: preset.id,
+    name: presetName(generatorId, preset, t),
+    description: presetDescription(generatorId, preset, t),
+    custom: false,
+    buildFrames: buildFrames(preset.id, preset.payload),
+  })), [capability.builtIns, generatorId, t, buildFrames])
+
+  const customCards = useMemo(() => customPresets.map((preset) => ({
+    id: preset.id,
+    name: preset.name,
+    description: null,
+    custom: true,
+    buildFrames: buildFrames(preset.id, preset.payload),
+  })), [customPresets, buildFrames])
 
   const handleSelect = (presetId: string) => {
     const preset = capability.builtIns.find((entry) => entry.id === presetId)
@@ -292,6 +486,7 @@ export function PresetBar<Parameters>({
       onApply(next)
       setSelectedId(presetId)
       setAppliedPayload(baseline)
+      setPickerOpen(false)
       setError(null)
     } catch {
       setError(t('presets.errors.invalidPreset'))
@@ -307,6 +502,7 @@ export function PresetBar<Parameters>({
       setError(t('presets.errors.storageUnavailable'))
       return false
     }
+    clearPresetFrameCache(generatorId)
     setCustomPresets(presets)
     setWarning(false)
     setError(null)
@@ -386,14 +582,13 @@ export function PresetBar<Parameters>({
   return (
     <PresetBarView
       selectedId={selectedId}
-      generatorId={generatorId}
-      builtIns={capability.builtIns}
-      customPresets={customPresets}
+      builtInCards={builtInCards}
+      customCards={customCards}
+      pickerOpen={pickerOpen}
       modified={modified}
       storageUnavailable={storage === null}
       warning={warning}
       error={error}
-      description={description}
       saveOpen={saveOpen}
       saveName={saveName}
       manageOpen={manageOpen}
@@ -404,6 +599,11 @@ export function PresetBar<Parameters>({
       manageRef={manageRef}
       manageButtonRef={manageButtonRef}
       onSelect={handleSelect}
+      onPickerOpen={() => {
+        setError(null)
+        setPickerOpen(true)
+      }}
+      onPickerClose={() => setPickerOpen(false)}
       onSaveAsOpen={() => {
         setError(null)
         setSaveOpen((open) => !open)
@@ -429,6 +629,16 @@ export function PresetBar<Parameters>({
       onDelete={handleDelete}
     />
   )
+}
+
+/** Returns the translated preset name, falling back to the raw name. */
+function presetName(
+  generatorId: string,
+  preset: GeneratorPreset,
+  t: TranslateFunction,
+): string {
+  const keys = presetDisplayKeys(generatorId, preset.id)
+  return keys ? t(keys.name) : preset.name
 }
 
 /** Returns the translated preset description, or null for custom presets. */

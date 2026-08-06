@@ -37,7 +37,7 @@
   .hero { align-items: flex-start; gap: 20px; }
   .status-chip { display: none; }
   .project-menu-button, .project-menu-item { min-height: 44px; }
-  .preset-bar .secondary-button, .preset-bar-row > button { min-height: 44px; }
+  .preset-bar .secondary-button { min-height: 44px; }
   .preset-manage { position: static; }
   .preset-manage-panel {
     left: 8px;
@@ -46,6 +46,8 @@
     width: auto;
     max-width: none;
   }
+  .preset-dialog-backdrop { padding: 0; }
+  .preset-dialog { width: 100%; height: 100%; max-height: 100vh; border-radius: 0; }
   .controls-heading, .category-content { padding-left: 17px; padding-right: 17px; }
   .parameter-field { grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
   .field-inputs { grid-template-columns: 1fr 70px; gap: 9px; }
