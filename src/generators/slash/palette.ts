@@ -35,6 +35,7 @@ function mixColor(first: RgbColor, second: RgbColor): RgbColor {
     r: Math.round((first.r + second.r) / 2),
     g: Math.round((first.g + second.g) / 2),
     b: Math.round((first.b + second.b) / 2),
+    a: Math.round((first.a + second.a) / 2),
   }
 }
 

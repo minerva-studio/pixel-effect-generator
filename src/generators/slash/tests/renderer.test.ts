@@ -31,6 +31,16 @@ describe('renderSlashFrames', () => {
     expect(frameBytes(first)).toEqual(frameBytes(second))
   })
 
+  it('writes per-band palette alpha into rendered pixels', () => {
+    const palette = DEFAULT_SLASH_PARAMETERS.palette.map((color, index) => ({ ...color, a: 220 - index * 40 }))
+    const frames = renderSlashFrames({ ...DEFAULT_SLASH_PARAMETERS, palette })
+    const allowed = new Set(['0,0,0,0', ...palette.map(({ r, g, b, a }) => `${r},${g},${b},${a}`)])
+    expect([...collectColors(frames)].every((color) => allowed.has(color))).toBe(true)
+    const alphas = new Set(frames.flatMap((frame) => Array.from(frame.pixels).filter((_, index) => index % 4 === 3)))
+    expect(alphas).not.toContain(255)
+    expect(alphas.has(220)).toBe(true)
+  })
+
   it('supports configurable canvas dimensions and preserves dimensions in every frame', () => {
     const targetSizes = [
       { width: 16, height: 16 },
@@ -84,6 +94,7 @@ describe('renderSlashFrames', () => {
         r: 20 + index * 10,
         g: 40 + index * 10,
         b: 60 + index * 10,
+        a: 255,
       }))
       const frames = renderSlashFrames({ ...quietParameters(), palette })
       const allowed = new Set(['0,0,0,0', ...palette.map((color) => `${color.r},${color.g},${color.b},255`)])

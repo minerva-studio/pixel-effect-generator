@@ -1,6 +1,6 @@
 import type { RgbColor } from '../../shared/pixel/color'
 
-/** Writes one opaque palette pixel inside the frame. */
+/** Writes one palette pixel with its own alpha inside the frame. */
 export function writePixel(
   pixels: Uint8ClampedArray,
   width: number,
@@ -14,7 +14,7 @@ export function writePixel(
   pixels[offset] = color.r
   pixels[offset + 1] = color.g
   pixels[offset + 2] = color.b
-  pixels[offset + 3] = 255
+  pixels[offset + 3] = color.a
 }
 
 /** Fills a centered opaque disc. */

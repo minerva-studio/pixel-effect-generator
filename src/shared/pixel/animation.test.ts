@@ -124,6 +124,27 @@ describe('GIF encoding', () => {
     expect(buildGifPalette(frames[1].pixels).indices.every((index) => index === 0)).toBe(true)
   })
 
+  it('flattens semi-transparent pixels to binary GIF transparency at the 128 threshold', () => {
+    const pixels = new Uint8ClampedArray(8 * 8 * 4)
+    for (let pixel = 0; pixel < 64; pixel += 1) {
+      const offset = pixel * 4
+      pixels[offset] = 255
+      pixels[offset + 1] = 128
+      pixels[offset + 2] = 64
+      pixels[offset + 3] = pixel % 2 === 0 ? 64 : 192
+    }
+    const frame: PixelFrame = { width: 8, height: 8, pixels }
+    const { palette, indices } = buildGifPalette(frame.pixels)
+    expect(palette).toContainEqual([255, 128, 64])
+    for (let pixel = 0; pixel < indices.length; pixel += 1) {
+      if (frame.pixels[pixel * 4 + 3] < 128) {
+        expect(indices[pixel]).toBe(0)
+      } else {
+        expect(indices[pixel]).toBeGreaterThan(0)
+      }
+    }
+  })
+
   it('keeps total duration within one 10ms unit across supported FPS values', () => {
     const frameCount = 8
     const frames = Array.from({ length: frameCount }, (_, index) => solidFrame(8, 8, index * 20, 30, 40, 255))

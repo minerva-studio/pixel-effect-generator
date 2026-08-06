@@ -43,8 +43,9 @@
   .controls-heading, .category-content { padding-left: 17px; padding-right: 17px; }
   .parameter-field { grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
   .field-inputs { grid-template-columns: 1fr 70px; gap: 9px; }
-  .palette-row { grid-template-columns: 24px 36px 1fr; }
-  .palette-row .remove-button { grid-column: 2 / -1; justify-self: end; }
+  .palette-row { grid-template-columns: 24px 36px 1fr auto; }
+  .palette-row .palette-alpha { grid-column: 1 / -1; }
+  .palette-row .remove-button { grid-column: 3 / -1; justify-self: end; }
   .preview-settings { flex-wrap: wrap; justify-content: flex-start; }
   .preview-settings strong { margin-left: auto; }
   .preview-seed-control { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }

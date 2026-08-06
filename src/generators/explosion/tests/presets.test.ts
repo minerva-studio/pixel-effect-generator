@@ -84,6 +84,21 @@ describe('combustion explosion built-in presets', () => {
     expect(renderExplosionFrames(restored).map(({ pixels }) => Array.from(pixels))).toEqual(renderExplosionFrames(source).map(({ pixels }) => Array.from(pixels)))
   })
 
+  it('defaults missing palette alpha and round-trips custom alpha', () => {
+    const captured = captureExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const legacy = {
+      ...captured,
+      palette: (captured.palette as { readonly r: number; readonly g: number; readonly b: number }[]).map(({ r, g, b }) => ({ r, g, b })),
+    }
+    expect(applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, legacy as JsonValue).palette.every((color) => color.a === 255)).toBe(true)
+
+    const custom = {
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      palette: DEFAULT_EXPLOSION_PARAMETERS.palette.map((color, index) => ({ ...color, a: 220 - index * 30 })),
+    }
+    expect(applyExplosionPreset(custom, captureExplosionPreset(custom)).palette).toEqual(custom.palette)
+  })
+
   it('round-trips shockwave fields through capture and apply', () => {
     const source: ExplosionParameters = {
       ...DEFAULT_EXPLOSION_PARAMETERS,

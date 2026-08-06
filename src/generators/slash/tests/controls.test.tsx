@@ -22,6 +22,16 @@ function renderControls(category: 'shape' | 'palette' | 'motion' | 'breakup' | '
 }
 
 describe('Slash controls', () => {
+  it('renders an alpha slider and 8-digit hex for every palette band', () => {
+    const markup = renderControls('palette')
+    expect(markup).toContain('Alpha')
+    expect(markup).toContain('type="range"')
+    expect(markup).toContain('min="0"')
+    expect(markup).toContain('max="255"')
+    expect(markup).toContain('#FFFFFFFF')
+    expect(renderControls('palette', 'zh-CN')).toContain('透明度')
+  })
+
   it('exposes adjacent minimum and maximum fragment size fields for every drawing mode', () => {
     const markup = renderControls('fragments')
 

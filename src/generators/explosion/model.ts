@@ -133,10 +133,10 @@ export function resizeExplosionCanvas(
 /** Modern billowing-fireball defaults used by the rolling preset and shape cards. */
 export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
   palette: [
-    { r: 255, g: 255, b: 255 },
-    { r: 255, g: 176, b: 48 },
-    { r: 255, g: 92, b: 38 },
-    { r: 74, g: 34, b: 26 },
+    { r: 255, g: 255, b: 255, a: 255 },
+    { r: 255, g: 176, b: 48, a: 255 },
+    { r: 255, g: 92, b: 38, a: 255 },
+    { r: 74, g: 34, b: 26, a: 255 },
   ],
   canvasWidth: 128,
   canvasHeight: 128,
@@ -180,10 +180,10 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
 /** Default explosion parameters now reproduce the classic Retro Burst look. */
 export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
   palette: [
-    { r: 255, g: 250, b: 224 },
-    { r: 255, g: 201, b: 72 },
-    { r: 242, g: 95, b: 44 },
-    { r: 105, g: 42, b: 52 },
+    { r: 255, g: 250, b: 224, a: 255 },
+    { r: 255, g: 201, b: 72, a: 255 },
+    { r: 242, g: 95, b: 44, a: 255 },
+    { r: 105, g: 42, b: 52, a: 255 },
   ],
   canvasWidth: 128,
   canvasHeight: 128,

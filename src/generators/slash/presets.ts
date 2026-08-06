@@ -144,9 +144,9 @@ export const SLASH_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
     description: 'A crisp, low-breakup base slash.',
     payload: {
       palette: [
-        { r: 255, g: 255, b: 255 },
-        { r: 154, g: 198, b: 255 },
-        { r: 52, g: 140, b: 255 },
+        { r: 255, g: 255, b: 255, a: 255 },
+        { r: 154, g: 198, b: 255, a: 255 },
+        { r: 52, g: 140, b: 255, a: 255 },
       ],
       radius: 44,
       thickness: 10,
@@ -178,9 +178,9 @@ export const SLASH_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
     description: 'A thick arc with a long, heavy trail.',
     payload: {
       palette: [
-        { r: 255, g: 240, b: 220 },
-        { r: 255, g: 140, b: 90 },
-        { r: 190, g: 60, b: 40 },
+        { r: 255, g: 240, b: 220, a: 255 },
+        { r: 255, g: 140, b: 90, a: 255 },
+        { r: 190, g: 60, b: 40, a: 255 },
       ],
       radius: 48,
       thickness: 18,
@@ -212,9 +212,9 @@ export const SLASH_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
     description: 'A bright palette with fast energy sparks.',
     payload: {
       palette: [
-        { r: 255, g: 255, b: 255 },
-        { r: 255, g: 220, b: 120 },
-        { r: 140, g: 240, b: 255 },
+        { r: 255, g: 255, b: 255, a: 255 },
+        { r: 255, g: 220, b: 120, a: 255 },
+        { r: 140, g: 240, b: 255, a: 255 },
       ],
       radius: 40,
       thickness: 8,
@@ -246,9 +246,9 @@ export const SLASH_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
     description: 'A heavily broken edge with directional shards.',
     payload: {
       palette: [
-        { r: 255, g: 255, b: 255 },
-        { r: 154, g: 198, b: 255 },
-        { r: 52, g: 140, b: 255 },
+        { r: 255, g: 255, b: 255, a: 255 },
+        { r: 154, g: 198, b: 255, a: 255 },
+        { r: 52, g: 140, b: 255, a: 255 },
       ],
       radius: 44,
       thickness: 12,
@@ -280,9 +280,9 @@ export const SLASH_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
     description: 'A complete 360-degree ring sweep.',
     payload: {
       palette: [
-        { r: 255, g: 255, b: 255 },
-        { r: 180, g: 200, b: 255 },
-        { r: 90, g: 120, b: 255 },
+        { r: 255, g: 255, b: 255, a: 255 },
+        { r: 180, g: 200, b: 255, a: 255 },
+        { r: 90, g: 120, b: 255, a: 255 },
       ],
       radius: 42,
       thickness: 10,

@@ -185,6 +185,7 @@ const enTree = {
       band: 'Palette band {index}',
       removeBand: 'Remove palette band {index}',
       remove: 'Remove',
+      alpha: 'Alpha',
       addColorBand: 'Add color band',
     },
     seed: {
@@ -291,6 +292,7 @@ const enTree = {
       band: 'Explosion palette band {index}',
       removeBand: 'Remove explosion palette band {index}',
       remove: 'Remove',
+      alpha: 'Alpha',
       addColorBand: 'Add color band',
     },
     presets: {
@@ -407,6 +409,7 @@ const enTree = {
       band: 'Bloom palette band {index}',
       removeBand: 'Remove bloom palette band {index}',
       remove: 'Remove',
+      alpha: 'Alpha',
       addColorBand: 'Add color band',
     },
     presets: {
@@ -736,6 +739,7 @@ export const zhCN: MessageTree = {
       band: '色带 {index}',
       removeBand: '删除色带 {index}',
       remove: '删除',
+      alpha: '透明度',
       addColorBand: '添加色带',
     },
     seed: {
@@ -842,6 +846,7 @@ export const zhCN: MessageTree = {
       band: '爆炸色带 {index}',
       removeBand: '删除爆炸色带 {index}',
       remove: '删除',
+      alpha: '透明度',
       addColorBand: '添加色带',
     },
     presets: {
@@ -958,6 +963,7 @@ export const zhCN: MessageTree = {
       band: '绽放色带 {index}',
       removeBand: '删除绽放色带 {index}',
       remove: '删除',
+      alpha: '透明度',
       addColorBand: '添加色带',
     },
     presets: {

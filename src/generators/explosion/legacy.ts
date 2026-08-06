@@ -255,8 +255,27 @@ function readPalette(value: unknown): RgbColor[] {
   if (!Array.isArray(value) || value.length < 2 || value.length > 6) throw new RangeError('palette must be an array of 2 to 6 colors.')
   return value.map((entry, index) => {
     if (!isPlainRecord(entry)) throw new RangeError(`palette[${index}] must be an object.`)
-    return { r: readInteger(entry, 'r', 0, 255), g: readInteger(entry, 'g', 0, 255), b: readInteger(entry, 'b', 0, 255) }
+    return {
+      r: readInteger(entry, 'r', 0, 255),
+      g: readInteger(entry, 'g', 0, 255),
+      b: readInteger(entry, 'b', 0, 255),
+      a: readOptionalInteger(entry, 'a', 0, 255, 255),
+    }
   })
+}
+
+/** Reads one optional bounded integer field with a fallback default. */
+function readOptionalInteger(
+  record: Readonly<Record<string, unknown>>,
+  key: string,
+  minimum: number,
+  maximum: number,
+  fallback: number,
+): number {
+  const value = record[key]
+  if (value === undefined) return fallback
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum) throw new RangeError(`${key} must be an integer between ${minimum} and ${maximum}.`)
+  return value
 }
 
 /** Reads one bounded integer field. */

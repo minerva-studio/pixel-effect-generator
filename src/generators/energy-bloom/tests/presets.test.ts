@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { payloadsEqual, resolveAppliedPresetBaseline } from '../../../components/PresetBar'
 import { en, presetDisplayKeys, translate } from '../../../i18n/messages'
+import type { JsonValue } from '../../../shared/project/types'
 import { DEFAULT_BLOOM_PARAMETERS, type BloomParameters } from '../model'
 import { renderBloomFrames } from '../renderer'
 import {
@@ -46,6 +47,21 @@ describe('energy bloom built-in presets', () => {
       BLOOM_BUILTIN_PRESETS[1].payload,
     )
     expect(applied).toMatchObject({ canvasWidth: 256, canvasHeight: 128, frameCount: 16 })
+  })
+
+  it('defaults missing palette alpha and round-trips custom alpha', () => {
+    const captured = captureBloomPreset(DEFAULT_BLOOM_PARAMETERS) as Record<string, unknown>
+    const legacy = {
+      ...captured,
+      palette: (captured.palette as { readonly r: number; readonly g: number; readonly b: number }[]).map(({ r, g, b }) => ({ r, g, b })),
+    }
+    expect(applyBloomPreset(DEFAULT_BLOOM_PARAMETERS, legacy as JsonValue).palette.every((color) => color.a === 255)).toBe(true)
+
+    const custom = {
+      ...DEFAULT_BLOOM_PARAMETERS,
+      palette: DEFAULT_BLOOM_PARAMETERS.palette.map((color, index) => ({ ...color, a: 220 - index * 30 })),
+    }
+    expect(applyBloomPreset(custom, captureBloomPreset(custom)).palette).toEqual(custom.palette)
   })
 
   it('clamps nested pixel fields to a small non-square canvas', () => {

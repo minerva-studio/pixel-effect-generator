@@ -52,7 +52,7 @@ const REQUIRED_PARAMETER_KEYS = [
  */
 export function serializeSlashParameters(parameters: SlashParameters): JsonValue {
   return {
-    palette: parameters.palette.map(({ r, g, b }) => ({ r, g, b })),
+    palette: parameters.palette.map(({ r, g, b, a }) => ({ r, g, b, a })),
     canvasWidth: parameters.canvasWidth,
     canvasHeight: parameters.canvasHeight,
     radius: parameters.radius,
@@ -150,8 +150,19 @@ export function readPalette(value: unknown): RgbColor[] {
       r: readInteger(entry, 'r', 0, 255),
       g: readInteger(entry, 'g', 0, 255),
       b: readInteger(entry, 'b', 0, 255),
+      a: readOptionalInteger(entry, 'a', 0, 255, 255),
     }
   })
+}
+
+/** Reads an optional bounded integer field, falling back to a default when absent. */
+export function readOptionalInteger(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number, fallback: number): number {
+  const value = record[key]
+  if (value === undefined) return fallback
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum) {
+    throw new RangeError(`${key} must be an integer between ${minimum} and ${maximum}.`)
+  }
+  return value
 }
 
 export function readInteger(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number): number {

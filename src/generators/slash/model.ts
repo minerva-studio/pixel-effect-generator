@@ -156,9 +156,9 @@ export function updateFragmentMaxSize(parameters: SlashParameters, value: number
 
 export const DEFAULT_SLASH_PARAMETERS: SlashParameters = {
   palette: [
-    { r: 255, g: 255, b: 255 },
-    { r: 154, g: 198, b: 255 },
-    { r: 52, g: 140, b: 255 },
+    { r: 255, g: 255, b: 255, a: 255 },
+    { r: 154, g: 198, b: 255, a: 255 },
+    { r: 52, g: 140, b: 255, a: 255 },
   ],
   canvasWidth: FRAME_SIZE,
   canvasHeight: FRAME_SIZE,

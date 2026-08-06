@@ -1,5 +1,6 @@
 import { isPlainRecord } from '../../shared/project/document'
 import type { JsonValue } from '../../shared/project/types'
+import type { RgbColor } from '../../shared/pixel/color'
 import type { GeneratorPreset, GeneratorPresetCapability } from '../contract'
 import {
   assertValidExplosionParameters,
@@ -30,7 +31,7 @@ export function captureExplosionPreset(parameters: ExplosionParameters): JsonVal
   return {
     schemaVersion: EXPLOSION_PRESET_SCHEMA_VERSION,
     family: EXPLOSION_PRESET_FAMILY,
-    palette: parameters.palette.map(({ r, g, b }) => ({ r, g, b })),
+    palette: parameters.palette.map(({ r, g, b, a }) => ({ r, g, b, a })),
     mode: parameters.motion.mode,
     seed: parameters.seed,
     body: { ...parameters.body },
@@ -249,10 +250,10 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
     payload: captureExplosionPreset({
       ...DEFAULT_EXPLOSION_PARAMETERS,
       palette: [
-        { r: 255, g: 250, b: 224 },
-        { r: 255, g: 201, b: 72 },
-        { r: 242, g: 95, b: 44 },
-        { r: 105, g: 42, b: 52 },
+        { r: 255, g: 250, b: 224, a: 255 },
+        { r: 255, g: 201, b: 72, a: 255 },
+        { r: 242, g: 95, b: 44, a: 255 },
+        { r: 105, g: 42, b: 52, a: 255 },
       ],
       seed: 20260805,
       body: {
@@ -308,11 +309,16 @@ function readRecord(record: Readonly<Record<string, unknown>>, key: string): Rea
 }
 
 /** Reads a two-to-six-color palette. */
-export function readPalette(value: unknown): { readonly r: number; readonly g: number; readonly b: number }[] {
+export function readPalette(value: unknown): RgbColor[] {
   if (!Array.isArray(value) || value.length < 2 || value.length > 6) throw new RangeError('palette must be an array of 2 to 6 colors.')
   return value.map((entry, index) => {
     if (!isPlainRecord(entry)) throw new RangeError(`palette[${index}] must be an object.`)
-    return { r: readInteger(entry, 'r', 0, 255), g: readInteger(entry, 'g', 0, 255), b: readInteger(entry, 'b', 0, 255) }
+    return {
+      r: readInteger(entry, 'r', 0, 255),
+      g: readInteger(entry, 'g', 0, 255),
+      b: readInteger(entry, 'b', 0, 255),
+      a: readOptionalInteger(entry, 'a', 0, 255, 255),
+    }
   })
 }
 

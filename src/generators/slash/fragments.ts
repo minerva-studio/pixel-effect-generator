@@ -300,7 +300,7 @@ export function integerLinePoints(
   return points
 }
 
-/** Writes one fully opaque pixel, silently ignoring out-of-bounds targets. */
+/** Writes one palette pixel with its own alpha, silently ignoring out-of-bounds targets. */
 export function writePixel(
   pixels: Uint8ClampedArray,
   frameWidth: number,
@@ -316,7 +316,7 @@ export function writePixel(
   pixels[pixelIndex] = color.r
   pixels[pixelIndex + 1] = color.g
   pixels[pixelIndex + 2] = color.b
-  pixels[pixelIndex + 3] = 255
+  pixels[pixelIndex + 3] = color.a
 }
 
 function trailStartTime(trailLength: number): number {

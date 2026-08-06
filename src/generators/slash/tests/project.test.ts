@@ -75,6 +75,22 @@ describe('parseSlashParameters', () => {
     expect(parseSlashParameters(serializeSlashParameters(extreme))).toEqual(extreme)
   })
 
+  it('defaults missing palette alpha to 255 and round-trips custom alpha', () => {
+    const json = JSON.parse(JSON.stringify(serializeSlashParameters(sampleParameters()))) as { palette: { readonly r: number; readonly g: number; readonly b: number }[] } & Record<string, unknown>
+    const legacy = { ...json, palette: json.palette.map(({ r, g, b }) => ({ r, g, b })) }
+    expect(parseSlashParameters(legacy as JsonValue).palette.every((color) => color.a === 255)).toBe(true)
+
+    const custom = {
+      ...DEFAULT_SLASH_PARAMETERS,
+      palette: [
+        { r: 10, g: 20, b: 30, a: 40 },
+        { r: 50, g: 60, b: 70, a: 80 },
+        { r: 90, g: 100, b: 110, a: 120 },
+      ],
+    }
+    expect(parseSlashParameters(serializeSlashParameters(custom))).toEqual(custom)
+  })
+
   it('builds a fresh palette array that does not alias the input', () => {
     const json = serializeSlashParameters(sampleParameters()) as { palette: unknown }
     const parsed = parseSlashParameters(json)

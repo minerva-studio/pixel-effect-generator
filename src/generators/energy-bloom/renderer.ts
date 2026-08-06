@@ -1,4 +1,5 @@
 import type { PixelFrame } from '../../shared/pixel/frame'
+import type { RgbColor } from '../../shared/pixel/color'
 import { clamp01, createXorshift32, hashUnit, lerp, smoothStep } from '../../shared/pixel/rng'
 import { renderCore } from '../shared-effects/core'
 import { dissolvePixelRejected, type DissolveOptions } from '../shared-effects/dissolve'
@@ -156,7 +157,7 @@ function renderBloomBody(
 }
 
 /** Fills transparent regions that cannot reach the canvas edge, preserving edge-only cel erosion. */
-function fillEnclosedCelHoles(pixels: Uint8ClampedArray, width: number, height: number, color: { readonly r: number; readonly g: number; readonly b: number }): void {
+function fillEnclosedCelHoles(pixels: Uint8ClampedArray, width: number, height: number, color: RgbColor): void {
   const outside = new Uint8Array(width * height)
   const queue: number[] = []
   for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {

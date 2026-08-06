@@ -24,6 +24,16 @@ describe('renderBloomFrames', () => {
     expect(new Set(first.flatMap(alphaValues))).toEqual(new Set([0, 255]))
   })
 
+  it('writes per-band palette alpha into rendered pixels', () => {
+    const palette = DEFAULT_BLOOM_PARAMETERS.palette.map((color, index) => ({ ...color, a: 223 - index * 32 }))
+    const frames = renderBloomFrames({ ...DEFAULT_BLOOM_PARAMETERS, palette })
+    const allowed = new Set(['0,0,0,0', ...palette.map(({ r, g, b, a }) => `${r},${g},${b},${a}`)])
+    expect([...new Set(frames.flatMap(colors))].every((color) => allowed.has(color))).toBe(true)
+    const alphas = new Set(frames.flatMap(alphaValues))
+    expect(alphas).not.toContain(255)
+    expect(alphas.has(223)).toBe(true)
+  })
+
   it('supports resized rectangular canvases', () => {
     const resized = resizeBloomCanvas(DEFAULT_BLOOM_PARAMETERS, { width: 64, height: 32 }, true)
     const frames = renderBloomFrames({ ...resized, frameCount: 6 })

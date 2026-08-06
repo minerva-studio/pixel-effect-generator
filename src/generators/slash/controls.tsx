@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
 import { GeneratorPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
-import { hexToRgb, rgbToHex } from '../../shared/pixel/color'
+import { hexToRgb, rgbaToHex } from '../../shared/pixel/color'
 import {
   MAX_CANVAS_SIZE,
   MAX_FRAGMENT_SIZE,
@@ -139,7 +139,15 @@ function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'categ
   const { t } = useI18n()
   const hintId = useId()
   const updateColor = (index: number, color: string) => {
-    const palette = parameters.palette.map((current, colorIndex) => colorIndex === index ? hexToRgb(color) : current)
+    const palette = parameters.palette.map((current, colorIndex) => (
+      colorIndex === index ? { ...hexToRgb(color), a: current.a } : current
+    ))
+    onChange({ ...parameters, palette })
+  }
+  const updateAlpha = (index: number, alpha: number) => {
+    const palette = parameters.palette.map((current, colorIndex) => (
+      colorIndex === index ? { ...current, a: alpha } : current
+    ))
     onChange({ ...parameters, palette })
   }
 
@@ -152,10 +160,15 @@ function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'categ
       </div>
       <div className="palette-list">
         {parameters.palette.map((color, index) => (
-          <div className="palette-row" key={`${index}-${rgbToHex(color)}`}>
+          <div className="palette-row" key={`${index}-${rgbaToHex(color)}`}>
             <span className="palette-order">{String(index + 1).padStart(2, '0')}</span>
-            <input aria-label={t('slash.palette.band', { index: index + 1 })} type="color" value={rgbToHex(color)} onChange={(event) => updateColor(index, event.target.value)} />
-            <code>{rgbToHex(color).toUpperCase()}</code>
+            <input aria-label={t('slash.palette.band', { index: index + 1 })} type="color" value={rgbaToHex(color).slice(0, 7)} onChange={(event) => updateColor(index, event.target.value)} />
+            <label className="palette-alpha">
+              <span>{t('slash.palette.alpha')}</span>
+              <input aria-label={t('slash.palette.alpha')} type="range" min={0} max={255} value={color.a} onChange={(event) => updateAlpha(index, Number(event.target.value))} />
+              <code>{color.a}</code>
+            </label>
+            <code>{rgbaToHex(color).toUpperCase()}</code>
             <button
               className="remove-button"
               type="button"

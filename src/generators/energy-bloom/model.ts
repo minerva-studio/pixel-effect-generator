@@ -137,10 +137,10 @@ export function resizeBloomCanvas(
 
 export const DEFAULT_BLOOM_PARAMETERS: BloomParameters = {
   palette: [
-    { r: 255, g: 255, b: 255 },
-    { r: 140, g: 235, b: 255 },
-    { r: 150, g: 120, b: 255 },
-    { r: 235, g: 80, b: 190 },
+    { r: 255, g: 255, b: 255, a: 255 },
+    { r: 140, g: 235, b: 255, a: 255 },
+    { r: 150, g: 120, b: 255, a: 255 },
+    { r: 235, g: 80, b: 190, a: 255 },
   ],
   canvasWidth: 128,
   canvasHeight: 128,

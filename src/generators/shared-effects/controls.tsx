@@ -3,7 +3,7 @@ import { drawFrame } from '../../components/export'
 import { NumberControl, SelectControl } from '../../components/controls'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
-import { hexToRgb, rgbToHex, type RgbColor } from '../../shared/pixel/color'
+import { hexToRgb, rgbaToHex, type RgbColor } from '../../shared/pixel/color'
 import type { PixelFrame } from '../../shared/pixel/frame'
 import {
   MAX_FRAGMENT_SIZE,
@@ -386,7 +386,10 @@ export function FamilyPaletteEditor({
   readonly onChange: (palette: readonly RgbColor[]) => void
 }) {
   const updateColor = (index: number, value: string) => onChange(
-    palette.map((color, colorIndex) => (colorIndex === index ? hexToRgb(value) : color)),
+    palette.map((color, colorIndex) => (colorIndex === index ? { ...hexToRgb(value), a: color.a } : color)),
+  )
+  const updateAlpha = (index: number, value: number) => onChange(
+    palette.map((color, colorIndex) => (colorIndex === index ? { ...color, a: value } : color)),
   )
   const removeColor = (index: number) => onChange(palette.filter((_, colorIndex) => colorIndex !== index))
   const addColor = () => {
@@ -396,6 +399,7 @@ export function FamilyPaletteEditor({
       r: Math.round((last.r + previous.r) / 2),
       g: Math.round((last.g + previous.g) / 2),
       b: Math.round((last.b + previous.b) / 2),
+      a: Math.round((last.a + previous.a) / 2),
     }])
   }
   return (
@@ -406,15 +410,27 @@ export function FamilyPaletteEditor({
       </div>
       <div className="palette-list">
         {palette.map((color, index) => (
-          <div className="palette-row" key={`${index}-${rgbToHex(color)}`}>
+          <div className="palette-row" key={`${index}-${rgbaToHex(color)}`}>
             <span className="palette-order">{String(index + 1).padStart(2, '0')}</span>
             <input
               aria-label={t(`${family}.palette.band`, { index: index + 1 })}
               type="color"
-              value={rgbToHex(color)}
+              value={rgbaToHex(color).slice(0, 7)}
               onChange={(event) => updateColor(index, event.target.value)}
             />
-            <code>{rgbToHex(color).toUpperCase()}</code>
+            <label className="palette-alpha">
+              <span>{t(`${family}.palette.alpha`)}</span>
+              <input
+                aria-label={t(`${family}.palette.alpha`)}
+                type="range"
+                min={0}
+                max={255}
+                value={color.a}
+                onChange={(event) => updateAlpha(index, Number(event.target.value))}
+              />
+              <code>{color.a}</code>
+            </label>
+            <code>{rgbaToHex(color).toUpperCase()}</code>
             <button
               className="remove-button"
               type="button"
