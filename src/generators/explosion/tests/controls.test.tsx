@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../../i18n/I18nProvider'
 import { en, messagesForLocale, translate, type MessageKey } from '../../../i18n/messages'
-import { ShockwaveControls, type FamilyTranslate } from '../../shared-effects/controls'
+import { ShockwaveControls, type DissolvePatch, type FamilyTranslate } from '../../shared-effects/controls'
 import type { SharedShockwaveParameters } from '../../shared-effects/types'
 import { ExplosionControls, ExplosionPreviewTools } from '../controls'
 import { DEFAULT_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
@@ -24,7 +24,7 @@ describe('combustion explosion controls', () => {
     expect(body).toContain('Legacy radial')
     expect(body).toContain('shape-card')
     expect(body).toContain('Churn amount')
-    expect(body).toContain('Surface material')
+    expect(body).not.toContain('Surface material')
     const retro = renderControls('body')
     expect(retro).toContain('Legacy radial')
     expect(retro).not.toContain('Churn amount')
@@ -39,7 +39,7 @@ describe('combustion explosion controls', () => {
     expect(motion).toContain('Motion curve')
     expect(motion).toContain('Formation time')
     expect(motion).toContain('Hold time')
-    expect(motion).toContain('Dissolve time')
+    expect(motion).not.toContain('Dissolve time')
   })
 
   it('defaults every effect section collapsed with one title and an accessible compact switch', () => {
@@ -57,11 +57,20 @@ describe('combustion explosion controls', () => {
   })
 
   it('renders only the active surface material controls', () => {
-    const burning = renderControls('body', 'en', MODERN_EXPLOSION_PARAMETERS)
+    const burning = renderControls('material', 'en', MODERN_EXPLOSION_PARAMETERS)
     expect(burning).toContain('Band curvature')
-    const soot = renderControls('body', 'en', { ...MODERN_EXPLOSION_PARAMETERS, surface: { style: 'rollingSoot', coverage: 0.9, sootAmount: 0.3, sootScale: 11 } })
+    expect(burning).toContain('Dissolve time')
+    const soot = renderControls('material', 'en', { ...MODERN_EXPLOSION_PARAMETERS, surface: { style: 'rollingSoot', coverage: 0.9, sootAmount: 0.3, sootScale: 11 } })
     expect(soot).toContain('Soot amount')
     expect(soot).not.toContain('Band curvature')
+  })
+
+  it('shows dissolve settings under the retro pixel surface in Material', () => {
+    const material = renderControls('material')
+    expect(material).toContain('Dissolve style')
+    expect(material).toContain('Circle size')
+    expect(renderControls('material', 'en', MODERN_EXPLOSION_PARAMETERS)).not.toContain('Dissolve style')
+    expect(renderControls('body')).not.toContain('Dissolve style')
   })
 
   it('renders localized labels and shared preview tools', () => {
@@ -103,6 +112,23 @@ describe('combustion explosion controls', () => {
     expect(renderToStaticMarkup(
       <I18nProvider><ShockwaveControls family="explosion" t={t} shockwave={MODERN_EXPLOSION_PARAMETERS.shockwave} onChange={() => undefined} /></I18nProvider>,
     )).toContain('复合多环')
+  })
+
+  it('uses model field names in the dissolve patch contract', () => {
+    const patch: DissolvePatch = {
+      dissolveStyle: 'circleFade',
+      dissolveSize: 6,
+      dissolveJitter: 0.5,
+      dissolveDensity: 0,
+      dissolveSpeed: 1,
+    }
+    expect(Object.keys(patch).sort()).toEqual([
+      'dissolveDensity',
+      'dissolveJitter',
+      'dissolveSize',
+      'dissolveSpeed',
+      'dissolveStyle',
+    ])
   })
 })
 

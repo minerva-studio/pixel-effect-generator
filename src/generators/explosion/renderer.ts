@@ -1,6 +1,7 @@
 import type { PixelFrame } from '../../shared/pixel/frame'
 import { clamp01, createXorshift32, hashUnit, lerp, smoothStep } from '../../shared/pixel/rng'
 import { renderCore } from '../shared-effects/core'
+import { dissolvePixelRejected, type DissolveOptions } from '../shared-effects/dissolve'
 import { generateFragments, renderFragments } from '../shared-effects/fragments'
 import { writePixel } from '../shared-effects/output'
 import { paletteIndex } from '../shared-effects/palette'
@@ -8,7 +9,7 @@ import { renderShockwave } from '../shared-effects/shockwave'
 import { dissolveAmount, formationGrowth, legacyRadialProgress, lifecycleAt } from '../shared-effects/timing'
 import { renderTongues } from '../shared-effects/tongues'
 import type { FragmentDescriptor } from '../shared-effects/fragments'
-import type { LobeView, SurfaceSample } from '../shared-effects/types'
+import type { DissolveStyle, LobeView, SurfaceSample } from '../shared-effects/types'
 import {
   assertValidExplosionParameters,
   explosionShapeCount,
@@ -257,8 +258,32 @@ function retroPixelBand(
   y: number,
   dissolve: number,
 ): number | undefined {
-  const survival = parameters.surface.coverage * (1 - dissolve)
-  if (hashUnit(parameters.seed ^ 0x9e3779b9, x, y) > survival - (1 - sample.depth) * 0.18) return undefined
+  const surface = parameters.surface
+  if (surface.style !== 'retroPixel') return undefined
+  const edge = 1 - sample.depth
+  const effective = clamp01(dissolve * surface.dissolveSpeed)
+  if (surface.dissolveStyle === 'pixelNoise') {
+    const survival = surface.coverage * (1 - effective)
+    if (hashUnit(parameters.seed ^ 0x9e3779b9, x, y) > survival - edge * 0.18) return undefined
+  } else if (dissolvePixelRejected(
+    surface.dissolveStyle,
+    parameters.seed,
+    x,
+    y,
+    parameters.canvasWidth,
+    parameters.canvasHeight,
+    dissolve,
+    surface.coverage,
+    edge,
+    {
+      size: surface.dissolveSize,
+      jitter: surface.dissolveJitter,
+      density: surface.dissolveDensity,
+      speed: surface.dissolveSpeed,
+    },
+  )) {
+    return undefined
+  }
   return paletteIndex(parameters.palette, sample.axis * 0.68 + (1 - sample.depth) * 0.32)
 }
 
@@ -286,9 +311,14 @@ function renderLegacyPixelNoiseBody(
   const centerY = height / 2
   const visibleRadius = Math.max(0.5, parameters.body.radius * legacyRadialProgress(parameters.motion.mode, time))
   const lifecycle = lifecycleAt(parameters.motion.mode, time)
-  const survival = lifecycle <= parameters.motion.dissolveStart
-    ? parameters.surface.coverage
-    : parameters.surface.coverage * (1 - (lifecycle - parameters.motion.dissolveStart) / (1 - parameters.motion.dissolveStart))
+  const dissolve = dissolveAmount(parameters.motion, lifecycle)
+  const surface = parameters.surface
+  const dissolveStyle: DissolveStyle = surface.style === 'retroPixel' ? surface.dissolveStyle : 'pixelNoise'
+  const options: DissolveOptions = surface.style === 'retroPixel'
+    ? { size: surface.dissolveSize, jitter: surface.dissolveJitter, density: surface.dissolveDensity, speed: surface.dissolveSpeed }
+    : { size: 6, jitter: 0.5, density: 0, speed: 1 }
+  const effective = clamp01(dissolve * options.speed)
+  const survival = surface.coverage * (1 - effective)
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const dx = x + 0.5 - centerX
@@ -301,7 +331,22 @@ function renderLegacyPixelNoiseBody(
       const normalizedDistance = distance / Math.max(1, contourRadius)
       const breakup = hashUnit(parameters.seed ^ 0x9e3779b9, x, y)
       const edgeLoss = clamp01((normalizedDistance - 0.45) / 0.55) * parameters.body.shapeIrregularity
-      if (breakup > survival - edgeLoss * 0.55) continue
+      if (dissolveStyle === 'pixelNoise') {
+        if (breakup > survival - edgeLoss * 0.55) continue
+      } else if (dissolvePixelRejected(
+        dissolveStyle,
+        parameters.seed,
+        x,
+        y,
+        width,
+        height,
+        dissolve,
+        surface.coverage,
+        normalizedDistance,
+        options,
+      )) {
+        continue
+      }
       writePixel(
         pixels, width, height, x, y,
         parameters.palette[Math.min(parameters.palette.length - 1, Math.floor(normalizedDistance * parameters.palette.length))],

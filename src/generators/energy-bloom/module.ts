@@ -12,11 +12,12 @@ import {
 import { bloomPresetCapability } from './presets'
 import { renderBloomFrames } from './renderer'
 
-export type BloomCategory = 'body' | 'motion' | 'effects' | 'palette'
+export type BloomCategory = 'body' | 'motion' | 'material' | 'effects' | 'palette'
 
 export const BLOOM_CATEGORIES = [
   { id: 'body', label: 'Body', description: 'Pick the bloom shape and tune its size, outline, and surface material.' },
   { id: 'motion', label: 'Motion', description: 'Control direction, formation, hold, dissolve, and the motion curve.' },
+  { id: 'material', label: 'Material', description: 'Choose the surface material and tune how it dissolves.' },
   { id: 'effects', label: 'Effects', description: 'Toggle and tune flash core, shockwave, energy tongues, and shards.' },
   { id: 'palette', label: 'Palette', description: 'Order discrete colors from the bright center to the deep outer edge.' },
 ] as const satisfies readonly { id: BloomCategory; label: string; description: string }[]

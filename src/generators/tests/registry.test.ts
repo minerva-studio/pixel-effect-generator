@@ -52,7 +52,7 @@ describe('generator registry', () => {
 
   it('registers the combustion explosion with four tabs, presets, and no project codec', () => {
     expect(explosionModule.definition.index).toBe(2)
-    expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'effects', 'palette'])
+    expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
     expect(explosionModule.projectCodec).toBeUndefined()
     expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual([
       'rollingFireball',
@@ -64,7 +64,7 @@ describe('generator registry', () => {
 
   it('registers the energy bloom family with independent defaults and six presets', () => {
     expect(bloomModule.definition.index).toBe(3)
-    expect(bloomModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'effects', 'palette'])
+    expect(bloomModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
     expect(bloomModule.defaultParameters.body.shape).toBe('softPetals')
     expect(bloomModule.defaultParameters.tongues.enabled).toBe(false)
     expect(bloomModule.projectCodec).toBeUndefined()

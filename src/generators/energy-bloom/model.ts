@@ -3,6 +3,7 @@ import type { FrameSize } from '../../shared/pixel/frame'
 import { MAX_FRAGMENT_SIZE, MAX_SHOCKWAVE_THICKNESS } from '../shared-effects/constants'
 import { MAX_CANVAS_SIZE, MAX_FRAME_COUNT, MIN_CANVAS_SIZE, MIN_FRAME_COUNT, sharedFrameLimits } from '../shared-effects/limits'
 import type {
+  DissolveStyle,
   SharedCoreParameters,
   SharedFragmentParameters,
   SharedFrameLimits,
@@ -25,7 +26,14 @@ export type BloomSurfaceParameters =
   | (BloomSurfaceBase & { readonly style: 'moltenCavities'; readonly cavityAmount: number; readonly cavityScale: number })
   | (BloomSurfaceBase & { readonly style: 'crystalShards'; readonly chunkSize: number; readonly crackWidth: number })
   | (BloomSurfaceBase & { readonly style: 'gridNoise' })
-  | (BloomSurfaceBase & { readonly style: 'pixelNoise' })
+  | (BloomSurfaceBase & {
+      readonly style: 'pixelNoise'
+      readonly dissolveStyle: DissolveStyle
+      readonly dissolveSize: number
+      readonly dissolveJitter: number
+      readonly dissolveDensity: number
+      readonly dissolveSpeed: number
+    })
 
 export interface BloomBodyParameters {
   readonly shape: BloomShape
@@ -78,7 +86,7 @@ export function createBloomSurface(
     case 'moltenCavities': return { style, coverage, cavityAmount: 0.28, cavityScale: 11 }
     case 'crystalShards': return { style, coverage, chunkSize: 8, crackWidth: 1 }
     case 'gridNoise': return { style, coverage }
-    case 'pixelNoise': return { style, coverage }
+    case 'pixelNoise': return { style, coverage, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 }
   }
 }
 
@@ -273,7 +281,16 @@ function assertValidSurface(surface: BloomSurfaceParameters): void {
       assertInRange(surface.crackWidth, 1, 2, 'surface.crackWidth')
       return
     case 'gridNoise':
+      return
     case 'pixelNoise':
+      if (surface.dissolveStyle !== 'pixelNoise' && surface.dissolveStyle !== 'scanSweep' && surface.dissolveStyle !== 'blockFade' && surface.dissolveStyle !== 'circleFade' && surface.dissolveStyle !== 'edgeRoll') {
+        throw new RangeError('surface.dissolveStyle is invalid.')
+      }
+      assertInRange(surface.dissolveSize, 3, 8, 'surface.dissolveSize')
+      assertInRange(surface.dissolveJitter, 0, 1, 'surface.dissolveJitter')
+      assertInRange(surface.dissolveDensity, 0, 1, 'surface.dissolveDensity')
+      assertInRange(surface.dissolveSpeed, 0.5, 1.5, 'surface.dissolveSpeed')
+      if (!Number.isInteger(surface.dissolveSize)) throw new RangeError('surface.dissolveSize must be an integer.')
       return
     default:
       throw new RangeError('surface.style is invalid.')

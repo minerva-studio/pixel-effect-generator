@@ -58,6 +58,9 @@ export interface SharedMotionParameters {
   readonly dissolveStart: number
 }
 
+/** Pixel-surface dissolve style shared by retro-styled materials. */
+export type DissolveStyle = 'pixelNoise' | 'scanSweep' | 'blockFade' | 'circleFade' | 'edgeRoll'
+
 /** One resolved shape direction consumed by tongues and directional shockwaves. */
 export interface LobeView {
   readonly angle: number

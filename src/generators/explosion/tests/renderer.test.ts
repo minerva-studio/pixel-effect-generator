@@ -188,6 +188,110 @@ describe('renderExplosionFrames', () => {
     expect(maximumRadius(thick)).toBeLessThanOrEqual(DEFAULT_EXPLOSION_PARAMETERS.body.radius * base.shockwave.endRadiusScale + 4)
   })
 
+  it('sweeps retro-pixel dissolve from the top-left corner on the legacy path', () => {
+    const parameters = quietParameters({
+      surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'scanSweep', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+    })
+    const frame = renderExplosionFrames(parameters)[6]
+    const diagonal = frame.width + frame.height
+    expect(countOpaqueRegion(frame, (x, y) => x + y <= diagonal / 2))
+      .toBeLessThan(countOpaqueRegion(frame, (x, y) => x + y > diagonal / 2))
+  })
+
+  it('applies scan-sweep dissolve to the modern retro-pixel path', () => {
+    const parameters = quietParameters({
+      surface: { style: 'retroPixel', coverage: 0.95, dissolveStyle: 'scanSweep', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+      motion: { ...MODERN_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frame = renderExplosionFrames(parameters)[6]
+    const diagonal = frame.width + frame.height
+    expect(countOpaqueRegion(frame, (x, y) => x + y <= diagonal / 2))
+      .toBeLessThan(countOpaqueRegion(frame, (x, y) => x + y > diagonal / 2))
+  })
+
+  it('fades retro-pixel bodies in whole 2x2 blocks', () => {
+    const parameters = quietParameters({
+      surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'blockFade', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+    })
+    const frame = renderExplosionFrames(parameters)[7]
+    const innerRadius = DEFAULT_EXPLOSION_PARAMETERS.body.radius * 0.7
+    for (let by = 0; by < frame.height; by += 2) {
+      for (let bx = 0; bx < frame.width; bx += 2) {
+        if (Math.hypot(bx + 1.5 - frame.width / 2, by + 1.5 - frame.height / 2) > innerRadius) continue
+        const alphas = new Set<number>()
+        for (let oy = 0; oy < 2; oy += 1) for (let ox = 0; ox < 2; ox += 1) {
+          alphas.add(frame.pixels[((by + oy) * frame.width + bx + ox) * 4 + 3])
+        }
+        expect(alphas.size).toBeLessThanOrEqual(1)
+      }
+    }
+  })
+
+  it('keeps circle-fade surfaces seamless without fixed grid gaps', () => {
+    const parameters = quietParameters({
+      surface: { style: 'retroPixel', coverage: 0.95, dissolveStyle: 'circleFade', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+    })
+    const frame = renderExplosionFrames(parameters)[4]
+    const innerRadius = DEFAULT_EXPLOSION_PARAMETERS.body.radius * 0.8
+    let corner = 0
+    let cornerOpaque = 0
+    for (let y = 0; y < frame.height; y += 1) {
+      for (let x = 0; x < frame.width; x += 1) {
+        if (Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2) > innerRadius) continue
+        if (x % 8 === 0 && y % 8 === 0) {
+          corner += 1
+          if (frame.pixels[(y * frame.width + x) * 4 + 3] === 255) cornerOpaque += 1
+        }
+      }
+    }
+    expect(corner).toBeGreaterThan(0)
+    expect(cornerOpaque / corner).toBeGreaterThan(0.9)
+  })
+
+  it('tunes circle-fade size, density, and speed deterministically', () => {
+    const surfaceFor = (overrides: {
+      readonly dissolveSize?: number
+      readonly dissolveDensity?: number
+      readonly dissolveSpeed?: number
+    } = {}) => ({
+      style: 'retroPixel' as const,
+      coverage: 0.95,
+      dissolveStyle: 'circleFade' as const,
+      dissolveSize: 6,
+      dissolveJitter: 0.5,
+      dissolveDensity: 0,
+      dissolveSpeed: 1,
+      ...overrides,
+    })
+    const base = quietParameters({
+      surface: surfaceFor(),
+      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+    })
+    const frames = renderExplosionFrames(base)
+    expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(base)))
+    const larger = renderExplosionFrames({ ...base, surface: surfaceFor({ dissolveSize: 8 }) })
+    const sparse = renderExplosionFrames({ ...base, surface: surfaceFor({ dissolveDensity: 1 }) })
+    const faster = renderExplosionFrames({ ...base, surface: surfaceFor({ dissolveSpeed: 1.5 }) })
+    expect(frameBytes(larger)).not.toEqual(frameBytes(frames))
+    expect(frameBytes(sparse)).not.toEqual(frameBytes(frames))
+    expect(countOpaque(faster[7])).toBeLessThan(countOpaque(frames[7]))
+  })
+
+  it('rolls retro-pixel dissolve inward from the edge', () => {
+    const parameters = quietParameters({
+      surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'edgeRoll', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+    })
+    const frame = renderExplosionFrames(parameters)[7]
+    const center = countOpaqueInside(frame, DEFAULT_EXPLOSION_PARAMETERS.body.radius * 0.4)
+    const edge = countOpaqueRegion(frame, (x, y) =>
+      Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2) > DEFAULT_EXPLOSION_PARAMETERS.body.radius * 0.75)
+    expect(center).toBeGreaterThan(edge)
+  })
+
   it('expands the body outward and contracts the same skeleton inward', () => {
     const quiet = quietParameters()
     const explosion = renderExplosionFrames({ ...quiet, motion: { ...quiet.motion, mode: 'explosion' } })
@@ -247,6 +351,15 @@ function countOpaqueInside(frame: PixelFrame, radius: number): number {
   let count = 0
   for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
     if (Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2) <= radius && frame.pixels[(y * frame.width + x) * 4 + 3] === 255) count += 1
+  }
+  return count
+}
+
+/** Counts opaque samples satisfying a pixel predicate. */
+function countOpaqueRegion(frame: PixelFrame, predicate: (x: number, y: number) => boolean): number {
+  let count = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (predicate(x, y) && frame.pixels[(y * frame.width + x) * 4 + 3] === 255) count += 1
   }
   return count
 }

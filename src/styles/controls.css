@@ -92,6 +92,7 @@
 .preset-card.failed { opacity: 0.55; }
 .preset-card-label { overflow: hidden; font-size: 0.72rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .preset-card-description { font-size: 0.62rem; line-height: 1.35; }
+.dissolve-settings { display: grid; gap: 8px; }
 .preset-error { margin: 0; color: #ff9d9d; font-size: 0.68rem; }
 .preset-warning { margin: 0; color: #ffd28a; font-size: 0.68rem; }
 .preset-hint { margin: 0; color: var(--muted); font-size: 0.68rem; }

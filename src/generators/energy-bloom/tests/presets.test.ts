@@ -117,6 +117,16 @@ describe('energy bloom built-in presets', () => {
     }
   })
 
+  it('falls back to pixel-noise dissolve for legacy pixel-noise surfaces', () => {
+    const payload = captureBloomPreset(DEFAULT_BLOOM_PARAMETERS) as Record<string, unknown>
+    const result = validateBloomPreset({ ...payload, surface: { style: 'pixelNoise', coverage: 0.92 } })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(((result.payload as Record<string, unknown>).surface as Record<string, unknown>).dissolveStyle).toBe('pixelNoise')
+      expect(((result.payload as Record<string, unknown>).surface as Record<string, unknown>).dissolveSize).toBe(6)
+    }
+  })
+
   it('exposes translated names and an unmodified applied baseline', () => {
     for (const preset of BLOOM_BUILTIN_PRESETS) {
       const keys = presetDisplayKeys('energyBloom', preset.id)!

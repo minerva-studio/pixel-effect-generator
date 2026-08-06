@@ -10,12 +10,22 @@ import {
   MAX_SHOCKWAVE_THICKNESS,
 } from './constants'
 import type {
+  DissolveStyle,
   SharedCoreParameters,
   SharedFragmentParameters,
   SharedFrameLimits,
   SharedShockwaveParameters,
   SharedTongueParameters,
 } from './types'
+
+/** Dissolve surface fields updated by the shared dissolve controls. */
+export interface DissolvePatch {
+  readonly dissolveStyle: DissolveStyle
+  readonly dissolveSize: number
+  readonly dissolveJitter: number
+  readonly dissolveDensity: number
+  readonly dissolveSpeed: number
+}
 
 /** Family-bound translation helper used by shared effect sections. */
 export type FamilyTranslate = (suffix: string, params?: Readonly<Record<string, string | number>>) => string
@@ -122,6 +132,43 @@ export function ShockwaveControls({
         </>
       ) : null}
     </>
+  )
+}
+
+/** Dissolve settings shared by retro-styled pixel surfaces. */
+export function DissolveControls({
+  family,
+  t,
+  style,
+  size,
+  jitter,
+  density,
+  speed,
+  onChange,
+}: {
+  readonly family: string
+  readonly t: FamilyTranslate
+  readonly style: DissolveStyle
+  readonly size: number
+  readonly jitter: number
+  readonly density: number
+  readonly speed: number
+  readonly onChange: (value: DissolvePatch) => void
+}) {
+  return (
+    <div className="dissolve-settings">
+      <SelectControl<DissolveStyle> label={t(`${family}.controls.dissolveStyle.label`)} description={t(`${family}.controls.dissolveStyle.description`)} value={style} options={[
+        { value: 'pixelNoise', label: t(`${family}.options.dissolvePixelNoise`) },
+        { value: 'scanSweep', label: t(`${family}.options.dissolveScanSweep`) },
+        { value: 'blockFade', label: t(`${family}.options.dissolveBlockFade`) },
+        { value: 'circleFade', label: t(`${family}.options.dissolveCircleFade`) },
+        { value: 'edgeRoll', label: t(`${family}.options.dissolveEdgeRoll`) },
+      ]} onChange={(dissolveStyle) => onChange({ dissolveStyle, dissolveSize: size, dissolveJitter: jitter, dissolveDensity: density, dissolveSpeed: speed })} />
+      <NumberControl label={t(`${family}.controls.dissolveSize.label`)} description={t(`${family}.controls.dissolveSize.description`)} value={size} minimum={3} maximum={8} unit="px" onChange={(dissolveSize) => onChange({ dissolveStyle: style, dissolveSize, dissolveJitter: jitter, dissolveDensity: density, dissolveSpeed: speed })} />
+      <NumberControl label={t(`${family}.controls.dissolveJitter.label`)} description={t(`${family}.controls.dissolveJitter.description`)} value={jitter} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(dissolveJitter) => onChange({ dissolveStyle: style, dissolveSize: size, dissolveJitter, dissolveDensity: density, dissolveSpeed: speed })} />
+      <NumberControl label={t(`${family}.controls.dissolveDensity.label`)} description={t(`${family}.controls.dissolveDensity.description`)} value={density} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(dissolveDensity) => onChange({ dissolveStyle: style, dissolveSize: size, dissolveJitter: jitter, dissolveDensity, dissolveSpeed: speed })} />
+      <NumberControl label={t(`${family}.controls.dissolveSpeed.label`)} description={t(`${family}.controls.dissolveSpeed.description`)} value={speed} minimum={0.5} maximum={1.5} step={0.05} scale={100} unit="%" onChange={(dissolveSpeed) => onChange({ dissolveStyle: style, dissolveSize: size, dissolveJitter: jitter, dissolveDensity: density, dissolveSpeed })} />
+    </div>
   )
 }
 

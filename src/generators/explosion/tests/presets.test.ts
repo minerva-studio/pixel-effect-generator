@@ -138,6 +138,16 @@ describe('combustion explosion built-in presets', () => {
     }
   })
 
+  it('falls back to pixel-noise dissolve for legacy retro-pixel surfaces', () => {
+    const payload = captureExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const result = validateExplosionPreset({ ...payload, surface: { style: 'retroPixel', coverage: 0.9 } })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(((result.payload as Record<string, unknown>).surface as Record<string, unknown>).dissolveStyle).toBe('pixelNoise')
+      expect(((result.payload as Record<string, unknown>).surface as Record<string, unknown>).dissolveSize).toBe(6)
+    }
+  })
+
   it('exposes translated names and an unmodified applied baseline', () => {
     for (const preset of EXPLOSION_BUILTIN_PRESETS) {
       const keys = presetDisplayKeys('explosion', preset.id)!

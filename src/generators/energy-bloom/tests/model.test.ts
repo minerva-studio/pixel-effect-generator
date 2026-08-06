@@ -72,5 +72,20 @@ describe('energy bloom parameter model', () => {
     expect(createBloomSurface('celBands')).toMatchObject({ style: 'celBands', bandWarp: 0.15, edgeBreakup: 0.3 })
     expect(createBloomSurface('crystalShards')).toMatchObject({ style: 'crystalShards', chunkSize: 8, crackWidth: 1 })
     expect(createBloomSurface('gridNoise')).toEqual({ style: 'gridNoise', coverage: 0.96 })
+    expect(createBloomSurface('pixelNoise')).toEqual({ style: 'pixelNoise', coverage: 0.96, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 })
+  })
+
+  it('rejects invalid pixel-noise dissolve styles', () => {
+    expect(() => assertValidBloomParameters({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      surface: { style: 'pixelNoise', coverage: 0.9, dissolveStyle: 'sweep' as never, dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+    })).toThrow(/dissolveStyle/i)
+  })
+
+  it('rejects out-of-range pixel-noise dissolve settings', () => {
+    const surface = { style: 'pixelNoise' as const, coverage: 0.9, dissolveStyle: 'pixelNoise' as const, dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 }
+    expect(() => assertValidBloomParameters({ ...DEFAULT_BLOOM_PARAMETERS, surface: { ...surface, dissolveSize: 2 } })).toThrow(/dissolveSize/i)
+    expect(() => assertValidBloomParameters({ ...DEFAULT_BLOOM_PARAMETERS, surface: { ...surface, dissolveSpeed: 0.4 } })).toThrow(/dissolveSpeed/i)
+    expect(() => assertValidBloomParameters({ ...DEFAULT_BLOOM_PARAMETERS, surface: { ...surface, dissolveDensity: 1.5 } })).toThrow(/dissolveDensity/i)
   })
 })

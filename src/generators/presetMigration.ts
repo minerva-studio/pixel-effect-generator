@@ -39,7 +39,15 @@ function toExplosionParameters(legacy: LegacyExplosionFields): ExplosionParamete
     ? { style: 'burningLayers' as const, coverage: legacy.surface.coverage, bandWarp: 0.18, edgeBreakup: 0.32 }
     : surfaceStyle === 'rollingSoot'
       ? { style: 'rollingSoot' as const, coverage: legacy.surface.coverage, sootAmount: 0.3, sootScale: 11 }
-      : { style: 'retroPixel' as const, coverage: legacy.surface.coverage }
+      : {
+          style: 'retroPixel' as const,
+          coverage: legacy.surface.coverage,
+          dissolveStyle: 'pixelNoise' as const,
+          dissolveSize: 6,
+          dissolveJitter: 0.5,
+          dissolveDensity: 0,
+          dissolveSpeed: 1,
+        }
   return clampExplosionPresetParameters({
     palette: legacy.palette,
     canvasWidth: 128,
@@ -76,7 +84,15 @@ function toBloomParameters(legacy: LegacyExplosionFields): BloomParameters {
         ? { style: 'crystalShards' as const, coverage: legacySurface.coverage, chunkSize: legacySurface.chunkSize, crackWidth: legacySurface.crackWidth }
         : legacySurface.style === 'gridNoise'
           ? { style: 'gridNoise' as const, coverage: legacySurface.coverage }
-          : { style: 'pixelNoise' as const, coverage: legacySurface.coverage }
+          : {
+              style: 'pixelNoise' as const,
+              coverage: legacySurface.coverage,
+              dissolveStyle: 'pixelNoise' as const,
+              dissolveSize: 6,
+              dissolveJitter: 0.5,
+              dissolveDensity: 0,
+              dissolveSpeed: 1,
+            }
   return clampBloomPresetParameters({
     palette: legacy.palette,
     canvasWidth: 128,

@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
 import type { FrameSize } from '../../shared/pixel/frame'
 import {
+  DissolveControls,
   EffectControls,
   FamilyPaletteEditor,
   ShapeCardGrid,
@@ -79,13 +80,13 @@ export function BloomControls({ category, parameters, onChange }: BloomControlsP
             </>
           ) : null}
           {parameters.body.shape === 'layeredCorolla' ? (
-            <NumberControl label={familyT('energyBloom.controls.corollaLayers.label')} description={familyT('energyBloom.controls.corollaLayers.description')} value={parameters.body.corollaLayers} minimum={2} maximum={3} onChange={(corollaLayers) => updateBody({ corollaLayers })} />
+            <>
+              <NumberControl label={familyT('energyBloom.controls.corollaLayers.label')} description={familyT('energyBloom.controls.corollaLayers.description')} value={parameters.body.corollaLayers} minimum={2} maximum={3} onChange={(corollaLayers) => updateBody({ corollaLayers })} />
+              <NumberControl label={familyT('energyBloom.controls.layerDelay.label')} description={familyT('energyBloom.controls.layerDelay.description')} value={parameters.body.layerDelay} minimum={0} maximum={0.4} step={0.01} scale={100} unit="%" onChange={(layerDelay) => updateBody({ layerDelay })} />
+            </>
           ) : null}
           <NumberControl label={familyT('energyBloom.controls.shapeIrregularity.label')} description={familyT('energyBloom.controls.shapeIrregularity.description')} value={parameters.body.shapeIrregularity} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(shapeIrregularity) => updateBody({ shapeIrregularity })} />
           <NumberControl label={familyT('energyBloom.controls.rotation.label')} description={familyT('energyBloom.controls.rotation.description')} value={parameters.body.rotation} minimum={0} maximum={359} unit="°" onChange={(rotation) => updateBody({ rotation })} />
-          <SelectControl label={familyT('energyBloom.controls.surfaceStyle.label')} description={familyT('energyBloom.controls.surfaceStyle.description')} value={parameters.surface.style} options={SURFACE_OPTIONS.map((style) => ({ value: style, label: familyT(`energyBloom.options.${style}`) }))} onChange={(style) => onChange({ ...parameters, surface: createBloomSurface(style as BloomSurfaceStyle, parameters.surface.coverage) })} />
-          <NumberControl label={familyT('energyBloom.controls.coverage.label')} description={familyT('energyBloom.controls.coverage.description')} value={parameters.surface.coverage} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(coverage) => onChange({ ...parameters, surface: { ...parameters.surface, coverage } })} />
-          <BloomSurfaceAdvancedControls parameters={parameters} onChange={onChange} familyT={familyT} />
         </div>
       )
     case 'motion':
@@ -102,10 +103,15 @@ export function BloomControls({ category, parameters, onChange }: BloomControlsP
           ]} onChange={(motionCurve) => updateMotion({ motionCurve })} />
           <NumberControl label={familyT('energyBloom.controls.formationDuration.label')} description={familyT('energyBloom.controls.formationDuration.description')} value={parameters.motion.formationDuration} minimum={0.1} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(formationDuration) => updateMotion({ formationDuration })} />
           <NumberControl label={familyT('energyBloom.controls.holdDuration.label')} description={familyT('energyBloom.controls.holdDuration.description')} value={parameters.motion.holdDuration} minimum={0} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(holdDuration) => updateMotion({ holdDuration })} />
+        </div>
+      )
+    case 'material':
+      return (
+        <div className="control-list">
+          <SelectControl label={familyT('energyBloom.controls.surfaceStyle.label')} description={familyT('energyBloom.controls.surfaceStyle.description')} value={parameters.surface.style} options={SURFACE_OPTIONS.map((style) => ({ value: style, label: familyT(`energyBloom.options.${style}`) }))} onChange={(style) => onChange({ ...parameters, surface: createBloomSurface(style as BloomSurfaceStyle, parameters.surface.coverage) })} />
+          <NumberControl label={familyT('energyBloom.controls.coverage.label')} description={familyT('energyBloom.controls.coverage.description')} value={parameters.surface.coverage} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(coverage) => onChange({ ...parameters, surface: { ...parameters.surface, coverage } })} />
+          <BloomSurfaceAdvancedControls parameters={parameters} onChange={onChange} familyT={familyT} />
           <NumberControl label={familyT('energyBloom.controls.dissolveStart.label')} description={familyT('energyBloom.controls.dissolveStart.description')} value={parameters.motion.dissolveStart} minimum={0.1} maximum={0.9} step={0.01} scale={100} unit="%" onChange={(dissolveStart) => updateMotion({ dissolveStart })} />
-          {parameters.body.shape === 'layeredCorolla' ? (
-            <NumberControl label={familyT('energyBloom.controls.layerDelay.label')} description={familyT('energyBloom.controls.layerDelay.description')} value={parameters.body.layerDelay} minimum={0} maximum={0.4} step={0.01} scale={100} unit="%" onChange={(layerDelay) => updateBody({ layerDelay })} />
-          ) : null}
         </div>
       )
     case 'effects':
@@ -135,7 +141,21 @@ function BloomSurfaceAdvancedControls({
   readonly familyT: FamilyTranslate
 }) {
   const surface = parameters.surface
-  if (surface.style === 'gridNoise' || surface.style === 'pixelNoise') return null
+  if (surface.style === 'gridNoise') return null
+  if (surface.style === 'pixelNoise') {
+    return (
+      <DissolveControls
+        family="energyBloom"
+        t={familyT}
+        style={surface.dissolveStyle}
+        size={surface.dissolveSize}
+        jitter={surface.dissolveJitter}
+        density={surface.dissolveDensity}
+        speed={surface.dissolveSpeed}
+        onChange={(dissolve) => onChange({ ...parameters, surface: { ...surface, ...dissolve } })}
+      />
+    )
+  }
   return (
     <>
       {surface.style === 'celBands' ? (

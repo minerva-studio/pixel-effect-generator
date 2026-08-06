@@ -124,6 +124,17 @@ describe('renderBloomFrames', () => {
       expect(() => renderBloomFrames(applyBloomPreset(DEFAULT_BLOOM_PARAMETERS, preset.payload))).not.toThrow()
     }
   })
+
+  it('sweeps pixel-noise dissolve from the top-left corner', () => {
+    const parameters = quietParameters({
+      surface: { style: 'pixelNoise', coverage: 0.95, dissolveStyle: 'scanSweep', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+      motion: { ...DEFAULT_BLOOM_PARAMETERS.motion, dissolveStart: 0.55 },
+    })
+    const frame = renderBloomFrames(parameters)[7]
+    const diagonal = frame.width + frame.height
+    expect(countOpaqueRegion(frame, (x, y) => x + y <= diagonal / 2))
+      .toBeLessThan(countOpaqueRegion(frame, (x, y) => x + y > diagonal / 2))
+  })
 })
 
 /** Disables all optional layers unless a test explicitly overrides one. */
@@ -163,6 +174,15 @@ function countOpaqueInside(frame: PixelFrame, radius: number): number {
   let count = 0
   for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
     if (Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2) <= radius && frame.pixels[(y * frame.width + x) * 4 + 3] === 255) count += 1
+  }
+  return count
+}
+
+/** Counts opaque samples satisfying a pixel predicate. */
+function countOpaqueRegion(frame: PixelFrame, predicate: (x: number, y: number) => boolean): number {
+  let count = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (predicate(x, y) && frame.pixels[(y * frame.width + x) * 4 + 3] === 255) count += 1
   }
   return count
 }

@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
 import type { FrameSize } from '../../shared/pixel/frame'
 import {
+  DissolveControls,
   EffectControls,
   FamilyPaletteEditor,
   ShapeCardGrid,
@@ -78,9 +79,6 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
           ) : null}
           <NumberControl label={familyT('explosion.controls.shapeIrregularity.label')} description={familyT('explosion.controls.shapeIrregularity.description')} value={parameters.body.shapeIrregularity} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(shapeIrregularity) => updateBody({ shapeIrregularity })} />
           <NumberControl label={familyT('explosion.controls.rotation.label')} description={familyT('explosion.controls.rotation.description')} value={parameters.body.rotation} minimum={0} maximum={359} unit="°" onChange={(rotation) => updateBody({ rotation })} />
-          <SelectControl label={familyT('explosion.controls.surfaceStyle.label')} description={familyT('explosion.controls.surfaceStyle.description')} value={parameters.surface.style} options={SURFACE_OPTIONS.map((style) => ({ value: style, label: familyT(`explosion.options.${style}`) }))} onChange={(style) => onChange({ ...parameters, surface: createExplosionSurface(style as ExplosionSurfaceStyle, parameters.surface.coverage) })} />
-          <NumberControl label={familyT('explosion.controls.coverage.label')} description={familyT('explosion.controls.coverage.description')} value={parameters.surface.coverage} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(coverage) => onChange({ ...parameters, surface: { ...parameters.surface, coverage } })} />
-          <ExplosionSurfaceAdvancedControls parameters={parameters} onChange={onChange} familyT={familyT} />
         </div>
       )
     case 'motion':
@@ -97,6 +95,14 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
           ]} onChange={(motionCurve) => updateMotion({ motionCurve })} />
           <NumberControl label={familyT('explosion.controls.formationDuration.label')} description={familyT('explosion.controls.formationDuration.description')} value={parameters.motion.formationDuration} minimum={0.1} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(formationDuration) => updateMotion({ formationDuration })} />
           <NumberControl label={familyT('explosion.controls.holdDuration.label')} description={familyT('explosion.controls.holdDuration.description')} value={parameters.motion.holdDuration} minimum={0} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(holdDuration) => updateMotion({ holdDuration })} />
+        </div>
+      )
+    case 'material':
+      return (
+        <div className="control-list">
+          <SelectControl label={familyT('explosion.controls.surfaceStyle.label')} description={familyT('explosion.controls.surfaceStyle.description')} value={parameters.surface.style} options={SURFACE_OPTIONS.map((style) => ({ value: style, label: familyT(`explosion.options.${style}`) }))} onChange={(style) => onChange({ ...parameters, surface: createExplosionSurface(style as ExplosionSurfaceStyle, parameters.surface.coverage) })} />
+          <NumberControl label={familyT('explosion.controls.coverage.label')} description={familyT('explosion.controls.coverage.description')} value={parameters.surface.coverage} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(coverage) => onChange({ ...parameters, surface: { ...parameters.surface, coverage } })} />
+          <ExplosionSurfaceAdvancedControls parameters={parameters} onChange={onChange} familyT={familyT} />
           <NumberControl label={familyT('explosion.controls.dissolveStart.label')} description={familyT('explosion.controls.dissolveStart.description')} value={parameters.motion.dissolveStart} minimum={0.1} maximum={0.9} step={0.01} scale={100} unit="%" onChange={(dissolveStart) => updateMotion({ dissolveStart })} />
         </div>
       )
@@ -127,7 +133,20 @@ function ExplosionSurfaceAdvancedControls({
   readonly familyT: FamilyTranslate
 }) {
   const surface = parameters.surface
-  if (surface.style === 'retroPixel') return null
+  if (surface.style === 'retroPixel') {
+    return (
+      <DissolveControls
+        family="explosion"
+        t={familyT}
+        style={surface.dissolveStyle}
+        size={surface.dissolveSize}
+        jitter={surface.dissolveJitter}
+        density={surface.dissolveDensity}
+        speed={surface.dissolveSpeed}
+        onChange={(dissolve) => onChange({ ...parameters, surface: { ...surface, ...dissolve } })}
+      />
+    )
+  }
   return (
     <>
       {surface.style === 'burningLayers' ? (
@@ -191,4 +210,4 @@ const SHAPE_CARD_OPTIONS: readonly ShapeCardOption<ExplosionParameters>[] = [
   { value: 'legacyRadial', labelKey: 'explosion.options.legacyRadial', descriptionKey: 'explosion.shapeDescriptions.legacyRadial', buildParameters: () => SHAPE_THUMBNAILS.legacyRadial },
 ]
 
-const SURFACE_OPTIONS: readonly ExplosionSurfaceStyle[] = ['burningLayers', 'rollingSoot', 'retroPixel']
+const SURFACE_OPTIONS: readonly ExplosionSurfaceStyle[] = ['retroPixel', 'burningLayers', 'rollingSoot']

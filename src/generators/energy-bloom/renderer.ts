@@ -1,6 +1,7 @@
 import type { PixelFrame } from '../../shared/pixel/frame'
 import { clamp01, createXorshift32, hashUnit, lerp, smoothStep } from '../../shared/pixel/rng'
 import { renderCore } from '../shared-effects/core'
+import { dissolvePixelRejected, type DissolveOptions } from '../shared-effects/dissolve'
 import { angularDistance } from '../shared-effects/balanced'
 import type { FragmentDescriptor } from '../shared-effects/fragments'
 import { generateFragments, renderFragments } from '../shared-effects/fragments'
@@ -346,8 +347,32 @@ function pixelNoiseBand(
   y: number,
   dissolve: number,
 ): number | undefined {
-  const survival = parameters.surface.coverage * (1 - dissolve)
-  if (hashUnit(parameters.seed ^ 0x9e3779b9, x, y) > survival - (1 - sample.depth) * 0.18) return undefined
+  const surface = parameters.surface
+  if (surface.style !== 'pixelNoise') return undefined
+  const edge = 1 - sample.depth
+  const effective = clamp01(dissolve * surface.dissolveSpeed)
+  if (surface.dissolveStyle === 'pixelNoise') {
+    const survival = surface.coverage * (1 - effective)
+    if (hashUnit(parameters.seed ^ 0x9e3779b9, x, y) > survival - edge * 0.18) return undefined
+  } else if (dissolvePixelRejected(
+    surface.dissolveStyle,
+    parameters.seed,
+    x,
+    y,
+    parameters.canvasWidth,
+    parameters.canvasHeight,
+    dissolve,
+    surface.coverage,
+    edge,
+    {
+      size: surface.dissolveSize,
+      jitter: surface.dissolveJitter,
+      density: surface.dissolveDensity,
+      speed: surface.dissolveSpeed,
+    },
+  )) {
+    return undefined
+  }
   return paletteIndex(parameters.palette, sample.axis * 0.68 + (1 - sample.depth) * 0.32)
 }
 

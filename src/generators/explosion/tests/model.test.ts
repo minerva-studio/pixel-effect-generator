@@ -26,7 +26,7 @@ describe('combustion explosion parameter model', () => {
     })).toThrow(/shape/i)
     expect(() => assertValidExplosionParameters({
       ...DEFAULT_EXPLOSION_PARAMETERS,
-      surface: { style: 'smooth' as never, coverage: 0.9 },
+      surface: { style: 'smooth' as never, coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
     })).toThrow(/style/i)
     expect(() => assertValidExplosionParameters({
       ...DEFAULT_EXPLOSION_PARAMETERS,
@@ -90,6 +90,22 @@ describe('combustion explosion parameter model', () => {
   it('creates style-specific default surfaces', () => {
     expect(createExplosionSurface('burningLayers')).toMatchObject({ style: 'burningLayers', bandWarp: 0.18, edgeBreakup: 0.32 })
     expect(createExplosionSurface('rollingSoot')).toMatchObject({ style: 'rollingSoot', sootAmount: 0.3, sootScale: 11 })
-    expect(createExplosionSurface('retroPixel')).toEqual({ style: 'retroPixel', coverage: 0.96 })
+    expect(createExplosionSurface('retroPixel')).toEqual({ style: 'retroPixel', coverage: 0.96, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 })
+  })
+
+  it('rejects invalid retro-pixel dissolve styles', () => {
+    expect(() => assertValidExplosionParameters({
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'sweep' as never, dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+    })).toThrow(/dissolveStyle/i)
+  })
+
+  it('rejects out-of-range retro-pixel dissolve settings', () => {
+    const surface = { style: 'retroPixel' as const, coverage: 0.9, dissolveStyle: 'pixelNoise' as const, dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 }
+    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSize: 9 } })).toThrow(/dissolveSize/i)
+    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveJitter: -0.1 } })).toThrow(/dissolveJitter/i)
+    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveDensity: 1.2 } })).toThrow(/dissolveDensity/i)
+    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSpeed: 2 } })).toThrow(/dissolveSpeed/i)
+    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSize: 6.5 } })).toThrow(/dissolveSize/i)
   })
 })

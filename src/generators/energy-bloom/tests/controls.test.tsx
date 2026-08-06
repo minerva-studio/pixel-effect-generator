@@ -26,11 +26,23 @@ describe('energy bloom controls', () => {
     expect(star).not.toContain('Petal count')
   })
 
-  it('shows the corolla layer delay only under the layered shape in Motion', () => {
-    const petalMotion = renderControls('motion')
-    expect(petalMotion).not.toContain('Layer delay')
-    const corollaMotion = renderControls('motion', 'en', { ...DEFAULT_BLOOM_PARAMETERS, body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'layeredCorolla' } })
-    expect(corollaMotion).toContain('Layer delay')
+  it('shows the corolla layer delay only under the layered shape in Body', () => {
+    const petalBody = renderControls('body')
+    expect(petalBody).not.toContain('Layer delay')
+    const corollaBody = renderControls('body', 'en', { ...DEFAULT_BLOOM_PARAMETERS, body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'layeredCorolla' } })
+    expect(corollaBody).toContain('Layer delay')
+  })
+
+  it('shows dissolve settings under the pixel noise surface in Material', () => {
+    const material = renderControls('material', 'en', {
+      ...DEFAULT_BLOOM_PARAMETERS,
+      surface: { style: 'pixelNoise', coverage: 0.95, dissolveStyle: 'scanSweep', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+    })
+    expect(material).toContain('Surface material')
+    expect(material).toContain('Dissolve time')
+    expect(material).toContain('Dissolve style')
+    expect(renderControls('material')).not.toContain('Dissolve style')
+    expect(renderControls('body')).not.toContain('Dissolve style')
   })
 
   it('defaults every effect section collapsed with one title and an accessible compact switch', () => {

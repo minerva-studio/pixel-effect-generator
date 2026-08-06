@@ -130,7 +130,15 @@ function parseV4Surface(value: Readonly<Record<string, unknown>>): BloomSurfaceP
     case 'gridNoise':
       return { style, coverage }
     case 'pixelNoise':
-      return { style, coverage }
+      return {
+        style,
+        coverage,
+        dissolveStyle: readOptionalEnum(value, 'dissolveStyle', ['pixelNoise', 'scanSweep', 'blockFade', 'circleFade', 'edgeRoll'], 'pixelNoise'),
+        dissolveSize: readOptionalInteger(value, 'dissolveSize', 3, 8, 6),
+        dissolveJitter: readOptionalNumber(value, 'dissolveJitter', 0, 1, 0.5),
+        dissolveDensity: readOptionalNumber(value, 'dissolveDensity', 0, 1, 0),
+        dissolveSpeed: readOptionalNumber(value, 'dissolveSpeed', 0.5, 1.5, 1),
+      }
   }
 }
 
@@ -275,7 +283,7 @@ export const BLOOM_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
       ...DEFAULT_BLOOM_PARAMETERS,
       seed: 20260505,
       body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'sharpStarburst', rayCount: 12, rayTaper: 0.8 },
-      surface: { style: 'pixelNoise', coverage: 0.92 },
+      surface: { style: 'pixelNoise', coverage: 0.92, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
       motion: { ...DEFAULT_BLOOM_PARAMETERS.motion, mode: 'implosion', formationDuration: 0.36, holdDuration: 0.06, motionCurve: 'crisp' },
       tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: true, count: 6, length: 30, width: 2 },
     }),

@@ -125,7 +125,15 @@ function parseV4Surface(value: Readonly<Record<string, unknown>>): ExplosionSurf
     case 'rollingSoot':
       return { style, coverage, sootAmount: readNumber(value, 'sootAmount', 0, 0.65), sootScale: readInteger(value, 'sootScale', 6, 24) }
     case 'retroPixel':
-      return { style, coverage }
+      return {
+        style,
+        coverage,
+        dissolveStyle: readOptionalEnum(value, 'dissolveStyle', ['pixelNoise', 'scanSweep', 'blockFade', 'circleFade', 'edgeRoll'], 'pixelNoise'),
+        dissolveSize: readOptionalInteger(value, 'dissolveSize', 3, 8, 6),
+        dissolveJitter: readOptionalNumber(value, 'dissolveJitter', 0, 1, 0.5),
+        dissolveDensity: readOptionalNumber(value, 'dissolveDensity', 0, 1, 0),
+        dissolveSpeed: readOptionalNumber(value, 'dissolveSpeed', 0.5, 1.5, 1),
+      }
   }
 }
 
@@ -256,7 +264,7 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
         pressureWidth: 6,
         pressureSharpness: 0.8,
       },
-      surface: { style: 'retroPixel', coverage: 0.9 },
+      surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
       motion: {
         mode: 'explosion',
         formationDuration: 0.46,

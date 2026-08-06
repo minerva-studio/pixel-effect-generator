@@ -45,6 +45,7 @@ describe('explosion preset family migration', () => {
       squash: 0,
       squashAngle: 0,
     })
+    expect(explosionPayload.surface).toMatchObject({ style: 'retroPixel', dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveSpeed: 1 })
   })
 
   it('migrates flat V2 lobed payloads into the bloom family', () => {

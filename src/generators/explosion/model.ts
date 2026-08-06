@@ -3,6 +3,7 @@ import type { FrameSize } from '../../shared/pixel/frame'
 import { MAX_FRAGMENT_SIZE, MAX_SHOCKWAVE_THICKNESS } from '../shared-effects/constants'
 import { MAX_CANVAS_SIZE, MAX_FRAME_COUNT, MIN_CANVAS_SIZE, MIN_FRAME_COUNT, sharedFrameLimits } from '../shared-effects/limits'
 import type {
+  DissolveStyle,
   SharedCoreParameters,
   SharedFragmentParameters,
   SharedFrameLimits,
@@ -23,7 +24,14 @@ interface ExplosionSurfaceBase {
 export type ExplosionSurfaceParameters =
   | (ExplosionSurfaceBase & { readonly style: 'burningLayers'; readonly bandWarp: number; readonly edgeBreakup: number })
   | (ExplosionSurfaceBase & { readonly style: 'rollingSoot'; readonly sootAmount: number; readonly sootScale: number })
-  | (ExplosionSurfaceBase & { readonly style: 'retroPixel' })
+  | (ExplosionSurfaceBase & {
+      readonly style: 'retroPixel'
+      readonly dissolveStyle: DissolveStyle
+      readonly dissolveSize: number
+      readonly dissolveJitter: number
+      readonly dissolveDensity: number
+      readonly dissolveSpeed: number
+    })
 
 export interface ExplosionBodyParameters {
   readonly shape: ExplosionShape
@@ -75,7 +83,7 @@ export function createExplosionSurface(
   switch (style) {
     case 'burningLayers': return { style, coverage, bandWarp: 0.18, edgeBreakup: 0.32 }
     case 'rollingSoot': return { style, coverage, sootAmount: 0.3, sootScale: 11 }
-    case 'retroPixel': return { style, coverage }
+    case 'retroPixel': return { style, coverage, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 }
   }
 }
 
@@ -190,7 +198,7 @@ export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
     pressureWidth: 6,
     pressureSharpness: 0.8,
   },
-  surface: { style: 'retroPixel', coverage: 0.9 },
+  surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
   motion: {
     mode: 'explosion',
     formationDuration: 0.46,
@@ -305,6 +313,14 @@ function assertValidSurface(surface: ExplosionSurfaceParameters): void {
       assertInRange(surface.sootScale, 6, 24, 'surface.sootScale')
       return
     case 'retroPixel':
+      if (surface.dissolveStyle !== 'pixelNoise' && surface.dissolveStyle !== 'scanSweep' && surface.dissolveStyle !== 'blockFade' && surface.dissolveStyle !== 'circleFade' && surface.dissolveStyle !== 'edgeRoll') {
+        throw new RangeError('surface.dissolveStyle is invalid.')
+      }
+      assertInRange(surface.dissolveSize, 3, 8, 'surface.dissolveSize')
+      assertInRange(surface.dissolveJitter, 0, 1, 'surface.dissolveJitter')
+      assertInRange(surface.dissolveDensity, 0, 1, 'surface.dissolveDensity')
+      assertInRange(surface.dissolveSpeed, 0.5, 1.5, 'surface.dissolveSpeed')
+      if (!Number.isInteger(surface.dissolveSize)) throw new RangeError('surface.dissolveSize must be an integer.')
       return
     default:
       throw new RangeError('surface.style is invalid.')
