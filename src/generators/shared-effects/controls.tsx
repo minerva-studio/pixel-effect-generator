@@ -410,7 +410,10 @@ export function FamilyPaletteEditor({
       </div>
       <div className="palette-list">
         {palette.map((color, index) => (
-          <div className="palette-row" key={`${index}-${rgbaToHex(color)}`}>
+          // Palette bands are an ordered list that is never reordered, so the
+          // positional index is a stable identity; a color-derived key would
+          // remount the row on every change and interrupt picker/drag input.
+          <div className="palette-row" key={index}>
             <span className="palette-order">{String(index + 1).padStart(2, '0')}</span>
             <input
               aria-label={t(`${family}.palette.band`, { index: index + 1 })}

@@ -160,7 +160,10 @@ function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'categ
       </div>
       <div className="palette-list">
         {parameters.palette.map((color, index) => (
-          <div className="palette-row" key={`${index}-${rgbaToHex(color)}`}>
+          // Palette bands are an ordered list that is never reordered, so the
+          // positional index is a stable identity; a color-derived key would
+          // remount the row on every change and interrupt picker/drag input.
+          <div className="palette-row" key={index}>
             <span className="palette-order">{String(index + 1).padStart(2, '0')}</span>
             <input aria-label={t('slash.palette.band', { index: index + 1 })} type="color" value={rgbaToHex(color).slice(0, 7)} onChange={(event) => updateColor(index, event.target.value)} />
             <label className="palette-alpha">
