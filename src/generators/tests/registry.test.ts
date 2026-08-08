@@ -11,6 +11,7 @@ import { blipGenerator, blipModule } from './blipFixture'
 import { slashModule } from '../slash/module'
 import { explosionModule } from '../explosion/module'
 import { bloomModule } from '../energy-bloom/module'
+import { projectileModule } from '../projectile/module'
 import { slashProjectCodec } from '../slash/project'
 import type { SlashParameters } from '../slash/model'
 import { packHorizontalSheet } from '../../shared/pixel/spritesheet'
@@ -23,7 +24,7 @@ describe('generator registry', () => {
   })
 
   it('registers unique ids and indexes while preserving order', () => {
-    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'energyBloom'])
+    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'energyBloom', 'projectile'])
     expect(dualRegistry.registrations.map((registration) => registration.id)).toEqual(['blip', 'slash'])
     expect(dualRegistry.definitions.map((definition) => definition.id)).toEqual(['blip', 'slash'])
     expect(() => createGeneratorRegistry([GENERATOR_REGISTRY.get('slash'), blipGenerator] as const)).not.toThrow()
@@ -34,9 +35,11 @@ describe('generator registry', () => {
     const id: GeneratorId = 'slash'
     const secondId: GeneratorId = 'explosion'
     const thirdId: GeneratorId = 'energyBloom'
+    const fourthId: GeneratorId = 'projectile'
     expect(id).toBe('slash')
     expect(secondId).toBe('explosion')
     expect(thirdId).toBe('energyBloom')
+    expect(fourthId).toBe('projectile')
     // @ts-expect-error - only registered literal ids are valid
     const invalid: GeneratorId = 'blip'
     expect(typeof invalid).toBe('string')

@@ -1297,6 +1297,9 @@ export interface MessageParams {
   'explosion.palette.removeBand': { index: number }
   'energyBloom.palette.band': { index: number }
   'energyBloom.palette.removeBand': { index: number }
+  'projectile.palette.bodyBand': { index: number }
+  'projectile.palette.energyBand': { index: number }
+  'projectile.palette.removeBand': { index: number }
   'previewTools.canvas.presetSquare': { width: number; height: number }
   'previewTools.canvas.presetHorizontal': { width: number; height: number }
   'export.fileName': { name: string; width: number; height: number; frameCount: number }
@@ -1402,6 +1405,11 @@ const GENERATOR_DISPLAY_KEYS: Readonly<Record<string, GeneratorDisplayKeys>> = {
     description: 'energyBloom.description',
     previewTitle: 'energyBloom.previewTitle',
   },
+  projectile: {
+    name: 'projectile.name',
+    description: 'projectile.description',
+    previewTitle: 'projectile.previewTitle',
+  },
 }
 
 const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, CategoryDisplayKeys>>>> = {
@@ -1425,6 +1433,13 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
     material: { label: 'energyBloom.categories.material.label', description: 'energyBloom.categories.material.description' },
     effects: { label: 'energyBloom.categories.effects.label', description: 'energyBloom.categories.effects.description' },
     palette: { label: 'energyBloom.categories.palette.label', description: 'energyBloom.categories.palette.description' },
+  },
+  projectile: {
+    body: { label: 'projectile.categories.body.label', description: 'projectile.categories.body.description' },
+    motion: { label: 'projectile.categories.motion.label', description: 'projectile.categories.motion.description' },
+    trail: { label: 'projectile.categories.trail.label', description: 'projectile.categories.trail.description' },
+    effects: { label: 'projectile.categories.effects.label', description: 'projectile.categories.effects.description' },
+    palette: { label: 'projectile.categories.palette.label', description: 'projectile.categories.palette.description' },
   },
 }
 

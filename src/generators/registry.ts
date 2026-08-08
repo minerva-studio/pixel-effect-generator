@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import { slashGenerator } from './slash/module'
 import { explosionGenerator } from './explosion/module'
 import { bloomGenerator } from './energy-bloom/module'
+import { projectileGenerator } from './projectile/module'
 import type {
   GeneratorDefinition,
   GeneratorModule,
@@ -156,7 +157,12 @@ function registrationsOf<Registrations extends readonly RegisteredGenerator<stri
 }
 
 /** Central production registry in navigation order. */
-export const GENERATOR_REGISTRY = createGeneratorRegistry([slashGenerator, explosionGenerator, bloomGenerator] as const)
+export const GENERATOR_REGISTRY = createGeneratorRegistry([
+  slashGenerator,
+  explosionGenerator,
+  bloomGenerator,
+  projectileGenerator,
+] as const)
 
 export type GeneratorId = (typeof GENERATOR_REGISTRY)['registrations'][number]['id']
 
