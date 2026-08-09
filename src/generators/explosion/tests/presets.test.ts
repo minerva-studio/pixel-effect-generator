@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { payloadsEqual, resolveAppliedPresetBaseline } from '../../../components/PresetBar'
 import { en, presetDisplayKeys, translate } from '../../../i18n/messages'
 import type { JsonValue } from '../../../shared/project/types'
-import { DEFAULT_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
+import { DEFAULT_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
 import { renderExplosionFrames } from '../renderer'
 import {
   EXPLOSION_BUILTIN_PRESETS,
@@ -17,8 +17,8 @@ import {
 } from '../presets'
 
 describe('combustion explosion built-in presets', () => {
-  it('exposes three unique valid V4 payloads', () => {
-    expect(EXPLOSION_BUILTIN_PRESETS.map(({ id }) => id)).toEqual(['rollingFireball', 'pressureBurst', 'retroBurst'])
+  it('exposes six unique valid V5 payloads', () => {
+    expect(EXPLOSION_BUILTIN_PRESETS.map(({ id }) => id)).toEqual(['rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'directionalBlast', 'retroBurst'])
     for (const preset of EXPLOSION_BUILTIN_PRESETS) {
       const payload = preset.payload as Record<string, unknown>
       expect(payload.schemaVersion).toBe(EXPLOSION_PRESET_SCHEMA_VERSION)
@@ -26,8 +26,24 @@ describe('combustion explosion built-in presets', () => {
       expect(validateExplosionPreset(preset.payload).ok).toBe(true)
       expect(() => renderExplosionFrames(applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, preset.payload))).not.toThrow()
     }
-    expect((EXPLOSION_BUILTIN_PRESETS[0].payload as Record<string, unknown>).body).toMatchObject({ shape: 'billowingFireball' })
-    expect((EXPLOSION_BUILTIN_PRESETS[2].payload as Record<string, unknown>).body).toMatchObject({ shape: 'legacyRadial' })
+    expect((EXPLOSION_BUILTIN_PRESETS[0].payload as Record<string, unknown>).body).toMatchObject({ shape: 'gameFireball' })
+    expect((EXPLOSION_BUILTIN_PRESETS[2].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'billowing' })
+    expect((EXPLOSION_BUILTIN_PRESETS[3].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'particulate' })
+    expect((EXPLOSION_BUILTIN_PRESETS.at(-1)!.payload as Record<string, unknown>).body).toMatchObject({ shape: 'legacyRadial' })
+  })
+
+  it('defaults missing V5 smoke count and writes it on the next capture', () => {
+    const payload = captureExplosionPreset(MODERN_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const { smokeCount: _smokeCount, smokeMotion: _smokeMotion, ...legacyBody } = payload.body as Record<string, unknown>
+    const parsed = parseExplosionPresetPayload({ ...payload, body: legacyBody })
+    expect(parsed.body.smokeCount).toBe(5)
+    expect(parsed.body.smokeMotion).toBe('billowing')
+    expect((captureExplosionPreset({
+      ...parsed,
+      canvasWidth: 128,
+      canvasHeight: 128,
+      frameCount: 10,
+    }) as Record<string, unknown>).body).toMatchObject({ smokeCount: 5, smokeMotion: 'billowing' })
   })
 
   it('preserves canvas size and frame count when applying presets', () => {
@@ -69,19 +85,39 @@ describe('combustion explosion built-in presets', () => {
     expect(() => parseExplosionPresetPayload(null)).toThrow(RangeError)
   })
 
-  it('capture/apply round-trips V4 to pixel-identical frames', () => {
+  it('capture/apply round-trips V5 to pixel-identical frames', () => {
     const source: ExplosionParameters = {
       ...DEFAULT_EXPLOSION_PARAMETERS,
       canvasWidth: 256,
       canvasHeight: 128,
       frameCount: 12,
       seed: 424242,
-      body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, shape: 'pressureBurst', radius: 60, rotation: 35, pressureWidth: 9 },
+      body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, shape: 'directionalBlast', radius: 60, rotation: 35, blastWidth: 0.7 },
+      volume: { enabled: true, profile: 'hardShell' },
       surface: { style: 'rollingSoot', coverage: 0.9, sootAmount: 0.4, sootScale: 14 },
       tongues: { ...DEFAULT_EXPLOSION_PARAMETERS.tongues, length: 44, width: 6 },
     }
     const restored = applyExplosionPreset(source, captureExplosionPreset(source))
     expect(renderExplosionFrames(restored).map(({ pixels }) => Array.from(pixels))).toEqual(renderExplosionFrames(source).map(({ pixels }) => Array.from(pixels)))
+  })
+
+  it('normalizes removed V5 experiment shapes and incompatible volume profiles', () => {
+    const payload = captureExplosionPreset(MODERN_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const turbulent = parseExplosionPresetPayload({
+      ...payload,
+      body: { ...(payload.body as object), shape: 'turbulentFireball' },
+      volume: { enabled: true, profile: 'hardShell' },
+    })
+    expect(turbulent.body.shape).toBe('smokeBurst')
+    expect(turbulent.volume).toEqual({ enabled: true, profile: 'smokeFire' })
+
+    const shock = parseExplosionPresetPayload({
+      ...payload,
+      body: { ...(payload.body as object), shape: 'shockBlast' },
+      volume: { enabled: true, profile: 'smokeFire' },
+    })
+    expect(shock.body.shape).toBe('gameFireball')
+    expect(shock.volume).toEqual({ enabled: true, profile: 'hardShell' })
   })
 
   it('defaults missing palette alpha and round-trips custom alpha', () => {

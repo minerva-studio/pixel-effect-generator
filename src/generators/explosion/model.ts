@@ -14,8 +14,15 @@ import type {
 
 export { MAX_CANVAS_SIZE, MAX_FRAGMENT_SIZE, MAX_FRAME_COUNT, MAX_SHOCKWAVE_THICKNESS, MIN_CANVAS_SIZE, MIN_FRAME_COUNT }
 
-export type ExplosionShape = 'billowingFireball' | 'pressureBurst' | 'legacyRadial'
+export type ExplosionShape = 'gameFireball' | 'directionalBlast' | 'smokeBurst' | 'legacyRadial'
 export type ExplosionSurfaceStyle = 'burningLayers' | 'rollingSoot' | 'retroPixel'
+export type ExplosionVolumeProfile = 'hardShell' | 'moltenCore' | 'smokeFire'
+export type ExplosionSmokeMotion = 'billowing' | 'particulate'
+
+export interface ExplosionVolumeParameters {
+  readonly enabled: boolean
+  readonly profile: ExplosionVolumeProfile
+}
 
 interface ExplosionSurfaceBase {
   readonly coverage: number
@@ -39,8 +46,15 @@ export interface ExplosionBodyParameters {
   readonly rotation: number
   readonly shapeIrregularity: number
   readonly churnAmount: number
+  readonly lobeCount: number
   readonly pressureWidth: number
   readonly pressureSharpness: number
+  readonly blastWidth: number
+  readonly blastAngle: number
+  readonly smokeSpread: number
+  readonly smokeRise: number
+  readonly smokeCount: number
+  readonly smokeMotion: ExplosionSmokeMotion
 }
 
 export interface ExplosionParameters {
@@ -50,6 +64,7 @@ export interface ExplosionParameters {
   readonly frameCount: number
   readonly seed: number
   readonly body: ExplosionBodyParameters
+  readonly volume: ExplosionVolumeParameters
   readonly surface: ExplosionSurfaceParameters
   readonly motion: SharedMotionParameters
   readonly core: SharedCoreParameters
@@ -67,11 +82,38 @@ export function explosionFrameLimits(size: FrameSize): ExplosionFrameLimits {
 }
 
 /** Stable direction count used by balanced effects for each body shape. */
-export function explosionShapeCount(shape: ExplosionShape): number {
+export function explosionShapeCount(shape: ExplosionShape, lobeCount = 5): number {
   switch (shape) {
-    case 'billowingFireball': return 8
-    case 'pressureBurst': return 6
+    case 'gameFireball': return lobeCount
+    case 'directionalBlast': return 5
+    case 'smokeBurst': return 6
     case 'legacyRadial': return 8
+  }
+}
+
+/** Returns the meaningful volume profiles for one active body shape. */
+export function explosionVolumeProfiles(shape: ExplosionShape): readonly ExplosionVolumeProfile[] {
+  switch (shape) {
+    case 'gameFireball':
+    case 'directionalBlast':
+      return ['hardShell', 'moltenCore']
+    case 'smokeBurst':
+      return ['smokeFire']
+    case 'legacyRadial':
+      return []
+  }
+}
+
+/** Returns the canonical volume profile and enabled state for one body shape. */
+export function normalizeExplosionVolume(
+  shape: ExplosionShape,
+  volume: ExplosionVolumeParameters,
+): ExplosionVolumeParameters {
+  const profiles = explosionVolumeProfiles(shape)
+  if (profiles.length === 0) return { enabled: false, profile: 'hardShell' }
+  return {
+    enabled: volume.enabled,
+    profile: profiles.includes(volume.profile) ? volume.profile : profiles[0],
   }
 }
 
@@ -130,7 +172,7 @@ export function resizeExplosionCanvas(
   }
 }
 
-/** Modern billowing-fireball defaults used by the rolling preset and shape cards. */
+/** Modern combustion defaults used by the game-fireball preset and shape cards. */
 export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
   palette: [
     { r: 255, g: 255, b: 255, a: 255 },
@@ -143,14 +185,22 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
   frameCount: 10,
   seed: 20260805,
   body: {
-    shape: 'billowingFireball',
+    shape: 'gameFireball',
     radius: 42,
     rotation: 0,
     shapeIrregularity: 0.22,
-    churnAmount: 0.55,
+    churnAmount: 0.72,
+    lobeCount: 5,
     pressureWidth: 6,
     pressureSharpness: 0.8,
+    blastWidth: 0.58,
+    blastAngle: 0,
+    smokeSpread: 0.72,
+    smokeRise: 0.18,
+    smokeCount: 5,
+    smokeMotion: 'billowing',
   },
+  volume: { enabled: true, profile: 'hardShell' },
   surface: createExplosionSurface('burningLayers'),
   motion: {
     mode: 'explosion',
@@ -161,7 +211,7 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
   },
   core: { enabled: true, radius: 14, duration: 0.2 },
   shockwave: {
-    mode: 'multiRing',
+    mode: 'none',
     colorMode: 'gradient',
     thickness: 2,
     startRadiusScale: 0.78,
@@ -173,9 +223,19 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
     squash: 0.28,
     squashAngle: 0,
   },
-  tongues: { enabled: true, count: 4, length: 22, width: 3, curvature: 0.34, variation: 0.24 },
-  fragments: { enabled: true, count: 26, minSize: 1, maxSize: 2, travelDistance: 30, tangentialDrift: 7, lifetime: 0.7 },
+  tongues: { enabled: false, count: 1, length: 0, width: 1, curvature: 0.34, variation: 0.24 },
+  fragments: { enabled: true, count: 8, minSize: 1, maxSize: 2, travelDistance: 18, tangentialDrift: 4, lifetime: 0.55 },
 }
+
+/** Dedicated smoke-and-ember colors with a warm bed and cool charcoal mass. */
+export const SMOKE_EXPLOSION_PALETTE: readonly RgbColor[] = [
+  { r: 255, g: 232, b: 164, a: 255 },
+  { r: 238, g: 132, b: 62, a: 255 },
+  { r: 166, g: 119, b: 111, a: 255 },
+  { r: 116, g: 96, b: 112, a: 255 },
+  { r: 72, g: 62, b: 82, a: 255 },
+  { r: 42, g: 41, b: 52, a: 255 },
+]
 
 /** Default explosion parameters now reproduce the classic Retro Burst look. */
 export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
@@ -195,9 +255,17 @@ export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
     rotation: 0,
     shapeIrregularity: 0.28,
     churnAmount: 0.5,
+    lobeCount: 5,
     pressureWidth: 6,
     pressureSharpness: 0.8,
+    blastWidth: 0.58,
+    blastAngle: 0,
+    smokeSpread: 0.72,
+    smokeRise: 0.18,
+    smokeCount: 5,
+    smokeMotion: 'billowing',
   },
+  volume: { enabled: false, profile: 'hardShell' },
   surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
   motion: {
     mode: 'explosion',
@@ -224,7 +292,7 @@ export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
   fragments: { enabled: true, count: 30, minSize: 1, maxSize: 3, travelDistance: 30, tangentialDrift: 9, lifetime: 0.68 },
 }
 
-/** Validates the complete V4 combustion explosion parameter contract. */
+/** Validates the complete V5 combustion explosion parameter contract. */
 export function assertValidExplosionParameters(parameters: ExplosionParameters): void {
   if (parameters.palette.length < 2 || parameters.palette.length > 6) throw new RangeError('palette must contain between 2 and 6 colors.')
   parameters.palette.forEach((color, index) => assertValidColor(color, `palette[${index}]`))
@@ -232,16 +300,30 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   assertInRange(parameters.canvasHeight, MIN_CANVAS_SIZE, MAX_CANVAS_SIZE, 'canvasHeight')
   assertInRange(parameters.frameCount, MIN_FRAME_COUNT, MAX_FRAME_COUNT, 'frameCount')
   assertInRange(parameters.seed, 0, 0xffffffff, 'seed')
+  if (typeof parameters.volume.enabled !== 'boolean') throw new RangeError('volume.enabled must be a boolean.')
+  if (!['hardShell', 'moltenCore', 'smokeFire'].includes(parameters.volume.profile)) throw new RangeError('volume.profile is invalid.')
   const limits = explosionFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
-  const shapeCount = explosionShapeCount(parameters.body.shape)
+  const shapeCount = explosionShapeCount(parameters.body.shape, parameters.body.lobeCount)
   assertInRange(parameters.body.radius, 2, limits.maxRadius, 'body.radius')
   assertInRange(parameters.body.rotation, 0, 359, 'body.rotation')
   assertInRange(parameters.body.shapeIrregularity, 0, 1, 'body.shapeIrregularity')
   assertInRange(parameters.body.churnAmount, 0, 1, 'body.churnAmount')
+  assertInRange(parameters.body.lobeCount, 3, 9, 'body.lobeCount')
+  if (!Number.isInteger(parameters.body.lobeCount)) throw new RangeError('body.lobeCount must be an integer.')
   assertInRange(parameters.body.pressureWidth, 1, 24, 'body.pressureWidth')
   assertInRange(parameters.body.pressureSharpness, 0, 1, 'body.pressureSharpness')
-  if (parameters.body.shape !== 'billowingFireball' && parameters.body.shape !== 'pressureBurst' && parameters.body.shape !== 'legacyRadial') {
+  assertInRange(parameters.body.blastWidth, 0.2, 1, 'body.blastWidth')
+  assertInRange(parameters.body.blastAngle, 0, 359, 'body.blastAngle')
+  assertInRange(parameters.body.smokeSpread, 0.2, 1.4, 'body.smokeSpread')
+  assertInRange(parameters.body.smokeRise, -0.6, 0.6, 'body.smokeRise')
+  assertInRange(parameters.body.smokeCount, 3, 9, 'body.smokeCount')
+  if (parameters.body.smokeMotion !== 'billowing' && parameters.body.smokeMotion !== 'particulate') throw new RangeError('body.smokeMotion is invalid.')
+  if (!['gameFireball', 'directionalBlast', 'smokeBurst', 'legacyRadial'].includes(parameters.body.shape)) {
     throw new RangeError('body.shape is invalid.')
+  }
+  const normalizedVolume = normalizeExplosionVolume(parameters.body.shape, parameters.volume)
+  if (normalizedVolume.enabled !== parameters.volume.enabled || normalizedVolume.profile !== parameters.volume.profile) {
+    throw new RangeError('volume is not compatible with body.shape.')
   }
   assertValidSurface(parameters.surface)
   assertValidMotion(parameters.motion)
@@ -277,7 +359,7 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   if (parameters.shockwave.startRadiusScale > parameters.shockwave.endRadiusScale) throw new RangeError('shockwave start radius must not exceed end radius.')
   const integers = [
     parameters.canvasWidth, parameters.canvasHeight, parameters.frameCount, parameters.seed,
-    parameters.body.radius, parameters.body.rotation, parameters.body.pressureWidth,
+    parameters.body.radius, parameters.body.rotation, parameters.body.pressureWidth, parameters.body.blastAngle, parameters.body.smokeCount,
     parameters.core.radius, parameters.shockwave.thickness, parameters.shockwave.ringCount, parameters.shockwave.squashAngle,
     parameters.tongues.count, parameters.tongues.length, parameters.tongues.width,
     parameters.fragments.count, parameters.fragments.minSize, parameters.fragments.maxSize,

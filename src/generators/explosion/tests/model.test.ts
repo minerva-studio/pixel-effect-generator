@@ -6,6 +6,8 @@ import {
   createExplosionSurface,
   explosionFrameLimits,
   explosionShapeCount,
+  explosionVolumeProfiles,
+  normalizeExplosionVolume,
   resizeExplosionCanvas,
 } from '../model'
 
@@ -14,8 +16,10 @@ describe('combustion explosion parameter model', () => {
     expect(DEFAULT_EXPLOSION_PARAMETERS.body.shape).toBe('legacyRadial')
     expect(DEFAULT_EXPLOSION_PARAMETERS.surface.style).toBe('retroPixel')
     expect(DEFAULT_EXPLOSION_PARAMETERS.tongues.enabled).toBe(false)
-    expect(MODERN_EXPLOSION_PARAMETERS.body.shape).toBe('billowingFireball')
-    expect(MODERN_EXPLOSION_PARAMETERS.tongues.enabled).toBe(true)
+    expect(MODERN_EXPLOSION_PARAMETERS.body.shape).toBe('gameFireball')
+    expect(MODERN_EXPLOSION_PARAMETERS.body.smokeCount).toBe(5)
+    expect(MODERN_EXPLOSION_PARAMETERS.body.smokeMotion).toBe('billowing')
+    expect(MODERN_EXPLOSION_PARAMETERS.tongues.enabled).toBe(false)
   })
 
   it('validates defaults and rejects invalid shapes, surfaces, curves, and timing', () => {
@@ -71,11 +75,48 @@ describe('combustion explosion parameter model', () => {
   })
 
   it('exposes per-shape direction counts and size-dependent limits', () => {
-    expect(explosionShapeCount('billowingFireball')).toBe(8)
-    expect(explosionShapeCount('pressureBurst')).toBe(6)
+    expect(explosionShapeCount('gameFireball')).toBe(5)
+    expect(explosionShapeCount('gameFireball', 8)).toBe(8)
+    expect(explosionShapeCount('directionalBlast')).toBe(5)
+    expect(explosionShapeCount('smokeBurst')).toBe(6)
     expect(explosionShapeCount('legacyRadial')).toBe(8)
     expect(explosionFrameLimits({ width: 64, height: 32 }).maxRadius).toBe(16)
     expect(explosionFrameLimits({ width: 128, height: 128 }).maxTongueLength).toBe(96)
+  })
+
+  it('accepts only the two supported smoke motion languages', () => {
+    for (const smokeMotion of ['billowing', 'particulate'] as const) {
+      expect(() => assertValidExplosionParameters({
+        ...MODERN_EXPLOSION_PARAMETERS,
+        body: { ...MODERN_EXPLOSION_PARAMETERS.body, smokeMotion },
+      })).not.toThrow()
+    }
+    expect(() => assertValidExplosionParameters({
+      ...MODERN_EXPLOSION_PARAMETERS,
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, smokeMotion: 'anchoredScale' as never },
+    })).toThrow(/smokeMotion/i)
+  })
+
+  it('requires smoke count to be an integer from three to nine', () => {
+    for (const smokeCount of [3, 5, 9]) {
+      expect(() => assertValidExplosionParameters({
+        ...MODERN_EXPLOSION_PARAMETERS,
+        body: { ...MODERN_EXPLOSION_PARAMETERS.body, smokeCount },
+      })).not.toThrow()
+    }
+    for (const smokeCount of [2, 10, 4.5]) {
+      expect(() => assertValidExplosionParameters({
+        ...MODERN_EXPLOSION_PARAMETERS,
+        body: { ...MODERN_EXPLOSION_PARAMETERS.body, smokeCount },
+      })).toThrow(/smokeCount|integer/i)
+    }
+  })
+
+  it('limits and normalizes volume profiles per active shape', () => {
+    expect(explosionVolumeProfiles('gameFireball')).toEqual(['hardShell', 'moltenCore'])
+    expect(explosionVolumeProfiles('smokeBurst')).toEqual(['smokeFire'])
+    expect(normalizeExplosionVolume('smokeBurst', { enabled: true, profile: 'hardShell' })).toEqual({ enabled: true, profile: 'smokeFire' })
+    expect(normalizeExplosionVolume('legacyRadial', { enabled: true, profile: 'moltenCore' })).toEqual({ enabled: false, profile: 'hardShell' })
   })
 
   it('scales pixel-space values from the short canvas edge', () => {

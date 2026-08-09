@@ -276,17 +276,18 @@ interface ShapeCardProps {
   readonly labelKey: string
   readonly descriptionKey: string
   readonly selected: boolean
-  readonly frames: readonly PixelFrame[]
+  readonly frames?: readonly PixelFrame[]
+  readonly disabled?: boolean
   readonly onSelect: (value: string) => void
 }
 
-const ShapeCard = memo(function ShapeCard({ value, labelKey, descriptionKey, selected, frames, onSelect }: ShapeCardProps) {
+const ShapeCard = memo(function ShapeCard({ value, labelKey, descriptionKey, selected, frames, disabled = false, onSelect }: ShapeCardProps) {
   const { t } = useI18n()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const frameIndexRef = useRef(0)
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return undefined
+    if (!canvas || !frames || frames.length === 0) return undefined
     drawFrame(canvas, frames[0])
     const interval = window.setInterval(() => {
       frameIndexRef.current = (frameIndexRef.current + 1) % frames.length
@@ -299,9 +300,11 @@ const ShapeCard = memo(function ShapeCard({ value, labelKey, descriptionKey, sel
       className={`shape-card ${selected ? 'active' : ''}`}
       type="button"
       aria-pressed={selected}
-      onClick={() => onSelect(value)}
+      aria-disabled={disabled}
+      disabled={disabled}
+      onClick={() => { if (!disabled) onSelect(value) }}
     >
-      <canvas ref={canvasRef} aria-hidden="true" />
+      {frames ? <canvas ref={canvasRef} aria-hidden="true" /> : <span className="shape-card-placeholder" aria-hidden="true" />}
       <span className="shape-card-label">{t(labelKey as MessageKey)}</span>
       <small className="shape-card-description">{t(descriptionKey as MessageKey)}</small>
     </button>
@@ -330,7 +333,8 @@ export interface ShapeCardOption<Parameters> {
   readonly value: string
   readonly labelKey: string
   readonly descriptionKey: string
-  readonly buildParameters: () => Parameters
+  readonly buildParameters?: () => Parameters
+  readonly disabled?: boolean
 }
 
 interface ShapeCardGridProps<Parameters> {
@@ -365,7 +369,8 @@ export function ShapeCardGrid<Parameters>({
           labelKey={option.labelKey}
           descriptionKey={option.descriptionKey}
           selected={option.value === selected}
-          frames={cachedShapeFrames(familyId, option.value, option.buildParameters, render)}
+          frames={option.disabled || !option.buildParameters ? undefined : cachedShapeFrames(familyId, option.value, option.buildParameters, render)}
+          disabled={option.disabled}
           onSelect={handleSelect}
         />
       ))}

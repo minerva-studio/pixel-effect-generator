@@ -4,6 +4,7 @@ import {
   createExplosionSurface,
   DEFAULT_EXPLOSION_PARAMETERS,
   MODERN_EXPLOSION_PARAMETERS,
+  SMOKE_EXPLOSION_PALETTE,
   resizeExplosionCanvas,
   type ExplosionParameters,
   type ExplosionSurfaceStyle,
@@ -51,13 +52,76 @@ describe('renderExplosionFrames', () => {
   })
 
   it('produces three structurally distinct deterministic shapes', () => {
-    const signatures = (['billowingFireball', 'pressureBurst', 'legacyRadial'] as const).map((shape) => {
-      const parameters = quietParameters({ body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, shape } })
+    const signatures = (['gameFireball', 'directionalBlast', 'smokeBurst'] as const).map((shape) => {
+      const parameters = quietParameters({
+        body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape },
+        volume: { enabled: true, profile: shape === 'smokeBurst' ? 'smokeFire' : 'hardShell' },
+      }, MODERN_EXPLOSION_PARAMETERS)
       const frames = renderExplosionFrames(parameters)
       expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(parameters)))
       return fullFrameHash(frames)
     })
     expect(new Set(signatures).size).toBe(3)
+  })
+
+  it('keeps all three active modern volume silhouettes structurally distinct', () => {
+    const shapes = ['gameFireball', 'directionalBlast', 'smokeBurst'] as const
+    const signatures = shapes.map((shape) => {
+      const parameters = quietParameters({
+        body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape },
+        volume: { enabled: true, profile: shape === 'smokeBurst' ? 'smokeFire' : 'hardShell' },
+        shockwave: { ...MODERN_EXPLOSION_PARAMETERS.shockwave, mode: 'none' },
+        tongues: { ...MODERN_EXPLOSION_PARAMETERS.tongues, enabled: false },
+        fragments: { ...MODERN_EXPLOSION_PARAMETERS.fragments, enabled: false },
+        core: { ...MODERN_EXPLOSION_PARAMETERS.core, enabled: false },
+      }, MODERN_EXPLOSION_PARAMETERS)
+      const frame = renderExplosionFrames(parameters)[4]
+      return silhouetteSignature(frame)
+    })
+    expect(new Set(signatures).size).toBe(3)
+  })
+
+  it('renders each volume profile deterministically with visible layering differences', () => {
+    const cases = [
+      { shape: 'gameFireball', profile: 'hardShell' },
+      { shape: 'gameFireball', profile: 'moltenCore' },
+      { shape: 'smokeBurst', profile: 'smokeFire' },
+    ] as const
+    const profiles = cases.map(({ shape, profile }) => {
+      const parameters = quietParameters({
+        body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape },
+        volume: { enabled: true, profile },
+        surface: { style: 'burningLayers', coverage: 1, bandWarp: 0, edgeBreakup: 0 },
+        core: { ...MODERN_EXPLOSION_PARAMETERS.core, duration: 0.8 },
+      }, MODERN_EXPLOSION_PARAMETERS)
+      const frames = renderExplosionFrames(parameters)
+      expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(parameters)))
+      expect(new Set(frames.flatMap(colors)).size).toBeGreaterThan(1)
+      expect(new Set(frames.flatMap(alphaValues))).toEqual(new Set([0, 255]))
+      return fullFrameHash(frames)
+    })
+    expect(new Set(profiles).size).toBe(3)
+  })
+
+  it('keeps the deepest hard-shell color on the one-pixel outer edge only', () => {
+    const parameters = quietParameters({
+      volume: { enabled: true, profile: 'hardShell' },
+      surface: { style: 'burningLayers', coverage: 1, bandWarp: 0, edgeBreakup: 0 },
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frame = renderExplosionFrames(parameters)[4]
+    const deepest = parameters.palette.at(-1)!
+    for (let y = 1; y < frame.height - 1; y += 1) for (let x = 1; x < frame.width - 1; x += 1) {
+      const offset = (y * frame.width + x) * 4
+      if (frame.pixels[offset] !== deepest.r || frame.pixels[offset + 1] !== deepest.g || frame.pixels[offset + 2] !== deepest.b) continue
+      const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]
+      expect(neighbors.some(([nx, ny]) => frame.pixels[(ny * frame.width + nx) * 4 + 3] === 0)).toBe(true)
+    }
+  })
+
+  it('falls back to the flat body when volume layering is disabled', () => {
+    const flat = quietParameters({ volume: { enabled: false, profile: 'hardShell' } }, MODERN_EXPLOSION_PARAMETERS)
+    const layered = quietParameters({ volume: { enabled: true, profile: 'hardShell' } }, MODERN_EXPLOSION_PARAMETERS)
+    expect(frameBytes(renderExplosionFrames(flat))).not.toEqual(frameBytes(renderExplosionFrames(layered)))
   })
 
   it('reads the default middle frame as a rounded billowing fireball, not a flower or star', () => {
@@ -66,19 +130,272 @@ describe('renderExplosionFrames', () => {
     expect(angularRadiusRatio(frame, 36)).toBeLessThanOrEqual(1.8)
   })
 
-  it('keeps the pressure burst center-connected without petals', () => {
+  it('keeps the directional blast connected, wide, and confined to the forward half-plane', () => {
     const parameters = quietParameters({
-      body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, shape: 'pressureBurst', pressureWidth: 8, pressureSharpness: 0.95 },
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'directionalBlast', blastWidth: 0.8, blastAngle: 0, rotation: 0 },
+      volume: { enabled: true, profile: 'hardShell' },
       surface: { style: 'burningLayers', coverage: 0.95, bandWarp: 0.1, edgeBreakup: 0.2 },
-    })
+    }, MODERN_EXPLOSION_PARAMETERS)
     const frame = renderExplosionFrames(parameters)[4]
-    expect(opaqueComponents(frame)).toBe(1)
-    expect(occupiedAngleBins(frame, 72)).toBeGreaterThanOrEqual(64)
+    expect(opaqueComponents(frame)).toBeGreaterThanOrEqual(2)
+    expect(opaqueComponents(frame)).toBeLessThanOrEqual(5)
     expect(countOpaqueInside(frame, 6)).toBeGreaterThan(0)
+    const forward = countOpaqueRegion(frame, (x) => x >= frame.width / 2 + 6)
+    const backward = countOpaqueRegion(frame, (x) => x < frame.width / 2 - 6)
+    expect(forward / Math.max(1, forward + backward)).toBeGreaterThanOrEqual(0.8)
+    expect(opaqueBounds(frame).height / opaqueBounds(frame).width).toBeGreaterThan(0.35)
+  })
+
+  it('does not let hidden flat-surface coverage suppress volume rendering', () => {
+    const visible = quietParameters({
+      volume: { enabled: true, profile: 'hardShell' },
+      surface: { style: 'burningLayers', coverage: 1, bandWarp: 0.2, edgeBreakup: 0.2 },
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const hiddenCoverage = {
+      ...visible,
+      surface: { ...visible.surface, coverage: 0 },
+    } as ExplosionParameters
+    expect(frameBytes(renderExplosionFrames(hiddenCoverage))).toEqual(frameBytes(renderExplosionFrames(visible)))
+  })
+
+  it('keeps the game fireball expanding after formation without repeating a hold frame', () => {
+    const parameters = quietParameters({}, MODERN_EXPLOSION_PARAMETERS)
+    const frames = renderExplosionFrames(parameters)
+    const visibleAreas = frames.slice(1, -1).map(countOpaque)
+    for (let index = 1; index < visibleAreas.length; index += 1) {
+      expect(visibleAreas[index], `visible frame ${index + 1} must keep expanding`).toBeGreaterThan(visibleAreas[index - 1])
+    }
+    expect(countOpaque(frames[5])).toBeGreaterThan(countOpaque(frames[4]))
+    expect(countOpaque(frames[7])).toBeGreaterThan(countOpaque(frames[5]))
+    expect(opaqueBounds(frames[5]).width).toBeGreaterThanOrEqual(opaqueBounds(frames[4]).width)
+    expect(opaqueBounds(frames[7]).width).toBeGreaterThan(opaqueBounds(frames[5]).width)
+  })
+
+  it('cools game-fireball lobes through orange into the deepest burnout color', () => {
+    const parameters = quietParameters({}, MODERN_EXPLOSION_PARAMETERS)
+    const frames = renderExplosionFrames(parameters)
+    const middleOrangeRatio = countExactColor(frames[4], parameters.palette[2]) / countOpaque(frames[4])
+    const lateOrangeRatio = countExactColor(frames[7], parameters.palette[2]) / countOpaque(frames[7])
+    const middleDarkRatio = countExactColor(frames[4], parameters.palette[3]) / countOpaque(frames[4])
+    const lateDarkRatio = countExactColor(frames[7], parameters.palette[3]) / countOpaque(frames[7])
+    expect(lateOrangeRatio).toBeLessThan(middleOrangeRatio)
+    expect(lateDarkRatio).toBeGreaterThan(middleDarkRatio)
+  })
+
+  it('changes the game-fireball silhouette when the fire blob count changes', () => {
+    const three = quietParameters({ body: { ...MODERN_EXPLOSION_PARAMETERS.body, lobeCount: 3 } }, MODERN_EXPLOSION_PARAMETERS)
+    const nine = quietParameters({ body: { ...MODERN_EXPLOSION_PARAMETERS.body, lobeCount: 9 } }, MODERN_EXPLOSION_PARAMETERS)
+    expect(silhouetteSignature(renderExplosionFrames(three)[5])).not.toBe(silhouetteSignature(renderExplosionFrames(nine)[5]))
+  })
+
+  it('breaks eight-blob symmetry only when shape irregularity is enabled', () => {
+    const regular = quietParameters({ body: { ...MODERN_EXPLOSION_PARAMETERS.body, lobeCount: 8, shapeIrregularity: 0 } }, MODERN_EXPLOSION_PARAMETERS)
+    const irregular = quietParameters({ body: { ...MODERN_EXPLOSION_PARAMETERS.body, lobeCount: 8, shapeIrregularity: 0.22 } }, MODERN_EXPLOSION_PARAMETERS)
+    const regularFrame = renderExplosionFrames(regular)[4]
+    const irregularFrame = renderExplosionFrames(irregular)[4]
+    const regularVariation = angularRadiusVariation(regularFrame, 64)
+    const irregularVariation = angularRadiusVariation(irregularFrame, 64)
+    expect(irregularVariation).toBeGreaterThan(regularVariation)
+    expect(rotationalAlphaAgreement(regularFrame, Math.PI / 4)).toBeGreaterThan(rotationalAlphaAgreement(irregularFrame, Math.PI / 4))
+  })
+
+  it('keeps every supported fire-blob count connected and hole-free before breakup', () => {
+    for (let lobeCount = 3; lobeCount <= 9; lobeCount += 1) {
+      const parameters = quietParameters({ body: { ...MODERN_EXPLOSION_PARAMETERS.body, lobeCount } }, MODERN_EXPLOSION_PARAMETERS)
+      const frame = renderExplosionFrames(parameters)[4]
+      expect(opaqueComponents(frame), `${lobeCount} blobs must remain connected`).toBe(1)
+      expect(enclosedTransparentPixels(frame), `${lobeCount} blobs must not enclose holes`).toBe(0)
+    }
+  })
+
+  it('breaks the late game fireball edge into detached directional cinders', () => {
+    const frames = renderExplosionFrames(quietParameters({}, MODERN_EXPLOSION_PARAMETERS))
+    expect(opaqueComponents(frames[7])).toBeGreaterThan(opaqueComponents(frames[5]))
+    expect(maximumRadius(frames[7])).toBeGreaterThan(maximumRadius(frames[5]))
+  })
+
+  it('reveals the complete rear lobe when dissolved foreground pixels retreat', () => {
+    const parameters = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shapeIrregularity: 0, rotation: 0 },
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frame = renderExplosionFrames(parameters)[7]
+    const rearLobeCenterX = frame.width / 2 + parameters.body.radius * 0.28
+    expect(opaqueFractionInCircle(frame, rearLobeCenterX, frame.height / 2, parameters.body.radius * 0.17)).toBeGreaterThan(0.9)
+  })
+
+  it('keeps smoke above the ember bed without outlining every smoke lobe', () => {
+    const parameters = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeSpread: 1.12, smokeRise: 0.2 },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frames = renderExplosionFrames(parameters)
+    const early = frames[2]
+    const frame = frames[4]
+    expect(opaqueComponents(frame)).toBe(1)
+    const coldSmoke = parameters.palette.at(-2)!
+    const hottest = parameters.palette[1]
+    expect(colorCentroidY(frame, coldSmoke)).toBeLessThan(colorCentroidY(frame, hottest))
+    expect(paletteGroupCentroidY(frame, parameters.palette.slice(2))).toBeLessThan(paletteGroupCentroidY(early, parameters.palette.slice(2)))
+    expect(opaqueBounds(frame).width / opaqueBounds(frame).height).not.toBeCloseTo(opaqueBounds(early).width / opaqueBounds(early).height, 2)
+  })
+
+  it('keeps the ember visible as a rear heat source without exposing it on the smoke silhouette', () => {
+    for (const smokeMotion of ['billowing', 'particulate'] as const) {
+      const parameters = quietParameters({
+        body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion },
+        volume: { enabled: true, profile: 'smokeFire' },
+        palette: SMOKE_EXPLOSION_PALETTE,
+      }, MODERN_EXPLOSION_PARAMETERS)
+      const frames = renderExplosionFrames(parameters)
+      const hotColors = parameters.palette.slice(0, 2)
+      if (smokeMotion === 'billowing') {
+        const earlyGlow = frames.slice(1, 4).reduce((total, frame) => total + countPaletteGroup(frame, hotColors), 0)
+        expect(earlyGlow, 'billowing smoke should retain an early rear glow').toBeGreaterThan(0)
+      }
+      expect(exposedPaletteGroupPixels(frames[4], hotColors), `${smokeMotion} glow must remain inside the smoke silhouette`).toBe(0)
+    }
+  })
+
+  it('keeps three through nine deterministic smoke puffs connected and hole-free', () => {
+    for (const smokeCount of [3, 5, 9]) {
+      const parameters = quietParameters({
+        body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeCount, smokeSpread: 1.12, smokeRise: 0.2 },
+        volume: { enabled: true, profile: 'smokeFire' },
+      }, MODERN_EXPLOSION_PARAMETERS)
+      const frames = renderExplosionFrames(parameters)
+      expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(parameters)))
+      expect(frameBytes(frames)).not.toEqual(frameBytes(renderExplosionFrames({ ...parameters, seed: parameters.seed + 1 })))
+      const allowed = new Set(['0,0,0,0', ...parameters.palette.map(({ r, g, b, a }) => `${r},${g},${b},${a}`)])
+      expect([...new Set(frames.flatMap(colors))].every((color) => allowed.has(color))).toBe(true)
+      expect(new Set(frames.flatMap(alphaValues))).toEqual(new Set([0, 255]))
+      expect(opaqueComponents(frames[4]), `${smokeCount} puffs must stay connected`).toBe(1)
+      expect(enclosedTransparentPixels(frames[4]), `${smokeCount} puffs must not enclose holes`).toBe(0)
+    }
+  })
+
+  it('winds down the main cloud while detached smoke continues through the final visible frame', () => {
+    const parameters = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeCount: 5, smokeSpread: 1.2, smokeRise: 0.18 },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frames = renderExplosionFrames(parameters)
+    const mainAreas = [6, 7, 8].map((index) => opaqueComponentAreas(frames[index])[0] ?? 0)
+    expect(mainAreas[1]).toBeLessThan(mainAreas[0])
+    expect(mainAreas[2]).toBeLessThan(mainAreas[1])
+    expect(maximumRadius(frames[8])).toBeGreaterThanOrEqual(maximumRadius(frames[7]))
+    expect(countExactColor(frames[8], parameters.palette.at(-1)!)).toBeGreaterThan(0)
+    expect(countOpaque(frames[8])).toBeGreaterThan(0)
+    expect(countOpaque(frames[9])).toBe(0)
+    expect(enclosedTransparentPixels(frames[8])).toBe(0)
+    expect(colorCentroidY(frames[8], parameters.palette.at(-2)!)).toBeLessThan(colorCentroidY(frames[8], parameters.palette[1]))
+  }, 10_000)
+
+  it('uses the seed to produce visibly different smoke-cluster compositions', () => {
+    const base = quietParameters({
+      body: {
+        ...MODERN_EXPLOSION_PARAMETERS.body,
+        shape: 'smokeBurst', smokeMotion: 'billowing', smokeCount: 5,
+        smokeSpread: 1.2, smokeRise: 0.18, shapeIrregularity: 0.22,
+      },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frames = [101, 202, 303].map((seed) => renderExplosionFrames({ ...base, seed })[5])
+    expect(alphaJaccard(frames[0], frames[1])).toBeLessThan(0.9)
+    expect(alphaJaccard(frames[0], frames[2])).toBeLessThan(0.9)
+    expect(alphaJaccard(frames[1], frames[2])).toBeLessThan(0.9)
+    expect(frameBytes(renderExplosionFrames({ ...base, seed: 101 }))).toEqual(frameBytes(renderExplosionFrames({ ...base, seed: 101 })))
+  })
+
+  it('uses gray-purple on lit smoke edges and charcoal only on shadow-facing edges', () => {
+    const parameters = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'billowing' },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frame = renderExplosionFrames(parameters)[5]
+    const charcoal = parameters.palette.at(-1)!
+    const coolPurple = parameters.palette.at(-2)!
+    expect(exposedColorCount(frame, coolPurple, 'lit')).toBeGreaterThan(0)
+    expect(exposedColorCount(frame, charcoal, 'shadow')).toBeGreaterThan(0)
+    expect(exposedColorCount(frame, charcoal, 'litOnly')).toBe(0)
+  })
+
+  it('removes the ember root before the final smoke remnants', () => {
+    const parameters = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'billowing' },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frame = renderExplosionFrames(parameters)[8]
+    expect(countExactColor(frame, parameters.palette[0])).toBe(0)
+    expect(countExactColor(frame, parameters.palette[1])).toBe(0)
+    expect(narrowBottomStemLength(frame)).toBeLessThanOrEqual(2)
+  })
+
+  it('keeps the nine-puff problem frame as one asymmetric smoke cluster with central mass', () => {
+    const parameters = quietParameters({
+      frameCount: 10,
+      body: {
+        ...MODERN_EXPLOSION_PARAMETERS.body,
+        shape: 'smokeBurst', smokeMotion: 'billowing', smokeCount: 9,
+        smokeSpread: 1.2, smokeRise: 0.18,
+      },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frame = renderExplosionFrames(parameters)[7]
+    const areas = opaqueComponentAreas(frame)
+    const smokeColorsUsed = parameters.palette.slice(2, 5).filter((color) => countExactColor(frame, color) > 0)
+    expect(areas[0]).toBeGreaterThan((areas[1] ?? 0) * 5)
+    expect(opaqueFractionInCircle(frame, frame.width / 2, frame.height / 2 - parameters.body.radius * 0.12, parameters.body.radius * 0.18)).toBeGreaterThan(0.58)
+    expect(horizontalMirrorAgreement(frame)).toBeLessThan(0.9)
+    expect(new Set(colors(frame).filter((color) => color !== '0,0,0,0')).size).toBeGreaterThanOrEqual(4)
+    expect(smokeColorsUsed.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('renders billowing and particulate smoke as structurally different motion languages', () => {
+    const base = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeCount: 5, smokeSpread: 1.16, smokeRise: 0.18 },
+      volume: { enabled: true, profile: 'smokeFire' },
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const billowing = renderExplosionFrames({ ...base, body: { ...base.body, smokeMotion: 'billowing' } })
+    const particulate = renderExplosionFrames({ ...base, body: { ...base.body, smokeMotion: 'particulate' } })
+    expect(frameBytes(billowing)).not.toEqual(frameBytes(particulate))
+    expect(silhouetteSignature(billowing[4])).not.toBe(silhouetteSignature(billowing[7]))
+    expect(opaqueComponents(particulate[7])).toBeGreaterThan(opaqueComponents(particulate[4]))
+    expect(maximumRadius(particulate[7])).toBeGreaterThan(maximumRadius(particulate[4]))
+  })
+
+  it('keeps the compound billowing crown changing shape without losing its fused middle cloud', () => {
+    const base = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'billowing', smokeCount: 5, shapeIrregularity: 0.72 },
+      volume: { enabled: true, profile: 'smokeFire' },
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frames = renderExplosionFrames(base)
+    expect(new Set([4, 6, 8].map((index) => fullFrameHash([frames[index]]))).size).toBe(3)
+    expect(opaqueComponents(frames[4])).toBe(1)
+    expect(enclosedTransparentPixels(frames[4])).toBe(0)
+    const regular = renderExplosionFrames({ ...base, body: { ...base.body, shapeIrregularity: 0 } })
+    expect(frameBytes(frames)).not.toEqual(frameBytes(regular))
+  })
+
+  it('continues particulate drift, darkening, and staggered breakup through the visible tail', () => {
+    const parameters = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'particulate', smokeCount: 5, shapeIrregularity: 0.64 },
+      volume: { enabled: true, profile: 'smokeFire' },
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frames = renderExplosionFrames(parameters)
+    expect(new Set([6, 7, 8].map((index) => fullFrameHash([frames[index]]))).size).toBe(3)
+    expect(maximumRadius(frames[8])).toBeGreaterThan(maximumRadius(frames[6]))
+    expect(opaqueComponents(frames[7])).toBeGreaterThan(opaqueComponents(frames[4]))
+    expect(countExactColor(frames[7], parameters.palette.at(-1)!)).toBeGreaterThan(0)
   })
 
   it('keeps Retro Burst byte-identical through a full-byte golden hash', () => {
-    const retro = applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, EXPLOSION_BUILTIN_PRESETS[2].payload)
+    const retro = applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, EXPLOSION_BUILTIN_PRESETS.at(-1)!.payload)
     expect(fullFrameHash(renderExplosionFrames(retro))).toBe(FULL_RETRO_BASELINE_HASH)
     expect(retro.body.shape).toBe('legacyRadial')
     expect(retro.surface.style).toBe('retroPixel')
@@ -213,7 +530,7 @@ describe('renderExplosionFrames', () => {
     const parameters = quietParameters({
       surface: { style: 'retroPixel', coverage: 0.95, dissolveStyle: 'scanSweep', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
       motion: { ...MODERN_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
-    }, MODERN_EXPLOSION_PARAMETERS)
+    }, DEFAULT_EXPLOSION_PARAMETERS)
     const frame = renderExplosionFrames(parameters)[6]
     const diagonal = frame.width + frame.height
     expect(countOpaqueRegion(frame, (x, y) => x + y <= diagonal / 2))
@@ -353,8 +670,42 @@ function colors(frame: PixelFrame): string[] {
   return result
 }
 
+/** Samples a coarse silhouette signature for structure comparisons. */
+function silhouetteSignature(frame: PixelFrame): string {
+  const cells: string[] = []
+  for (let gy = 0; gy < 8; gy += 1) for (let gx = 0; gx < 8; gx += 1) {
+    let occupied = 0
+    for (let y = Math.floor(gy * frame.height / 8); y < Math.floor((gy + 1) * frame.height / 8); y += 1) for (let x = Math.floor(gx * frame.width / 8); x < Math.floor((gx + 1) * frame.width / 8); x += 1) {
+      occupied += frame.pixels[(y * frame.width + x) * 4 + 3] === 255 ? 1 : 0
+    }
+    cells.push(occupied > 0 ? '1' : '0')
+  }
+  return cells.join('')
+}
+
 /** Counts all opaque pixels in one frame. */
 function countOpaque(frame: PixelFrame): number { return alphaValues(frame).filter((alpha) => alpha === 255).length }
+
+/** Counts pixels matching one exact RGB palette entry. */
+function countExactColor(frame: PixelFrame, color: { readonly r: number; readonly g: number; readonly b: number }): number {
+  let count = 0
+  for (let offset = 0; offset < frame.pixels.length; offset += 4) {
+    if (frame.pixels[offset] === color.r && frame.pixels[offset + 1] === color.g && frame.pixels[offset + 2] === color.b && frame.pixels[offset + 3] === 255) count += 1
+  }
+  return count
+}
+
+/** Measures opaque coverage inside one circular sample region. */
+function opaqueFractionInCircle(frame: PixelFrame, centerX: number, centerY: number, radius: number): number {
+  let samples = 0
+  let opaque = 0
+  for (let y = Math.floor(centerY - radius); y <= Math.ceil(centerY + radius); y += 1) for (let x = Math.floor(centerX - radius); x <= Math.ceil(centerX + radius); x += 1) {
+    if ((x + 0.5 - centerX) ** 2 + (y + 0.5 - centerY) ** 2 > radius ** 2) continue
+    samples += 1
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 255) opaque += 1
+  }
+  return opaque / Math.max(1, samples)
+}
 
 /** Counts opaque samples inside a centered radius. */
 function countOpaqueInside(frame: PixelFrame, radius: number): number {
@@ -374,6 +725,35 @@ function countOpaqueRegion(frame: PixelFrame, predicate: (x: number, y: number) 
   return count
 }
 
+/** Returns the axis-aligned bounds of all opaque pixels. */
+function opaqueBounds(frame: PixelFrame): { readonly width: number; readonly height: number } {
+  let minimumX = frame.width
+  let maximumX = -1
+  let minimumY = frame.height
+  let maximumY = -1
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    minimumX = Math.min(minimumX, x)
+    maximumX = Math.max(maximumX, x)
+    minimumY = Math.min(minimumY, y)
+    maximumY = Math.max(maximumY, y)
+  }
+  return { width: maximumX - minimumX + 1, height: maximumY - minimumY + 1 }
+}
+
+/** Measures the vertical centroid of one exact palette color. */
+function colorCentroidY(frame: PixelFrame, color: { readonly r: number; readonly g: number; readonly b: number }): number {
+  let total = 0
+  let count = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    const offset = (y * frame.width + x) * 4
+    if (frame.pixels[offset] !== color.r || frame.pixels[offset + 1] !== color.g || frame.pixels[offset + 2] !== color.b) continue
+    total += y
+    count += 1
+  }
+  return count === 0 ? Number.POSITIVE_INFINITY : total / count
+}
+
 /** Counts four-neighbor opaque components. */
 function opaqueComponents(frame: PixelFrame): number {
   const seen = new Uint8Array(frame.width * frame.height)
@@ -385,6 +765,128 @@ function opaqueComponents(frame: PixelFrame): number {
     flood(frame, [start], seen)
   }
   return components
+}
+
+/** Measures the vertical centroid of a group of exact palette colors. */
+function paletteGroupCentroidY(frame: PixelFrame, palette: readonly { readonly r: number; readonly g: number; readonly b: number }[]): number {
+  const keys = new Set(palette.map(({ r, g, b }) => `${r},${g},${b}`))
+  let total = 0
+  let count = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    const offset = (y * frame.width + x) * 4
+    if (!keys.has(`${frame.pixels[offset]},${frame.pixels[offset + 1]},${frame.pixels[offset + 2]}`)) continue
+    total += y
+    count += 1
+  }
+  return count === 0 ? Number.POSITIVE_INFINITY : total / count
+}
+
+/** Returns four-neighbor opaque component areas from largest to smallest. */
+function opaqueComponentAreas(frame: PixelFrame): number[] {
+  const seen = new Uint8Array(frame.width * frame.height)
+  const areas: number[] = []
+  for (let start = 0; start < seen.length; start += 1) {
+    if (seen[start] || frame.pixels[start * 4 + 3] !== 255) continue
+    const queue = [start]
+    seen[start] = 1
+    let area = 0
+    while (queue.length > 0) {
+      const current = queue.pop()!
+      area += 1
+      const x = current % frame.width
+      const y = Math.floor(current / frame.width)
+      for (const [nextX, nextY] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        if (nextX < 0 || nextY < 0 || nextX >= frame.width || nextY >= frame.height) continue
+        const next = nextY * frame.width + nextX
+        if (seen[next] || frame.pixels[next * 4 + 3] !== 255) continue
+        seen[next] = 1
+        queue.push(next)
+      }
+    }
+    areas.push(area)
+  }
+  return areas.sort((left, right) => right - left)
+}
+
+/** Measures horizontal alpha agreement without counting shared transparent pixels. */
+function horizontalMirrorAgreement(frame: PixelFrame): number {
+  let union = 0
+  let intersection = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    const opaque = frame.pixels[(y * frame.width + x) * 4 + 3] === 255
+    const mirrored = frame.pixels[(y * frame.width + frame.width - 1 - x) * 4 + 3] === 255
+    if (!opaque && !mirrored) continue
+    union += 1
+    if (opaque && mirrored) intersection += 1
+  }
+  return intersection / Math.max(1, union)
+}
+
+/** Measures binary-alpha intersection over union between equal-sized frames. */
+function alphaJaccard(left: PixelFrame, right: PixelFrame): number {
+  let intersection = 0
+  let union = 0
+  for (let index = 3; index < left.pixels.length; index += 4) {
+    const leftOpaque = left.pixels[index] === 255
+    const rightOpaque = right.pixels[index] === 255
+    if (leftOpaque || rightOpaque) union += 1
+    if (leftOpaque && rightOpaque) intersection += 1
+  }
+  return intersection / Math.max(1, union)
+}
+
+/** Counts exact-color boundary pixels on the lit or shadow-facing side. */
+function exposedColorCount(
+  frame: PixelFrame,
+  color: { readonly r: number; readonly g: number; readonly b: number },
+  side: 'lit' | 'shadow' | 'litOnly',
+): number {
+  let count = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    const offset = (y * frame.width + x) * 4
+    if (frame.pixels[offset] !== color.r || frame.pixels[offset + 1] !== color.g || frame.pixels[offset + 2] !== color.b || frame.pixels[offset + 3] !== 255) continue
+    const transparent = (sampleX: number, sampleY: number) => sampleX < 0 || sampleY < 0 || sampleX >= frame.width || sampleY >= frame.height
+      || frame.pixels[(sampleY * frame.width + sampleX) * 4 + 3] === 0
+    const lit = transparent(x - 1, y) || transparent(x, y - 1)
+    const shadow = transparent(x + 1, y) || transparent(x, y + 1)
+    if ((side === 'lit' && lit) || (side === 'shadow' && shadow) || (side === 'litOnly' && lit && !shadow)) count += 1
+  }
+  return count
+}
+
+/** Counts pixels matching any RGB entry in one palette group. */
+function countPaletteGroup(frame: PixelFrame, palette: readonly { readonly r: number; readonly g: number; readonly b: number }[]): number {
+  return palette.reduce((total, color) => total + countExactColor(frame, color), 0)
+}
+
+/** Counts matching pixels that touch transparency in the four-neighbor silhouette. */
+function exposedPaletteGroupPixels(frame: PixelFrame, palette: readonly { readonly r: number; readonly g: number; readonly b: number }[]): number {
+  const keys = new Set(palette.map(({ r, g, b }) => `${r},${g},${b}`))
+  let exposed = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    const offset = (y * frame.width + x) * 4
+    if (!keys.has(`${frame.pixels[offset]},${frame.pixels[offset + 1]},${frame.pixels[offset + 2]}`)) continue
+    if ([[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].some(([neighborX, neighborY]) => (
+      neighborX < 0 || neighborY < 0 || neighborX >= frame.width || neighborY >= frame.height
+      || frame.pixels[(neighborY * frame.width + neighborX) * 4 + 3] === 0
+    ))) exposed += 1
+  }
+  return exposed
+}
+
+/** Measures consecutive one- or two-pixel-wide rows at the bottom of the opaque silhouette. */
+function narrowBottomStemLength(frame: PixelFrame): number {
+  let bottom = -1
+  for (let y = frame.height - 1; y >= 0 && bottom < 0; y -= 1) {
+    if (countOpaqueRegion(frame, (_x, sampleY) => sampleY === y) > 0) bottom = y
+  }
+  let length = 0
+  for (let y = bottom; y >= 0; y -= 1) {
+    const width = countOpaqueRegion(frame, (_x, sampleY) => sampleY === y)
+    if (width === 0 || width > 2) break
+    length += 1
+  }
+  return length
 }
 
 /** Flood-fills opaque pixels. */
@@ -501,6 +1003,72 @@ function angularRadiusRatio(frame: PixelFrame, bins: number): number {
   }
   const occupied = maxima.filter((value) => value > 0)
   return Math.max(...occupied) / Math.max(1, Math.min(...occupied))
+}
+
+/** Returns normalized angular-radius variation across occupied bins. */
+function angularRadiusVariation(frame: PixelFrame, bins: number): number {
+  const maxima = new Array<number>(bins).fill(0)
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    const angle = Math.atan2(y + 0.5 - frame.height / 2, x + 0.5 - frame.width / 2) + Math.PI
+    const bin = Math.min(bins - 1, Math.floor(angle / (Math.PI * 2) * bins))
+    maxima[bin] = Math.max(maxima[bin], Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2))
+  }
+  const occupied = maxima.filter((value) => value > 0)
+  const mean = occupied.reduce((sum, value) => sum + value, 0) / Math.max(1, occupied.length)
+  const variance = occupied.reduce((sum, value) => sum + (value - mean) ** 2, 0) / Math.max(1, occupied.length)
+  return Math.sqrt(variance) / Math.max(1, mean)
+}
+
+/** Measures binary-alpha agreement after rotating samples around the frame center. */
+function rotationalAlphaAgreement(frame: PixelFrame, angle: number): number {
+  const centerX = frame.width / 2
+  const centerY = frame.height / 2
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  let union = 0
+  let matches = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    const localX = x + 0.5 - centerX
+    const localY = y + 0.5 - centerY
+    const rotatedX = Math.floor(centerX + localX * cos - localY * sin)
+    const rotatedY = Math.floor(centerY + localX * sin + localY * cos)
+    if (rotatedX < 0 || rotatedY < 0 || rotatedX >= frame.width || rotatedY >= frame.height) continue
+    const opaque = frame.pixels[(y * frame.width + x) * 4 + 3] === 255
+    const rotatedOpaque = frame.pixels[(rotatedY * frame.width + rotatedX) * 4 + 3] === 255
+    if (!opaque && !rotatedOpaque) continue
+    union += 1
+    if (opaque && rotatedOpaque) matches += 1
+  }
+  return matches / Math.max(1, union)
+}
+
+/** Counts transparent pixels that cannot reach the canvas boundary. */
+function enclosedTransparentPixels(frame: PixelFrame): number {
+  const seen = new Uint8Array(frame.width * frame.height)
+  const queue: number[] = []
+  for (let x = 0; x < frame.width; x += 1) {
+    queue.push(x, (frame.height - 1) * frame.width + x)
+  }
+  for (let y = 1; y < frame.height - 1; y += 1) {
+    queue.push(y * frame.width, y * frame.width + frame.width - 1)
+  }
+  while (queue.length > 0) {
+    const current = queue.pop()!
+    if (seen[current] || frame.pixels[current * 4 + 3] === 255) continue
+    seen[current] = 1
+    const x = current % frame.width
+    const y = Math.floor(current / frame.width)
+    if (x > 0) queue.push(current - 1)
+    if (x + 1 < frame.width) queue.push(current + 1)
+    if (y > 0) queue.push(current - frame.width)
+    if (y + 1 < frame.height) queue.push(current + frame.width)
+  }
+  let enclosed = 0
+  for (let index = 0; index < seen.length; index += 1) {
+    if (!seen[index] && frame.pixels[index * 4 + 3] === 0) enclosed += 1
+  }
+  return enclosed
 }
 
 /** Hashes every byte of every frame with FNV-1a. */

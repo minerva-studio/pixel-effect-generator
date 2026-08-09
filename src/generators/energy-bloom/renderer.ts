@@ -201,6 +201,7 @@ function sampleShape(
   const dy = y + 0.5 - centerY
   const distance = Math.hypot(dx, dy)
   if (parameters.body.shape === 'sharpStarburst') return sampleStarburst(parameters, directions, dx, dy, distance, lifecycle)
+  if (parameters.body.shape === 'arcaneBurst') return sampleArcaneBurst(parameters, directions, dx, dy, distance, lifecycle)
   const baseGrowth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
   const baseRadius = Math.max(0.5, parameters.body.radius * 0.19 * baseGrowth)
   let best: SurfaceSample | undefined = distance <= baseRadius && baseRadius > 0
@@ -221,6 +222,33 @@ function sampleShape(
     if (!best || candidate.depth > best.depth) best = candidate
   })
   return best
+}
+
+/** Samples a chunky energy shell with a bright core and no petal silhouette. */
+function sampleArcaneBurst(
+  parameters: BloomParameters,
+  directions: readonly DirectionDescriptor[],
+  dx: number,
+  dy: number,
+  distance: number,
+  lifecycle: number,
+): SurfaceSample | undefined {
+  const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
+  const core = parameters.body.radius * 0.28 * growth
+  if (distance <= core) return { depth: 1 - distance / Math.max(0.5, core), axis: 0, directionIndex: 0 }
+  const radius = parameters.body.radius * growth
+  const angle = Math.atan2(dy, dx)
+  // Use a low-frequency broken shell instead of angular petals. The shell stays
+  // readable as one energy mass while three broad gaps keep it from becoming a
+  // perfect ring.
+  const wave = Math.sin(angle * 3 + parameters.seed * 0.00001) * 0.5
+    + Math.sin(angle * 5 - parameters.seed * 0.000017) * 0.25
+  if (wave < -0.5 && distance > radius * 0.46) return undefined
+  const inner = radius * (0.42 + wave * 0.06)
+  const outer = radius * (0.64 + wave * 0.08)
+  if (distance < inner || distance > outer) return undefined
+  const shellDepth = Math.min((distance - inner) / Math.max(1, outer - inner), (outer - distance) / Math.max(1, outer - inner))
+  return { depth: clamp01(shellDepth * 2), axis: clamp01(distance / Math.max(1, outer)), directionIndex: 0 }
 }
 
 /** Samples controlled tapered star rays expanding from the shared center. */

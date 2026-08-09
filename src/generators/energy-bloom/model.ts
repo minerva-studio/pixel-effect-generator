@@ -14,7 +14,7 @@ import type {
 
 export { MAX_CANVAS_SIZE, MAX_FRAGMENT_SIZE, MAX_FRAME_COUNT, MAX_SHOCKWAVE_THICKNESS, MIN_CANVAS_SIZE, MIN_FRAME_COUNT }
 
-export type BloomShape = 'softPetals' | 'sharpStarburst' | 'layeredCorolla'
+export type BloomShape = 'softPetals' | 'sharpStarburst' | 'layeredCorolla' | 'arcaneBurst'
 export type BloomSurfaceStyle = 'celBands' | 'moltenCavities' | 'crystalShards' | 'gridNoise' | 'pixelNoise'
 
 interface BloomSurfaceBase {
@@ -193,7 +193,7 @@ export function assertValidBloomParameters(parameters: BloomParameters): void {
   assertInRange(parameters.frameCount, MIN_FRAME_COUNT, MAX_FRAME_COUNT, 'frameCount')
   assertInRange(parameters.seed, 0, 0xffffffff, 'seed')
   const limits = bloomFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
-  if (parameters.body.shape !== 'softPetals' && parameters.body.shape !== 'sharpStarburst' && parameters.body.shape !== 'layeredCorolla') {
+  if (!['softPetals', 'sharpStarburst', 'layeredCorolla', 'arcaneBurst'].includes(parameters.body.shape)) {
     throw new RangeError('body.shape is invalid.')
   }
   assertInRange(parameters.body.radius, 2, limits.maxRadius, 'body.radius')

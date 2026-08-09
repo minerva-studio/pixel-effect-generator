@@ -220,12 +220,21 @@ const SHAPE_THUMBNAILS: Readonly<Record<BloomShape, BloomParameters>> = {
     surface: { style: 'moltenCavities', coverage: 0.94, cavityAmount: 0.22, cavityScale: 12 },
     tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: true, count: 8, length: 18, width: 2 },
   },
+  arcaneBurst: {
+    ...DEFAULT_BLOOM_PARAMETERS,
+    seed: THUMBNAIL_SEED,
+    body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'arcaneBurst', petalCount: 5, petalStretch: 0.7, shapeIrregularity: 0.12 },
+    surface: { style: 'crystalShards', coverage: 0.95, chunkSize: 7, crackWidth: 1 },
+    shockwave: { ...DEFAULT_BLOOM_PARAMETERS.shockwave, mode: 'none' },
+    tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: false },
+  },
 }
 
 const SHAPE_CARD_OPTIONS: readonly ShapeCardOption<BloomParameters>[] = [
   { value: 'softPetals', labelKey: 'energyBloom.options.softPetals', descriptionKey: 'energyBloom.shapeDescriptions.softPetals', buildParameters: () => SHAPE_THUMBNAILS.softPetals },
   { value: 'sharpStarburst', labelKey: 'energyBloom.options.sharpStarburst', descriptionKey: 'energyBloom.shapeDescriptions.sharpStarburst', buildParameters: () => SHAPE_THUMBNAILS.sharpStarburst },
   { value: 'layeredCorolla', labelKey: 'energyBloom.options.layeredCorolla', descriptionKey: 'energyBloom.shapeDescriptions.layeredCorolla', buildParameters: () => SHAPE_THUMBNAILS.layeredCorolla },
+  { value: 'arcaneBurst', labelKey: 'energyBloom.options.arcaneBurst', descriptionKey: 'energyBloom.shapeDescriptions.arcaneBurst', buildParameters: () => SHAPE_THUMBNAILS.arcaneBurst },
 ]
 
 const SURFACE_OPTIONS: readonly BloomSurfaceStyle[] = ['celBands', 'moltenCavities', 'crystalShards', 'gridNoise', 'pixelNoise']

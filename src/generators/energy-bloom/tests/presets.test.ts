@@ -17,12 +17,13 @@ import {
 } from '../presets'
 
 describe('energy bloom built-in presets', () => {
-  it('exposes six unique valid V4 payloads with implosion variants', () => {
+  it('exposes seven unique valid V5 payloads with implosion variants', () => {
     expect(BLOOM_BUILTIN_PRESETS.map(({ id }) => id)).toEqual([
       'softPetals',
       'sharpStarburst',
       'layeredCorolla',
       'softPetalsImplosion',
+      'arcaneBurst',
       'starburstImplosion',
       'corollaImplosion',
     ])

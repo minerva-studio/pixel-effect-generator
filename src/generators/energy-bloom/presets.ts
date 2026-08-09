@@ -16,7 +16,7 @@ import {
 /** Preset fields cover the effect while excluding canvas size and frame count. */
 export type BloomPresetFields = Omit<BloomParameters, 'canvasWidth' | 'canvasHeight' | 'frameCount'>
 
-export const BLOOM_PRESET_SCHEMA_VERSION = 4
+export const BLOOM_PRESET_SCHEMA_VERSION = 5
 export const BLOOM_PRESET_FAMILY = 'energyBloom'
 
 const MAX_PRESET_RADIUS = 256
@@ -60,7 +60,7 @@ export function parseBloomPresetPayload(value: unknown): BloomPresetFields {
     palette: readPalette(value.palette),
     seed: readInteger(value, 'seed', 0, 0xffffffff),
     body: {
-      shape: readEnum(body, 'shape', ['softPetals', 'sharpStarburst', 'layeredCorolla']),
+      shape: readEnum(body, 'shape', ['softPetals', 'sharpStarburst', 'layeredCorolla', 'arcaneBurst']),
       radius: readInteger(body, 'radius', 2, MAX_PRESET_RADIUS),
       rotation: readInteger(body, 'rotation', 0, 359),
       shapeIrregularity: readNumber(body, 'shapeIrregularity', 0, 1),
@@ -274,6 +274,20 @@ export const BLOOM_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
       ...DEFAULT_BLOOM_PARAMETERS,
       seed: 20260101,
       motion: { ...DEFAULT_BLOOM_PARAMETERS.motion, mode: 'implosion', formationDuration: 0.4, holdDuration: 0.08 },
+    }),
+  },
+  {
+    id: 'arcaneBurst',
+    name: 'Arcane Burst',
+    description: 'A bright controlled energy shell without petals.',
+    payload: captureBloomPreset({
+      ...DEFAULT_BLOOM_PARAMETERS,
+      seed: 20260808,
+      body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'arcaneBurst', petalCount: 5, petalStretch: 0.7, shapeIrregularity: 0.12 },
+      surface: { style: 'crystalShards', coverage: 0.95, chunkSize: 7, crackWidth: 1 },
+      shockwave: { ...DEFAULT_BLOOM_PARAMETERS.shockwave, mode: 'none' },
+      tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: false },
+      fragments: { ...DEFAULT_BLOOM_PARAMETERS.fragments, count: 8, travelDistance: 16 },
     }),
   },
   {

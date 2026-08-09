@@ -54,15 +54,11 @@ describe('generator registry', () => {
     expect(explosionModule.definition.index).toBe(2)
     expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
     expect(explosionModule.projectCodec).toBeUndefined()
-    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual([
-      'rollingFireball',
-      'pressureBurst',
-      'retroBurst',
-    ])
+    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'directionalBlast', 'retroBurst'])
     expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(10)
   })
 
-  it('registers the energy bloom family with independent defaults and six presets', () => {
+  it('registers the energy bloom family with independent defaults and seven presets', () => {
     expect(bloomModule.definition.index).toBe(3)
     expect(bloomModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
     expect(bloomModule.defaultParameters.body.shape).toBe('softPetals')
@@ -73,6 +69,7 @@ describe('generator registry', () => {
       'sharpStarburst',
       'layeredCorolla',
       'softPetalsImplosion',
+      'arcaneBurst',
       'starburstImplosion',
       'corollaImplosion',
     ])
