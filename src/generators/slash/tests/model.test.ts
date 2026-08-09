@@ -17,6 +17,13 @@ describe('slash model', () => {
     expect(() => assertValidParameters({ ...DEFAULT_SLASH_PARAMETERS, fragmentMode: 'invalid' as never })).toThrow(RangeError)
   })
 
+  it('accepts the full tip-length range and rejects values outside it', () => {
+    expect(() => assertValidParameters({ ...DEFAULT_SLASH_PARAMETERS, tipLength: 0 })).not.toThrow()
+    expect(() => assertValidParameters({ ...DEFAULT_SLASH_PARAMETERS, tipLength: 1 })).not.toThrow()
+    expect(() => assertValidParameters({ ...DEFAULT_SLASH_PARAMETERS, tipLength: -0.01 })).toThrow(RangeError)
+    expect(() => assertValidParameters({ ...DEFAULT_SLASH_PARAMETERS, tipLength: 1.01 })).toThrow(RangeError)
+  })
+
   it('uses half of the longer canvas side as the radius limit', () => {
     expect(frameLimits({ width: 256, height: 128 }).maxRadius).toBe(128)
     expect(frameLimits({ width: 128, height: 128 }).maxRadius).toBe(64)

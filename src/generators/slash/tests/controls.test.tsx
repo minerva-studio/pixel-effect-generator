@@ -22,6 +22,17 @@ function renderControls(category: 'shape' | 'palette' | 'motion' | 'breakup' | '
 }
 
 describe('Slash controls', () => {
+  it('exposes the leading tip length directly after thickness in both languages', () => {
+    const en = renderControls('shape')
+    const zh = renderControls('shape', 'zh-CN')
+
+    expect(en).toContain('Tip length')
+    expect(en.indexOf('Tip length')).toBeGreaterThan(en.indexOf('Thickness'))
+    expect(en).toContain('four times the slash thickness')
+    expect(zh).toContain('尖锋长度')
+    expect(zh).toContain('斩击厚度的四倍')
+  })
+
   it('renders an alpha slider and 8-digit hex for every palette band', () => {
     const markup = renderControls('palette')
     expect(markup).toContain('Alpha')

@@ -114,6 +114,56 @@ describe('renderSlashFrames', () => {
     }
   })
 
+  it('centers a long taper on the leading edge and mirrors it with sweep direction', () => {
+    const geometry = {
+      ...quietParameters(),
+      startAngleDegrees: 0,
+      sweepDegrees: 120,
+      thickness: 16,
+      tipLength: 0.75,
+    }
+    const blunt = renderSlashFrames({ ...geometry, tipLength: 0 })[3]
+    const clockwise = renderSlashFrames({ ...geometry, direction: 'clockwise' })[3]
+    const counterClockwise = renderSlashFrames({ ...geometry, direction: 'counterClockwise' })[3]
+
+    expect(countOpaquePixels(clockwise)).toBeGreaterThan(0)
+    expect(countOpaquePixels(clockwise)).toBeLessThan(countOpaquePixels(blunt))
+    for (let y = 0; y < FRAME_SIZE; y += 1) {
+      for (let x = 0; x < FRAME_SIZE; x += 1) {
+        expect(pixelAt(clockwise, x, y)).toEqual(pixelAt(counterClockwise, x, FRAME_SIZE - 1 - y))
+      }
+    }
+  })
+
+  it('keeps pointed geometry palette-only with binary alpha', () => {
+    const parameters = { ...quietParameters(), tipLength: 1, dissolveLength: 1 }
+    const frames = renderSlashFrames(parameters)
+
+    expect(hasOnlyBinaryAlpha(frames)).toBe(true)
+    expect(hasOnlyPaletteAndTransparent(frames, parameters.palette)).toBe(true)
+  })
+
+  it('renders pointed short arcs, full circles, repeated sweeps, and maximum tilt', () => {
+    for (const geometry of [
+      { sweepDegrees: 30, tiltDegrees: 0 },
+      { sweepDegrees: 360, tiltDegrees: 0 },
+      { sweepDegrees: 720, tiltDegrees: 0 },
+      { sweepDegrees: 360, tiltDegrees: 90 },
+    ]) {
+      const frames = renderSlashFrames({
+        ...quietParameters(),
+        canvasWidth: 256,
+        canvasHeight: 128,
+        radius: 48,
+        thickness: 16,
+        tipLength: 1,
+        ...geometry,
+      })
+      expect(frames.some((frame) => countOpaquePixels(frame) > 0), JSON.stringify(geometry)).toBe(true)
+      expect(countOpaquePixels(frames.at(-1)!)).toBe(0)
+    }
+  })
+
   it('rotates the complete local sweep without changing its shape', () => {
     const geometry = { ...quietParameters(), startAngleDegrees: 0, sweepDegrees: 90 }
     const original = renderSlashFrames({ ...geometry, rotationDegrees: 0 })[2]

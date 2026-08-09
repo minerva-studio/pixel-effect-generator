@@ -30,6 +30,7 @@ describe('serializeSlashParameters', () => {
       'canvasHeight',
       'radius',
       'thickness',
+      'tipLength',
       'startAngleDegrees',
       'sweepDegrees',
       'rotationDegrees',
@@ -98,10 +99,14 @@ describe('parseSlashParameters', () => {
     expect(parsed.palette).toEqual(DEFAULT_SLASH_PARAMETERS.palette)
   })
 
-  it('fails when every required field is missing', () => {
+  it('fails when every required field is missing while defaulting a legacy missing tip length', () => {
     const json = serializeSlashParameters(sampleParameters()) as Record<string, unknown>
     for (const key of Object.keys(json)) {
       const { [key]: _removed, ...rest } = json
+      if (key === 'tipLength') {
+        expect(parseSlashParameters(rest).tipLength).toBe(0)
+        continue
+      }
       expect(() => parseSlashParameters(rest), `missing ${key}`).toThrow(RangeError)
     }
   })
@@ -120,6 +125,8 @@ describe('parseSlashParameters', () => {
     expect(() => parseSlashParameters({ ...base, dissolveMode: 'glitter' })).toThrow(RangeError)
     expect(() => parseSlashParameters({ ...base, edgeBreakupMode: 'none' })).toThrow(RangeError)
     expect(() => parseSlashParameters({ ...base, fragmentMode: 'plasma' })).toThrow(RangeError)
+    expect(() => parseSlashParameters({ ...base, tipLength: -0.01 })).toThrow(RangeError)
+    expect(() => parseSlashParameters({ ...base, tipLength: 1.01 })).toThrow(RangeError)
   })
 
   it('enforces the long-edge radius cap and thickness bounds', () => {
@@ -159,6 +166,7 @@ describe('parseSlashParameters', () => {
       radius: 128,
       frameCount: 12,
       seed: 424242,
+      tipLength: 0.75,
       fragmentMinSize: 3,
       fragmentMaxSize: 16,
     }

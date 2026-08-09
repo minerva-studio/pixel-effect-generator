@@ -21,6 +21,7 @@ export interface SlashParameters {
   readonly canvasHeight: number
   readonly radius: number
   readonly thickness: number
+  readonly tipLength: number
   readonly startAngleDegrees: number
   readonly sweepDegrees: number
   readonly rotationDegrees: number
@@ -164,6 +165,7 @@ export const DEFAULT_SLASH_PARAMETERS: SlashParameters = {
   canvasHeight: FRAME_SIZE,
   radius: 44,
   thickness: 12,
+  tipLength: 0,
   startAngleDegrees: -90,
   sweepDegrees: 180,
   rotationDegrees: 0,
@@ -201,6 +203,7 @@ export function assertValidParameters(parameters: SlashParameters): void {
   })
   assertInRange(parameters.radius, 2, limits.maxRadius, 'radius')
   assertInRange(parameters.thickness, 1, parameters.radius, 'thickness')
+  assertInRange(parameters.tipLength, 0, 1, 'tipLength')
   assertInRange(parameters.startAngleDegrees, -180, 180, 'startAngleDegrees')
   assertInRange(parameters.sweepDegrees, 30, MAX_SWEEP_DEGREES, 'sweepDegrees')
   assertInRange(parameters.rotationDegrees, -180, 180, 'rotationDegrees')

@@ -57,6 +57,7 @@ export function serializeSlashParameters(parameters: SlashParameters): JsonValue
     canvasHeight: parameters.canvasHeight,
     radius: parameters.radius,
     thickness: parameters.thickness,
+    tipLength: parameters.tipLength,
     startAngleDegrees: parameters.startAngleDegrees,
     sweepDegrees: parameters.sweepDegrees,
     rotationDegrees: parameters.rotationDegrees,
@@ -104,6 +105,7 @@ export function parseSlashParameters(value: unknown): SlashParameters {
     canvasHeight,
     radius: readInteger(value, 'radius', 2, limits.maxRadius),
     thickness: readInteger(value, 'thickness', 1, limits.maxRadius),
+    tipLength: readOptionalNumber(value, 'tipLength', 0, 1, 0),
     startAngleDegrees: readNumber(value, 'startAngleDegrees', -180, 180),
     sweepDegrees: readNumber(value, 'sweepDegrees', 30, MAX_SWEEP_DEGREES),
     rotationDegrees: readNumber(value, 'rotationDegrees', -180, 180),
@@ -161,6 +163,16 @@ export function readOptionalInteger(record: Readonly<Record<string, unknown>>, k
   if (value === undefined) return fallback
   if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum) {
     throw new RangeError(`${key} must be an integer between ${minimum} and ${maximum}.`)
+  }
+  return value
+}
+
+/** Reads an optional bounded finite number, falling back when absent. */
+export function readOptionalNumber(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number, fallback: number): number {
+  const value = record[key]
+  if (value === undefined) return fallback
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < minimum || value > maximum) {
+    throw new RangeError(`${key} must be a number between ${minimum} and ${maximum}.`)
   }
   return value
 }

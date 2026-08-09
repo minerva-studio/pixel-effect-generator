@@ -129,6 +129,7 @@ const enTree = {
     previewTitle: 'Sweep study',
     presets: {
       cleanArc: { name: 'Clean Arc', description: 'A crisp, low-breakup base slash.' },
+      pointedStrike: { name: 'Pointed Strike', description: 'A long, centered blade tip with a clean directional finish.' },
       heavyCleave: { name: 'Heavy Cleave', description: 'A thick arc with a long, heavy trail.' },
       energySweep: { name: 'Energy Sweep', description: 'A bright palette with fast energy sparks.' },
       shatteredEdge: { name: 'Shattered Edge', description: 'A heavily broken edge with directional shards.' },
@@ -144,6 +145,7 @@ const enTree = {
     controls: {
       radius: { label: 'Radius', description: "Distance from the origin to the slash's outer edge." },
       thickness: { label: 'Thickness', description: 'Width of the colored arc between its inner and outer edges.' },
+      tipLength: { label: 'Tip length', description: 'Length of the centered taper behind the leading edge; 100% spans about four times the slash thickness.' },
       startAngle: { label: 'Start angle', description: 'Starting direction in screen space: 0° points right and 90° points down.' },
       sweepAngle: { label: 'Sweep angle', description: 'Degrees travelled from the start angle; values above 360° create a second pass.' },
       rotation: { label: 'Rotation', description: 'Rotates the complete local slash path to aim the overall swing in screen space.' },
@@ -775,6 +777,7 @@ export const zhCN: MessageTree = {
     previewTitle: '扫掠效果',
     presets: {
       cleanArc: { name: '干净弧光', description: '清晰、低破碎的基础刀光。' },
+      pointedStrike: { name: '尖锋斩', description: '沿中线平滑收束的长刀光尖锋。' },
       heavyCleave: { name: '重斩', description: '较厚、拖尾较长的重击弧线。' },
       energySweep: { name: '能量横扫', description: '鲜亮色板与快速能量火花。' },
       shatteredEdge: { name: '碎裂边缘', description: '明显破口与定向碎片。' },
@@ -790,6 +793,7 @@ export const zhCN: MessageTree = {
     controls: {
       radius: { label: '半径', description: '从原点到扫击外缘的距离。' },
       thickness: { label: '厚度', description: '内缘与外缘之间彩色弧线的宽度。' },
+      tipLength: { label: '尖锋长度', description: '前缘后方沿中线收尖的长度；100% 约为斩击厚度的四倍。' },
       startAngle: { label: '起始角度', description: '屏幕空间中的起始方向：0° 指向右，90° 指向下。' },
       sweepAngle: { label: '扫掠角度', description: '从起始角度扫过的角度；超过 360° 会进行第二轮扫掠。' },
       rotation: { label: '旋转', description: '旋转完整的局部扫掠路径，调整屏幕空间中的整体挥动方向。' },
@@ -1427,6 +1431,7 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
 const PRESET_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, PresetDisplayKeys>>>> = {
   slash: {
     cleanArc: { name: 'slash.presets.cleanArc.name', description: 'slash.presets.cleanArc.description' },
+    pointedStrike: { name: 'slash.presets.pointedStrike.name', description: 'slash.presets.pointedStrike.description' },
     heavyCleave: { name: 'slash.presets.heavyCleave.name', description: 'slash.presets.heavyCleave.description' },
     energySweep: { name: 'slash.presets.energySweep.name', description: 'slash.presets.energySweep.description' },
     shatteredEdge: { name: 'slash.presets.shatteredEdge.name', description: 'slash.presets.shatteredEdge.description' },

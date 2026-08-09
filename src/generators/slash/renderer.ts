@@ -44,6 +44,8 @@ function renderSlashFrame(
   const tiltScale = Math.max(Math.cos(degreesToRadians(parameters.tiltDegrees)), 1 / parameters.radius)
   const inverseTiltScale = 1 / tiltScale
   const innerRadius = parameters.radius - parameters.thickness
+  const middleRadius = parameters.radius - parameters.thickness / 2
+  const visibleHead = Math.min(visibleEnd, arcRadians)
   const centerX = frameWidth / 2
   const centerY = frameHeight / 2
   const rotationCosine = Math.cos(rotationRadians)
@@ -78,7 +80,21 @@ function renderSlashFrame(
         }
       }
 
-      const radialProgress = (radius - innerRadius) / parameters.thickness
+      const localThickness = leadingTipThickness(parameters, visibleHead - directedProgress)
+      if (localThickness <= 0) {
+        continue
+      }
+      const localInnerRadius = parameters.tipLength === 0
+        ? innerRadius
+        : middleRadius - localThickness / 2
+      const localOuterRadius = parameters.tipLength === 0
+        ? parameters.radius
+        : middleRadius + localThickness / 2
+      if (radius < localInnerRadius || radius > localOuterRadius) {
+        continue
+      }
+
+      const radialProgress = (radius - localInnerRadius) / localThickness
       if (edgeBreakupCut(parameters, directedProgress, radius, radialProgress)) {
         continue
       }
@@ -96,6 +112,16 @@ function renderSlashFrame(
 
   renderFragments(pixels, frameWidth, frameHeight, parameters, fragments, sampleTime, arcStart, rotationCosine, rotationSine)
   return { width: frameWidth, height: frameHeight, pixels }
+}
+
+/** Returns the centered band thickness at an angular distance behind the active leading edge. */
+function leadingTipThickness(parameters: SlashParameters, angularDistance: number): number {
+  if (parameters.tipLength === 0) {
+    return parameters.thickness
+  }
+  const taperLength = parameters.tipLength * parameters.thickness * 4
+  const distanceAlongArc = Math.max(0, angularDistance) * (parameters.radius - parameters.thickness / 2)
+  return parameters.thickness * smoothStep(clamp01(distanceAlongArc / taperLength))
 }
 
 /** Resolves the first visible revolution of one spatial angle in a multi-turn sweep. */

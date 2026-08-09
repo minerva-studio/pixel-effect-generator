@@ -13,6 +13,7 @@ import {
   parseSlashPresetPayload,
   validateSlashPreset,
 } from '../presets'
+import type { JsonValue } from '../../../shared/project/types'
 
 function frameHash(frames: readonly { readonly pixels: Uint8ClampedArray }[]): string {
   let hash = 2166136261
@@ -25,9 +26,9 @@ function frameHash(frames: readonly { readonly pixels: Uint8ClampedArray }[]): s
 }
 
 describe('Slash built-in presets', () => {
-  it('exposes five unique preset ids', () => {
+  it('exposes six unique preset ids with Pointed Strike after Clean Arc', () => {
     const ids = SLASH_BUILTIN_PRESETS.map((preset) => preset.id)
-    expect(ids).toEqual(['cleanArc', 'heavyCleave', 'energySweep', 'shatteredEdge', 'fullCircle'])
+    expect(ids).toEqual(['cleanArc', 'pointedStrike', 'heavyCleave', 'energySweep', 'shatteredEdge', 'fullCircle'])
     expect(new Set(ids).size).toBe(ids.length)
   })
 
@@ -43,7 +44,7 @@ describe('Slash built-in presets', () => {
     }
   })
 
-  it('produces distinguishable frame hashes for the five presets', () => {
+  it('produces distinguishable frame hashes for the six presets', () => {
     const hashes = SLASH_BUILTIN_PRESETS.map((preset) => {
       const applied = applySlashPreset(DEFAULT_SLASH_PARAMETERS, preset.payload)
       return frameHash(renderSlashFrames(applied))
@@ -85,6 +86,14 @@ describe('Slash built-in presets', () => {
     const { palette: _palette, ...missingPalette } = payload
     expect(validateSlashPreset(missingPalette).ok).toBe(false)
     expect(() => parseSlashPresetPayload(null)).toThrow(RangeError)
+  })
+
+  it('defaults legacy custom presets without tip length to a blunt leading edge', () => {
+    const payload = captureSlashPreset(DEFAULT_SLASH_PARAMETERS) as Record<string, unknown>
+    const { tipLength: _tipLength, ...legacy } = payload
+
+    expect(parseSlashPresetPayload(legacy).tipLength).toBe(0)
+    expect(applySlashPreset({ ...DEFAULT_SLASH_PARAMETERS, tipLength: 0.8 }, legacy as JsonValue).tipLength).toBe(0)
   })
 
   it('capture/apply round-trips to pixel-identical frames', () => {

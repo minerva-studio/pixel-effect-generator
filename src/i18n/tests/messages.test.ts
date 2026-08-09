@@ -87,6 +87,8 @@ describe('translation resources', () => {
     expect(translate(en, 'presets.saveAs')).toBe('Save as…')
     expect(translate(en, 'slash.presets.fullCircle.name')).toBe('Full Circle')
     expect(translate(messagesForLocale('zh-CN'), 'slash.presets.fullCircle.description')).toBe('完整的 360° 环形扫击。')
+    expect(translate(en, 'slash.presets.pointedStrike.name')).toBe('Pointed Strike')
+    expect(translate(messagesForLocale('zh-CN'), 'slash.presets.pointedStrike.name')).toBe('尖锋斩')
     expect(translate(en, 'explosion.presets.retroBurst.name')).toBe('Retro Burst')
     expect(translate(en, 'energyBloom.presets.softPetals.name')).toBe('Soft Petals')
     expect(translate(messagesForLocale('zh-CN'), 'energyBloom.presets.softPetals.description')).toBe('赛璐璐色带的圆润卡通花瓣；默认关闭火舌。')
