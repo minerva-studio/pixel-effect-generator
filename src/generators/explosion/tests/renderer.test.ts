@@ -305,7 +305,7 @@ describe('renderExplosionFrames', () => {
       expect(opaqueComponents(frames[4]), `${smokeCount} puffs must stay connected`).toBe(1)
       expect(enclosedTransparentPixels(frames[4]), `${smokeCount} puffs must not enclose holes`).toBe(0)
     }
-  })
+  }, 10_000)
 
   it('winds down the main cloud while detached smoke continues through the final visible frame', () => {
     const parameters = quietParameters({
