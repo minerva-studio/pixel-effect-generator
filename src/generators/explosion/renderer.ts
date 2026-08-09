@@ -151,7 +151,7 @@ function generateBlobs(parameters: ExplosionParameters): BlobDescriptor[] {
   }))
   const averageGap = Math.PI * 2 / count
   let angles: number[]
-  if (parameters.body.shape === 'gameFireball') {
+  if (parameters.body.shape === 'rollingFireball') {
     const minimumGap = averageGap * lerp(1, 0.48, effectiveIrregularity)
     const remainingAngle = Math.max(0, Math.PI * 2 - minimumGap * count)
     const totalWeight = samples.reduce((sum, sample) => sum + sample.gapWeight, 0)
@@ -256,16 +256,15 @@ function buildBodyPrimitives(
   lifecycle: number,
 ): BodyPrimitive[] {
   switch (parameters.body.shape) {
-    case 'gameFireball': return buildGameFireballPrimitives(parameters, blobs, lifecycle)
-    case 'turbulentFireball': return buildTurbulentFireballPrimitives(parameters, blobs, time, lifecycle)
+    case 'rollingFireball': return buildRollingFireballPrimitives(parameters, blobs, lifecycle)
     case 'shockBlast': return buildShockBlastPrimitives(parameters, blobs, time, lifecycle)
     case 'smokeBurst': return buildSmokeBurstPrimitives(parameters, blobs, time, lifecycle)
     case 'legacyRadial': return []
   }
 }
 
-/** Restores the compact five-lobe fireball that preceded the failed geometry experiment. */
-function buildGameFireballPrimitives(
+/** Builds the compact overlapping fire masses used by the rolling fireball. */
+function buildRollingFireballPrimitives(
   parameters: ExplosionParameters,
   blobs: readonly BlobDescriptor[],
   lifecycle: number,
@@ -323,75 +322,6 @@ function buildGameFireballPrimitives(
       rx: cinderRadius * (1.1 + progress * 0.4), ry: cinderRadius, angle,
     })
   }
-  return primitives
-}
-
-/** Builds one connected flame column that rises and rolls along an S-shaped spine. */
-function buildTurbulentFireballPrimitives(
-  parameters: ExplosionParameters,
-  blobs: readonly BlobDescriptor[],
-  time: number,
-  lifecycle: number,
-): BodyPrimitive[] {
-  const radius = parameters.body.radius
-  const drift = parameters.motion.mode === 'explosion' ? time : 1 - time
-  const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
-  const rotation = parameters.body.rotation / 180 * Math.PI
-  const rotate = (x: number, y: number) => ({
-    x: x * Math.cos(rotation) - y * Math.sin(rotation),
-    y: x * Math.sin(rotation) + y * Math.cos(rotation),
-  })
-  const churn = parameters.body.churnAmount
-  const irregularity = parameters.body.shapeIrregularity
-  const phase = drift * Math.PI * (1.2 + churn * 0.8)
-  const pointAt = (progress: number, phaseOffset = 0) => {
-    const lift = radius * (0.24 - progress * (0.9 + churn * 0.18)) * growth
-    const sway = Math.sin(progress * Math.PI * 2.25 + phase + phaseOffset)
-      * radius * (0.07 + churn * 0.13) * growth
-    return rotate(sway, lift)
-  }
-  const root = pointAt(0)
-  const primitives: BodyPrimitive[] = [{
-    kind: 'ellipse', owner: 0, depth: parameters.volume.profile === 'moltenCore' ? 4 : 0, role: 'core',
-    x: root.x, y: root.y, rx: radius * 0.3 * growth, ry: radius * 0.23 * growth, angle: rotation,
-  }]
-
-  // A hidden segmented spine owns continuity; visible curl segments own all local surface detail.
-  for (let index = 0; index < 6; index += 1) {
-    const startProgress = index / 7
-    const endProgress = (index + 1.7) / 7
-    const start = pointAt(startProgress)
-    const end = pointAt(endProgress)
-    const width = radius * lerp(0.22, 0.1, startProgress) * growth
-    primitives.push({
-      kind: 'taperedCapsule', owner: 0, depth: 0, role: 'connector', alphaOnly: true,
-      startX: start.x, startY: start.y, endX: end.x, endY: end.y,
-      startWidth: width, endWidth: Math.max(1, width * 0.76),
-    })
-  }
-
-  blobs.slice(0, 7).forEach((blob, index) => {
-    const delay = index * 0.045 + blob.delay * 0.35
-    const localTime = clamp01((drift - delay) / Math.max(0.01, 0.92 - delay))
-    if (localTime <= 0) return
-    const progress = (index + 0.6 + localTime * (0.32 + churn * 0.2)) / 7
-    const base = pointAt(Math.min(1, progress), blob.tongueNoise * irregularity * 0.5)
-    const next = pointAt(Math.min(1.05, progress + 0.14), blob.tongueNoise * irregularity * 0.5)
-    const sideSign = index % 2 === 0 ? 1 : -1
-    const side = sideSign * radius * (0.08 + churn * 0.08)
-      * (0.68 + Math.sin(localTime * Math.PI) * 0.32)
-      * (1 + blob.tongueNoise * irregularity * 0.28)
-    const sideVector = rotate(side, 0)
-    const tail = smoothStep(clamp01((drift - (0.72 + index * 0.012)) / 0.22))
-    const width = radius * lerp(0.24, 0.09, index / 6) * growth * (1 - tail * 0.58)
-    primitives.push({
-      kind: 'taperedCapsule', owner: index + 1, depth: blob.depth, role: 'fire',
-      startX: base.x, startY: base.y,
-      endX: next.x + sideVector.x, endY: next.y + sideVector.y,
-      startWidth: width * (1.08 + irregularity * blob.radiusScale * 0.06),
-      endWidth: Math.max(1, width * (0.46 + index * 0.018)),
-    })
-  })
   return primitives
 }
 
@@ -912,14 +842,14 @@ function frontPrimitiveHit(
 }
 
 /** Tests whether one visible fire-lobe hit has retreated during the late edge breakup. */
-function gameFireballHitEroded(
+function rollingFireballHitEroded(
   parameters: ExplosionParameters,
   hit: PrimitiveHit,
   x: number,
   y: number,
   lifecycle: number,
 ): boolean {
-  if (parameters.body.shape !== 'gameFireball' || hit.role !== 'fire') return false
+  if (parameters.body.shape !== 'rollingFireball' || hit.role !== 'fire') return false
   const ending = smoothStep(clamp01((lifecycle - 0.62) / 0.34))
   const angle = Math.atan2(y, x)
   const sector = Math.floor((angle + Math.PI) / (Math.PI / 6))
@@ -952,19 +882,15 @@ function renderVolumeBody(
       primitives,
       localX,
       localY,
-      (hit) => !gameFireballHitEroded(parameters, hit, localX, localY, lifecycle),
+      (hit) => !rollingFireballHitEroded(parameters, hit, localX, localY, lifecycle),
     )
     if (!front) continue
     let band = front.distance * 0.72 + (1 - front.light) * 0.18
-    if (parameters.body.shape === 'turbulentFireball' && front.role === 'fire') {
-      // Only the rooted lower flame stays white-hot; upper curls cool into broader warm bands.
-      band += 0.2 + Math.min(0.3, front.owner * 0.04)
-    }
     if (parameters.body.shape === 'shockBlast' && front.role === 'core') {
       // Directional lighting avoids turning the central flash into concentric target rings.
       band = 0.16 + (1 - front.light) * 0.55
     }
-    if (parameters.body.shape === 'gameFireball' && front.role === 'fire') {
+    if (parameters.body.shape === 'rollingFireball' && front.role === 'fire') {
       // Each lobe cools on a separate deterministic schedule while the central core stays hot longer.
       const coolingStart = 0.46 + hashUnit(parameters.seed, front.owner, 91) * 0.16
       const cooling = smoothStep(clamp01((lifecycle - coolingStart) / Math.max(0.01, 0.94 - coolingStart)))
@@ -983,7 +909,7 @@ function renderVolumeBody(
       band = 0.38 + front.distance * 0.2 + cinderCooling * 0.28
     }
     if (profile === 'moltenCore' && front.role === 'core') band = 0.02 + front.distance * 0.16
-    if (parameters.body.shape === 'gameFireball' && front.role === 'core') {
+    if (parameters.body.shape === 'rollingFireball' && front.role === 'core') {
       const coreCooling = smoothStep(clamp01((lifecycle - 0.68) / 0.28))
       band += coreCooling * 0.82
     }
@@ -1001,10 +927,10 @@ function renderVolumeBody(
     const paletteBand = clamp01(Math.min(0.94, band))
     const rawColorIndex = paletteIndex(parameters.palette, paletteBand)
     const smokeMayUseDeep = profile === 'smokeFire' && front.role === 'smokeParticleDark'
-    const gameMayUseDeep = parameters.body.shape === 'gameFireball'
+    const rollingMayUseDeep = parameters.body.shape === 'rollingFireball'
       && lifecycle >= 0.68
       && (front.role === 'fire' || front.role === 'core' || front.role === 'cinder')
-    const colorIndex = smokeMayUseDeep || gameMayUseDeep
+    const colorIndex = smokeMayUseDeep || rollingMayUseDeep
       ? rawColorIndex
       : Math.min(parameters.palette.length - 2, rawColorIndex)
     const offset = y * width + x
@@ -1264,7 +1190,7 @@ function shapeViews(
   const lifecycle = lifecycleAt(parameters.motion.mode, time)
   if (parameters.body.shape !== 'legacyRadial' && blobs.length > 0) {
     return blobs.map((blob, index) => {
-      if (parameters.body.shape === 'gameFireball') {
+      if (parameters.body.shape === 'rollingFireball') {
         const lobeDelay = blob.delay * 0.45 + index * 0.006
         const growth = clamp01((lifecycle - lobeDelay) / Math.max(0.01, 1 - lobeDelay))
         const lobeRate = 0.28 + blob.tongueNoise * 0.04

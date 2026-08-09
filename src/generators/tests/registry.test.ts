@@ -54,7 +54,7 @@ describe('generator registry', () => {
     expect(explosionModule.definition.index).toBe(2)
     expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
     expect(explosionModule.projectCodec).toBeUndefined()
-    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'turbulentFireball', 'retroBurst'])
+    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
     expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(10)
   })
 

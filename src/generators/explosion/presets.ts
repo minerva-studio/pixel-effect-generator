@@ -159,13 +159,13 @@ function parseV4Surface(value: Readonly<Record<string, unknown>>): ExplosionSurf
 function readExplosionShape(body: Readonly<Record<string, unknown>>, version: unknown): ExplosionParameters['body']['shape'] {
   const value = body.shape
   if (version === 4) {
-    if (value === 'billowingFireball') return 'gameFireball'
-    if (value === 'pressureBurst') return 'gameFireball'
+    if (value === 'billowingFireball') return 'rollingFireball'
+    if (value === 'pressureBurst') return 'rollingFireball'
   }
   if (version === 5 && value === 'directionalBlast') {
     throw new RangeError('directionalBlast was removed from Explosion; use the Projectile Blast Bolt preset instead.')
   }
-  if (typeof value !== 'string' || !['gameFireball', 'turbulentFireball', 'shockBlast', 'smokeBurst', 'legacyRadial'].includes(value)) {
+  if (typeof value !== 'string' || !['rollingFireball', 'shockBlast', 'smokeBurst', 'legacyRadial'].includes(value)) {
     throw new RangeError('body.shape is invalid.')
   }
   return value as ExplosionParameters['body']['shape']
@@ -259,8 +259,8 @@ export function validateExplosionPreset(
 export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
   {
     id: 'rollingFireball',
-    name: 'Game Fireball',
-    description: 'A connected, irregular combustion volume with a clean readable silhouette.',
+    name: 'Rolling Fireball',
+    description: 'Overlapping fire masses expand and cool on staggered schedules.',
     payload: captureExplosionPreset(MODERN_EXPLOSION_PARAMETERS),
   },
   {
@@ -315,19 +315,6 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
       volume: { enabled: true, profile: 'hardShell' },
       core: { ...MODERN_EXPLOSION_PARAMETERS.core, radius: 13, duration: 0.18 },
       fragments: { ...MODERN_EXPLOSION_PARAMETERS.fragments, count: 6, travelDistance: 20 },
-    }),
-  },
-  {
-    id: 'turbulentFireball',
-    name: 'Turbulent Fireball',
-    description: 'A connected flame column that rises and rolls along an asymmetric S-shaped flow.',
-    payload: captureExplosionPreset({
-      ...MODERN_EXPLOSION_PARAMETERS,
-      seed: 20260807,
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'turbulentFireball', churnAmount: 0.78, shapeIrregularity: 0.34 },
-      volume: { enabled: true, profile: 'smokeFire' },
-      core: { ...MODERN_EXPLOSION_PARAMETERS.core, radius: 11, duration: 0.14 },
-      fragments: { ...MODERN_EXPLOSION_PARAMETERS.fragments, enabled: false },
     }),
   },
   {

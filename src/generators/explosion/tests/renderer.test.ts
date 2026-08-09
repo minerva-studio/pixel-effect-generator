@@ -51,25 +51,25 @@ describe('renderExplosionFrames', () => {
     }
   })
 
-  it('produces four structurally distinct deterministic modern shapes', () => {
-    const signatures = (['gameFireball', 'turbulentFireball', 'shockBlast', 'smokeBurst'] as const).map((shape) => {
+  it('produces three structurally distinct deterministic modern shapes', () => {
+    const signatures = (['rollingFireball', 'shockBlast', 'smokeBurst'] as const).map((shape) => {
       const parameters = quietParameters({
         body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape },
-        volume: { enabled: true, profile: shape === 'smokeBurst' || shape === 'turbulentFireball' ? 'smokeFire' : 'hardShell' },
+        volume: { enabled: true, profile: shape === 'smokeBurst' ? 'smokeFire' : 'hardShell' },
       }, MODERN_EXPLOSION_PARAMETERS)
       const frames = renderExplosionFrames(parameters)
       expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(parameters)))
       return fullFrameHash(frames)
     })
-    expect(new Set(signatures).size).toBe(4)
+    expect(new Set(signatures).size).toBe(3)
   })
 
-  it('keeps all four active modern volume silhouettes structurally distinct', () => {
-    const shapes = ['gameFireball', 'turbulentFireball', 'shockBlast', 'smokeBurst'] as const
+  it('keeps all three active modern volume silhouettes structurally distinct', () => {
+    const shapes = ['rollingFireball', 'shockBlast', 'smokeBurst'] as const
     const signatures = shapes.map((shape) => {
       const parameters = quietParameters({
         body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape },
-        volume: { enabled: true, profile: shape === 'smokeBurst' || shape === 'turbulentFireball' ? 'smokeFire' : 'hardShell' },
+        volume: { enabled: true, profile: shape === 'smokeBurst' ? 'smokeFire' : 'hardShell' },
         shockwave: { ...MODERN_EXPLOSION_PARAMETERS.shockwave, mode: 'none' },
         tongues: { ...MODERN_EXPLOSION_PARAMETERS.tongues, enabled: false },
         fragments: { ...MODERN_EXPLOSION_PARAMETERS.fragments, enabled: false },
@@ -78,13 +78,13 @@ describe('renderExplosionFrames', () => {
       const frame = renderExplosionFrames(parameters)[4]
       return silhouetteSignature(frame)
     })
-    expect(new Set(signatures).size).toBe(4)
+    expect(new Set(signatures).size).toBe(3)
   })
 
   it('renders each volume profile deterministically with visible layering differences', () => {
     const cases = [
-      { shape: 'gameFireball', profile: 'hardShell' },
-      { shape: 'gameFireball', profile: 'moltenCore' },
+      { shape: 'rollingFireball', profile: 'hardShell' },
+      { shape: 'rollingFireball', profile: 'moltenCore' },
       { shape: 'smokeBurst', profile: 'smokeFire' },
     ] as const
     const profiles = cases.map(({ shape, profile }) => {
@@ -128,20 +128,6 @@ describe('renderExplosionFrames', () => {
     const frame = renderExplosionFrames(quietParameters({}, MODERN_EXPLOSION_PARAMETERS))[4]
     expect(occupiedAngleBins(frame, 72)).toBeGreaterThanOrEqual(64)
     expect(angularRadiusRatio(frame, 36)).toBeLessThanOrEqual(1.8)
-  })
-
-  it('keeps the turbulent fireball connected while its S-shaped mass continues rising', () => {
-    const parameters = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'turbulentFireball', churnAmount: 0.8, rotation: 0 },
-      volume: { enabled: true, profile: 'smokeFire' },
-      surface: { style: 'burningLayers', coverage: 0.95, bandWarp: 0.1, edgeBreakup: 0.2 },
-    }, MODERN_EXPLOSION_PARAMETERS)
-    const frames = renderExplosionFrames(parameters)
-    expect(opaqueComponents(frames[4])).toBe(1)
-    expect(opaqueCentroid(frames[6]).y).toBeLessThan(opaqueCentroid(frames[3]).y)
-    expect(opaqueBounds(frames[4]).height).toBeGreaterThan(opaqueBounds(frames[4]).width)
-    const bandCenters = verticalBandCentroids(frames[4], 3)
-    expect(Math.max(...bandCenters) - Math.min(...bandCenters)).toBeGreaterThan(3)
   })
 
   it('renders five high-energy shock wedges that narrow monotonically away from the core', () => {
@@ -817,29 +803,6 @@ function opaqueCentroid(frame: PixelFrame): { readonly x: number; readonly y: nu
     count += 1
   }
   return { x: totalX / Math.max(1, count), y: totalY / Math.max(1, count) }
-}
-
-/** Measures horizontal mass centroids in equal vertical slices of the opaque bounds. */
-function verticalBandCentroids(frame: PixelFrame, bands: number): number[] {
-  let minimumY = frame.height
-  let maximumY = -1
-  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
-    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
-    minimumY = Math.min(minimumY, y)
-    maximumY = Math.max(maximumY, y)
-  }
-  return Array.from({ length: bands }, (_, band) => {
-    const start = minimumY + (maximumY - minimumY + 1) * band / bands
-    const end = minimumY + (maximumY - minimumY + 1) * (band + 1) / bands
-    let totalX = 0
-    let count = 0
-    for (let y = Math.floor(start); y < Math.ceil(end); y += 1) for (let x = 0; x < frame.width; x += 1) {
-      if (y < start || y >= end || frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
-      totalX += x
-      count += 1
-    }
-    return totalX / Math.max(1, count)
-  })
 }
 
 /** Measures the vertical centroid of one exact palette color. */

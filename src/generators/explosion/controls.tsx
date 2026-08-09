@@ -82,14 +82,11 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
             onSelect={selectShape}
           />
           <NumberControl label={familyT('explosion.controls.radius.label')} description={familyT('explosion.controls.radius.description')} value={parameters.body.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(radius) => updateBody({ radius })} />
-          {parameters.body.shape === 'gameFireball' ? (
+          {parameters.body.shape === 'rollingFireball' ? (
             <>
               <NumberControl label={familyT('explosion.controls.lobeCount.label')} description={familyT('explosion.controls.lobeCount.description')} value={parameters.body.lobeCount} minimum={3} maximum={9} onChange={(lobeCount) => updateBody({ lobeCount })} />
               <NumberControl label={familyT('explosion.controls.churnAmount.label')} description={familyT('explosion.controls.churnAmount.description')} value={parameters.body.churnAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(churnAmount) => updateBody({ churnAmount })} />
             </>
-          ) : null}
-          {parameters.body.shape === 'turbulentFireball' ? (
-            <NumberControl label={familyT('explosion.controls.turbulence.label')} description={familyT('explosion.controls.turbulence.description')} value={parameters.body.churnAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(churnAmount) => updateBody({ churnAmount })} />
           ) : null}
           {parameters.body.shape === 'shockBlast' ? (
             <>
@@ -245,14 +242,7 @@ export function ExplosionPreviewTools({ parameters, onChange, onResize }: {
 const THUMBNAIL_SEED = 1337
 const THUMBNAIL_FRAGMENTS = { ...MODERN_EXPLOSION_PARAMETERS.fragments, enabled: false }
 const SHAPE_THUMBNAILS: Readonly<Record<ExplosionShape, ExplosionParameters>> = {
-  gameFireball: { ...MODERN_EXPLOSION_PARAMETERS, seed: THUMBNAIL_SEED, fragments: THUMBNAIL_FRAGMENTS },
-  turbulentFireball: {
-    ...MODERN_EXPLOSION_PARAMETERS,
-    seed: THUMBNAIL_SEED,
-    body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'turbulentFireball', churnAmount: 0.78 },
-    volume: { enabled: true, profile: 'smokeFire' },
-    fragments: THUMBNAIL_FRAGMENTS,
-  },
+  rollingFireball: { ...MODERN_EXPLOSION_PARAMETERS, seed: THUMBNAIL_SEED, fragments: THUMBNAIL_FRAGMENTS },
   shockBlast: {
     ...MODERN_EXPLOSION_PARAMETERS,
     seed: THUMBNAIL_SEED,
@@ -277,10 +267,9 @@ const SHAPE_THUMBNAILS: Readonly<Record<ExplosionShape, ExplosionParameters>> = 
 
 const SHAPE_CARD_OPTIONS: readonly ShapeCardOption<ExplosionParameters>[] = [
   { value: 'legacyRadial', labelKey: 'explosion.options.legacyRadial', descriptionKey: 'explosion.shapeDescriptions.legacyRadial', buildParameters: () => SHAPE_THUMBNAILS.legacyRadial },
-  { value: 'gameFireball', labelKey: 'explosion.options.gameFireball', descriptionKey: 'explosion.shapeDescriptions.gameFireball', buildParameters: () => SHAPE_THUMBNAILS.gameFireball },
+  { value: 'rollingFireball', labelKey: 'explosion.options.rollingFireball', descriptionKey: 'explosion.shapeDescriptions.rollingFireball', buildParameters: () => SHAPE_THUMBNAILS.rollingFireball },
   { value: 'smokeBurst', labelKey: 'explosion.options.smokeBurst', descriptionKey: 'explosion.shapeDescriptions.smokeBurst', buildParameters: () => SHAPE_THUMBNAILS.smokeBurst },
   { value: 'shockBlast', labelKey: 'explosion.options.shockBlast', descriptionKey: 'explosion.shapeDescriptions.shockBlast', buildParameters: () => SHAPE_THUMBNAILS.shockBlast },
-  { value: 'turbulentFireball', labelKey: 'explosion.options.turbulentFireball', descriptionKey: 'explosion.shapeDescriptions.turbulentFireball', buildParameters: () => SHAPE_THUMBNAILS.turbulentFireball },
 ]
 
 const SURFACE_OPTIONS: readonly ExplosionSurfaceStyle[] = ['retroPixel', 'burningLayers', 'rollingSoot']

@@ -14,7 +14,7 @@ import type {
 
 export { MAX_CANVAS_SIZE, MAX_FRAGMENT_SIZE, MAX_FRAME_COUNT, MAX_SHOCKWAVE_THICKNESS, MIN_CANVAS_SIZE, MIN_FRAME_COUNT }
 
-export type ExplosionShape = 'gameFireball' | 'turbulentFireball' | 'shockBlast' | 'smokeBurst' | 'legacyRadial'
+export type ExplosionShape = 'rollingFireball' | 'shockBlast' | 'smokeBurst' | 'legacyRadial'
 export type ExplosionSurfaceStyle = 'burningLayers' | 'rollingSoot' | 'retroPixel'
 export type ExplosionVolumeProfile = 'hardShell' | 'moltenCore' | 'smokeFire'
 export type ExplosionSmokeMotion = 'billowing' | 'particulate'
@@ -85,8 +85,7 @@ export function explosionFrameLimits(size: FrameSize): ExplosionFrameLimits {
 /** Stable direction count used by balanced effects for each body shape. */
 export function explosionShapeCount(shape: ExplosionShape, lobeCount = 5, pressureCount = 5): number {
   switch (shape) {
-    case 'gameFireball': return lobeCount
-    case 'turbulentFireball': return 7
+    case 'rollingFireball': return lobeCount
     case 'shockBlast': return pressureCount
     case 'smokeBurst': return 6
     case 'legacyRadial': return 8
@@ -96,10 +95,8 @@ export function explosionShapeCount(shape: ExplosionShape, lobeCount = 5, pressu
 /** Returns the meaningful volume profiles for one active body shape. */
 export function explosionVolumeProfiles(shape: ExplosionShape): readonly ExplosionVolumeProfile[] {
   switch (shape) {
-    case 'gameFireball':
+    case 'rollingFireball':
       return ['hardShell', 'moltenCore']
-    case 'turbulentFireball':
-      return ['smokeFire', 'hardShell']
     case 'shockBlast':
       return ['hardShell', 'moltenCore']
     case 'smokeBurst':
@@ -190,7 +187,7 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
   frameCount: 10,
   seed: 20260805,
   body: {
-    shape: 'gameFireball',
+    shape: 'rollingFireball',
     radius: 42,
     rotation: 0,
     shapeIrregularity: 0.22,
@@ -326,7 +323,7 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   assertInRange(parameters.body.smokeRise, -0.6, 0.6, 'body.smokeRise')
   assertInRange(parameters.body.smokeCount, 3, 9, 'body.smokeCount')
   if (parameters.body.smokeMotion !== 'billowing' && parameters.body.smokeMotion !== 'particulate') throw new RangeError('body.smokeMotion is invalid.')
-  if (!['gameFireball', 'turbulentFireball', 'shockBlast', 'smokeBurst', 'legacyRadial'].includes(parameters.body.shape)) {
+  if (!['rollingFireball', 'shockBlast', 'smokeBurst', 'legacyRadial'].includes(parameters.body.shape)) {
     throw new RangeError('body.shape is invalid.')
   }
   const normalizedVolume = normalizeExplosionVolume(parameters.body.shape, parameters.volume)

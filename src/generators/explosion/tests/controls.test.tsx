@@ -19,26 +19,22 @@ function renderControls(category: ExplosionCategory, locale: 'en' | 'zh-CN' = 'e
 describe('combustion explosion controls', () => {
   it('renders fixed-seed shape cards and shape-specific body controls', () => {
     const body = renderControls('body', 'en', MODERN_EXPLOSION_PARAMETERS)
-    expect(body).toContain('Game fireball')
+    expect(body).toContain('Rolling fireball')
     expect(body).toContain('Shock blast')
     expect(body).not.toContain('Coming soon')
     expect(body).not.toContain('aria-disabled="true"')
     expect(body).toContain('Legacy radial')
-    expect(body.indexOf('Legacy radial')).toBeLessThan(body.indexOf('Game fireball'))
+    expect(body.indexOf('Legacy radial')).toBeLessThan(body.indexOf('Rolling fireball'))
     expect(body.indexOf('Smoke burst')).toBeLessThan(body.indexOf('Shock blast'))
-    expect(body.indexOf('Shock blast')).toBeLessThan(body.indexOf('Turbulent fireball'))
     expect(body).toContain('shape-card')
-    expect(body).toContain('Lobe expansion')
-    expect(body).toContain('Fire blob count')
+    expect(body).toContain('Fire-mass expansion')
+    expect(body).toContain('Fire-mass count')
     expect(body).not.toContain('Surface material')
     expect(body).not.toContain('Volume layering')
     expect(body).not.toContain('Internal structure')
     const retro = renderControls('body')
     expect(retro).toContain('Legacy radial')
-    expect(retro).not.toContain('Lobe expansion')
-    const turbulent = renderControls('body', 'en', { ...MODERN_EXPLOSION_PARAMETERS, body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'turbulentFireball' }, volume: { enabled: true, profile: 'smokeFire' } })
-    expect(turbulent).toContain('Rolling intensity')
-    expect(turbulent).not.toContain('Fire blob count')
+    expect(retro).not.toContain('Fire-mass expansion')
     const shock = renderControls('body', 'en', { ...MODERN_EXPLOSION_PARAMETERS, body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'shockBlast' } })
     expect(shock).toContain('Shell count')
     expect(shock).toContain('Shell thickness')
@@ -46,7 +42,7 @@ describe('combustion explosion controls', () => {
     expect(shock).toContain('min="3"')
     expect(shock).toContain('max="12"')
     expect(shock).toContain('max="48"')
-    expect(shock).not.toContain('Lobe expansion')
+    expect(shock).not.toContain('Fire-mass expansion')
     const smoke = renderControls('body', 'en', { ...MODERN_EXPLOSION_PARAMETERS, body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst' } })
     expect(smoke).toContain('Smoke motion')
     expect(smoke).toContain('Rolling billows')
@@ -67,7 +63,7 @@ describe('combustion explosion controls', () => {
         label="Shapes"
         selected="active"
         options={[
-          { value: 'active', labelKey: 'explosion.options.gameFireball', descriptionKey: 'explosion.shapeDescriptions.gameFireball', buildParameters: () => ({ id: 'active' }) },
+          { value: 'active', labelKey: 'explosion.options.rollingFireball', descriptionKey: 'explosion.shapeDescriptions.rollingFireball', buildParameters: () => ({ id: 'active' }) },
           { value: 'future', labelKey: 'explosion.options.shockBlast', descriptionKey: 'explosion.shapeDescriptions.shockBlast', disabled: true },
         ]}
         render={renderFrames}
@@ -153,7 +149,7 @@ describe('combustion explosion controls', () => {
 
   it('renders localized labels and shared preview tools', () => {
     const body = renderControls('body', 'zh-CN')
-    expect(body).toContain('游戏化火球')
+    expect(body).toContain('翻滚火团')
     expect(body).toContain('冲击爆破')
     expect(body).toContain('主体形状')
     expect(renderControls('effects', 'zh-CN')).toContain('火焰喷流')
