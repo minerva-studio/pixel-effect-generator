@@ -14,7 +14,7 @@ import type {
 
 export { MAX_CANVAS_SIZE, MAX_FRAGMENT_SIZE, MAX_FRAME_COUNT, MAX_SHOCKWAVE_THICKNESS, MIN_CANVAS_SIZE, MIN_FRAME_COUNT }
 
-export type ExplosionShape = 'gameFireball' | 'directionalBlast' | 'smokeBurst' | 'legacyRadial'
+export type ExplosionShape = 'gameFireball' | 'turbulentFireball' | 'shockBlast' | 'smokeBurst' | 'legacyRadial'
 export type ExplosionSurfaceStyle = 'burningLayers' | 'rollingSoot' | 'retroPixel'
 export type ExplosionVolumeProfile = 'hardShell' | 'moltenCore' | 'smokeFire'
 export type ExplosionSmokeMotion = 'billowing' | 'particulate'
@@ -48,6 +48,7 @@ export interface ExplosionBodyParameters {
   readonly churnAmount: number
   readonly lobeCount: number
   readonly pressureWidth: number
+  readonly pressureCount: number
   readonly pressureSharpness: number
   readonly blastWidth: number
   readonly blastAngle: number
@@ -82,10 +83,11 @@ export function explosionFrameLimits(size: FrameSize): ExplosionFrameLimits {
 }
 
 /** Stable direction count used by balanced effects for each body shape. */
-export function explosionShapeCount(shape: ExplosionShape, lobeCount = 5): number {
+export function explosionShapeCount(shape: ExplosionShape, lobeCount = 5, pressureCount = 5): number {
   switch (shape) {
     case 'gameFireball': return lobeCount
-    case 'directionalBlast': return 5
+    case 'turbulentFireball': return 7
+    case 'shockBlast': return pressureCount
     case 'smokeBurst': return 6
     case 'legacyRadial': return 8
   }
@@ -95,7 +97,10 @@ export function explosionShapeCount(shape: ExplosionShape, lobeCount = 5): numbe
 export function explosionVolumeProfiles(shape: ExplosionShape): readonly ExplosionVolumeProfile[] {
   switch (shape) {
     case 'gameFireball':
-    case 'directionalBlast':
+      return ['hardShell', 'moltenCore']
+    case 'turbulentFireball':
+      return ['smokeFire', 'hardShell']
+    case 'shockBlast':
       return ['hardShell', 'moltenCore']
     case 'smokeBurst':
       return ['smokeFire']
@@ -155,7 +160,7 @@ export function resizeExplosionCanvas(
     body: {
       ...parameters.body,
       radius: clampInteger(parameters.body.radius * scale, 2, limits.maxRadius),
-      pressureWidth: clampInteger(parameters.body.pressureWidth * scale, 1, 24),
+      pressureWidth: clampInteger(parameters.body.pressureWidth * scale, 1, 48),
     },
     surface,
     core: { ...parameters.core, radius: clampInteger(parameters.core.radius * scale, 0, limits.maxRadius) },
@@ -191,7 +196,8 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
     shapeIrregularity: 0.22,
     churnAmount: 0.72,
     lobeCount: 5,
-    pressureWidth: 6,
+    pressureWidth: 24,
+    pressureCount: 5,
     pressureSharpness: 0.8,
     blastWidth: 0.58,
     blastAngle: 0,
@@ -256,7 +262,8 @@ export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
     shapeIrregularity: 0.28,
     churnAmount: 0.5,
     lobeCount: 5,
-    pressureWidth: 6,
+    pressureWidth: 24,
+    pressureCount: 5,
     pressureSharpness: 0.8,
     blastWidth: 0.58,
     blastAngle: 0,
@@ -292,7 +299,7 @@ export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
   fragments: { enabled: true, count: 30, minSize: 1, maxSize: 3, travelDistance: 30, tangentialDrift: 9, lifetime: 0.68 },
 }
 
-/** Validates the complete V5 combustion explosion parameter contract. */
+/** Validates the complete V6 combustion explosion parameter contract. */
 export function assertValidExplosionParameters(parameters: ExplosionParameters): void {
   if (parameters.palette.length < 2 || parameters.palette.length > 6) throw new RangeError('palette must contain between 2 and 6 colors.')
   parameters.palette.forEach((color, index) => assertValidColor(color, `palette[${index}]`))
@@ -303,14 +310,15 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   if (typeof parameters.volume.enabled !== 'boolean') throw new RangeError('volume.enabled must be a boolean.')
   if (!['hardShell', 'moltenCore', 'smokeFire'].includes(parameters.volume.profile)) throw new RangeError('volume.profile is invalid.')
   const limits = explosionFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
-  const shapeCount = explosionShapeCount(parameters.body.shape, parameters.body.lobeCount)
+  const shapeCount = explosionShapeCount(parameters.body.shape, parameters.body.lobeCount, parameters.body.pressureCount)
   assertInRange(parameters.body.radius, 2, limits.maxRadius, 'body.radius')
   assertInRange(parameters.body.rotation, 0, 359, 'body.rotation')
   assertInRange(parameters.body.shapeIrregularity, 0, 1, 'body.shapeIrregularity')
   assertInRange(parameters.body.churnAmount, 0, 1, 'body.churnAmount')
   assertInRange(parameters.body.lobeCount, 3, 9, 'body.lobeCount')
   if (!Number.isInteger(parameters.body.lobeCount)) throw new RangeError('body.lobeCount must be an integer.')
-  assertInRange(parameters.body.pressureWidth, 1, 24, 'body.pressureWidth')
+  assertInRange(parameters.body.pressureWidth, 1, 48, 'body.pressureWidth')
+  assertInRange(parameters.body.pressureCount, 3, 12, 'body.pressureCount')
   assertInRange(parameters.body.pressureSharpness, 0, 1, 'body.pressureSharpness')
   assertInRange(parameters.body.blastWidth, 0.2, 1, 'body.blastWidth')
   assertInRange(parameters.body.blastAngle, 0, 359, 'body.blastAngle')
@@ -318,7 +326,7 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   assertInRange(parameters.body.smokeRise, -0.6, 0.6, 'body.smokeRise')
   assertInRange(parameters.body.smokeCount, 3, 9, 'body.smokeCount')
   if (parameters.body.smokeMotion !== 'billowing' && parameters.body.smokeMotion !== 'particulate') throw new RangeError('body.smokeMotion is invalid.')
-  if (!['gameFireball', 'directionalBlast', 'smokeBurst', 'legacyRadial'].includes(parameters.body.shape)) {
+  if (!['gameFireball', 'turbulentFireball', 'shockBlast', 'smokeBurst', 'legacyRadial'].includes(parameters.body.shape)) {
     throw new RangeError('body.shape is invalid.')
   }
   const normalizedVolume = normalizeExplosionVolume(parameters.body.shape, parameters.volume)
@@ -359,7 +367,7 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   if (parameters.shockwave.startRadiusScale > parameters.shockwave.endRadiusScale) throw new RangeError('shockwave start radius must not exceed end radius.')
   const integers = [
     parameters.canvasWidth, parameters.canvasHeight, parameters.frameCount, parameters.seed,
-    parameters.body.radius, parameters.body.rotation, parameters.body.pressureWidth, parameters.body.blastAngle, parameters.body.smokeCount,
+    parameters.body.radius, parameters.body.rotation, parameters.body.pressureWidth, parameters.body.pressureCount, parameters.body.blastAngle, parameters.body.smokeCount,
     parameters.core.radius, parameters.shockwave.thickness, parameters.shockwave.ringCount, parameters.shockwave.squashAngle,
     parameters.tongues.count, parameters.tongues.length, parameters.tongues.width,
     parameters.fragments.count, parameters.fragments.minSize, parameters.fragments.maxSize,

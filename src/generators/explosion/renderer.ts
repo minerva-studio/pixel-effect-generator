@@ -27,7 +27,7 @@ interface BlobDescriptor {
   readonly curveSign: number
 }
 
-type BodyPrimitiveRole = 'core' | 'fire' | 'ember' | 'cinder' | 'smoke' | 'smokeWisp' | 'smokeParticle' | 'smokeParticleDark' | 'smokeBridge' | 'spark' | 'connector'
+type BodyPrimitiveRole = 'core' | 'fire' | 'shell' | 'ember' | 'cinder' | 'smoke' | 'smokeWisp' | 'smokeParticle' | 'smokeParticleDark' | 'smokeBridge' | 'spark' | 'connector'
 
 interface BodyPrimitiveBase {
   readonly owner: number
@@ -63,7 +63,16 @@ interface BoxPrimitive extends BodyPrimitiveBase {
   readonly halfHeight: number
 }
 
-type BodyPrimitive = EllipsePrimitive | TaperedCapsulePrimitive | BoxPrimitive
+interface ShellSectorPrimitive extends BodyPrimitiveBase {
+  readonly kind: 'shellSector'
+  readonly innerRadius: number
+  readonly outerRadius: number
+  readonly angle: number
+  readonly halfAngle: number
+  readonly sharpness: number
+}
+
+type BodyPrimitive = EllipsePrimitive | TaperedCapsulePrimitive | BoxPrimitive | ShellSectorPrimitive
 
 interface PrimitiveHit {
   readonly owner: number
@@ -123,7 +132,7 @@ function renderExplosionFrame(
 function generateBlobs(parameters: ExplosionParameters): BlobDescriptor[] {
   const count = parameters.body.shape === 'smokeBurst'
     ? parameters.body.smokeCount
-    : explosionShapeCount(parameters.body.shape, parameters.body.lobeCount)
+    : explosionShapeCount(parameters.body.shape, parameters.body.lobeCount, parameters.body.pressureCount)
   const random = createXorshift32(parameters.seed ^ 0x71e4a2d9)
   const unit = () => random() / 0x100000000
   const irregularity = parameters.body.shapeIrregularity
@@ -239,7 +248,7 @@ function renderModernBody(
   }
 }
 
-/** Builds one of the three active modern silhouettes from explicit analytic primitives. */
+/** Builds one active modern silhouette from its own explicit motion skeleton. */
 function buildBodyPrimitives(
   parameters: ExplosionParameters,
   blobs: readonly BlobDescriptor[],
@@ -248,7 +257,8 @@ function buildBodyPrimitives(
 ): BodyPrimitive[] {
   switch (parameters.body.shape) {
     case 'gameFireball': return buildGameFireballPrimitives(parameters, blobs, lifecycle)
-    case 'directionalBlast': return buildDirectionalBlastPrimitives(parameters, blobs, time, lifecycle)
+    case 'turbulentFireball': return buildTurbulentFireballPrimitives(parameters, blobs, time, lifecycle)
+    case 'shockBlast': return buildShockBlastPrimitives(parameters, blobs, time, lifecycle)
     case 'smokeBurst': return buildSmokeBurstPrimitives(parameters, blobs, time, lifecycle)
     case 'legacyRadial': return []
   }
@@ -316,73 +326,107 @@ function buildGameFireballPrimitives(
   return primitives
 }
 
-/** Builds one connected short, wide blast from a true tapered centerline. */
-function buildDirectionalBlastPrimitives(
+/** Builds one connected flame column that rises and rolls along an S-shaped spine. */
+function buildTurbulentFireballPrimitives(
   parameters: ExplosionParameters,
   blobs: readonly BlobDescriptor[],
   time: number,
   lifecycle: number,
 ): BodyPrimitive[] {
   const radius = parameters.body.radius
-  const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
-  const angle = (parameters.body.blastAngle + parameters.body.rotation) / 180 * Math.PI
-  const forwardX = Math.cos(angle)
-  const forwardY = Math.sin(angle)
-  const sideX = -forwardY
-  const sideY = forwardX
-  const rootRadius = radius * 0.3 * growth
-  const startDistance = radius * 0.05 * growth
-  const endDistance = radius * 0.82 * growth
-  const rootWidth = radius * (0.24 + 0.16 * parameters.body.blastWidth) * growth
-  const tipWidth = radius * 0.14 * growth
-  const irregularity = parameters.body.shapeIrregularity
-  const shoulderJitter = (blobs[0]?.tongueNoise ?? 0) * radius * 0.035 * irregularity * growth
-  const shoulderForward = radius * (0.38 + (blobs[1]?.tongueNoise ?? 0) * 0.025 * irregularity) * growth
-  const shoulderSide = radius * (0.17 + parameters.body.blastWidth * 0.04) * growth
-  const point = (forward: number, side: number) => ({
-    x: forwardX * forward + sideX * side,
-    y: forwardY * forward + sideY * side,
-  })
-  const start = point(startDistance, 0)
-  const end = point(endDistance + shoulderJitter, 0)
-  const upper = point(shoulderForward, shoulderSide)
-  const lower = point(shoulderForward, -shoulderSide)
-  const primitives: BodyPrimitive[] = [
-    { kind: 'ellipse', owner: 0, depth: parameters.volume.profile === 'moltenCore' ? 4 : 0, role: 'core', x: 0, y: 0, rx: rootRadius, ry: rootRadius, angle },
-    {
-      kind: 'taperedCapsule', owner: 1, depth: 1, role: 'fire',
-      startX: start.x, startY: start.y, endX: end.x, endY: end.y,
-      startWidth: rootWidth, endWidth: tipWidth,
-    },
-    {
-      kind: 'ellipse', owner: 0, depth: 0, role: 'connector', alphaOnly: true,
-      x: upper.x, y: upper.y, rx: radius * 0.3 * growth, ry: radius * 0.18 * growth, angle,
-    },
-    {
-      kind: 'ellipse', owner: 0, depth: 0, role: 'connector', alphaOnly: true,
-      x: lower.x, y: lower.y, rx: radius * 0.3 * growth, ry: radius * 0.18 * growth, angle,
-    },
-  ]
   const drift = parameters.motion.mode === 'explosion' ? time : 1 - time
-  // Staggered tapered streaks produce a directional burst instead of synchronized dots.
-  for (let index = 0; index < 8; index += 1) {
-    const launch = 0.08 + index % 3 * 0.055 + hashUnit(parameters.seed, index, 41) * 0.08
-    const particleTime = clamp01((drift - launch) / Math.max(0.01, 0.78 - launch))
-    if (drift < launch || particleTime >= 0.96) continue
-    const spread = (hashUnit(parameters.seed, index, 42) * 2 - 1)
-      * (0.18 + parameters.body.blastWidth * 0.3)
-    const particleAngle = angle + spread
-    const travel = radius * (0.45 + particleTime * (0.82 + hashUnit(parameters.seed, index, 43) * 0.5)) * growth
-    const streakLength = radius * (0.08 + hashUnit(parameters.seed, index, 44) * 0.12) * growth
-    const headX = Math.cos(particleAngle) * travel
-    const headY = Math.sin(particleAngle) * travel
-    const tailX = headX - Math.cos(particleAngle) * streakLength
-    const tailY = headY - Math.sin(particleAngle) * streakLength
-    const streakWidth = Math.max(1, radius * (0.018 + hashUnit(parameters.seed, index, 45) * 0.022) * growth)
+  const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
+  const rotation = parameters.body.rotation / 180 * Math.PI
+  const rotate = (x: number, y: number) => ({
+    x: x * Math.cos(rotation) - y * Math.sin(rotation),
+    y: x * Math.sin(rotation) + y * Math.cos(rotation),
+  })
+  const churn = parameters.body.churnAmount
+  const irregularity = parameters.body.shapeIrregularity
+  const phase = drift * Math.PI * (1.2 + churn * 0.8)
+  const pointAt = (progress: number, phaseOffset = 0) => {
+    const lift = radius * (0.24 - progress * (0.9 + churn * 0.18)) * growth
+    const sway = Math.sin(progress * Math.PI * 2.25 + phase + phaseOffset)
+      * radius * (0.07 + churn * 0.13) * growth
+    return rotate(sway, lift)
+  }
+  const root = pointAt(0)
+  const primitives: BodyPrimitive[] = [{
+    kind: 'ellipse', owner: 0, depth: parameters.volume.profile === 'moltenCore' ? 4 : 0, role: 'core',
+    x: root.x, y: root.y, rx: radius * 0.3 * growth, ry: radius * 0.23 * growth, angle: rotation,
+  }]
+
+  // A hidden segmented spine owns continuity; visible curl segments own all local surface detail.
+  for (let index = 0; index < 6; index += 1) {
+    const startProgress = index / 7
+    const endProgress = (index + 1.7) / 7
+    const start = pointAt(startProgress)
+    const end = pointAt(endProgress)
+    const width = radius * lerp(0.22, 0.1, startProgress) * growth
     primitives.push({
-      kind: 'taperedCapsule', owner: 10 + index, depth: 4, role: 'spark',
-      startX: tailX, startY: tailY, endX: headX, endY: headY,
-      startWidth: streakWidth, endWidth: Math.max(1, streakWidth * 0.45),
+      kind: 'taperedCapsule', owner: 0, depth: 0, role: 'connector', alphaOnly: true,
+      startX: start.x, startY: start.y, endX: end.x, endY: end.y,
+      startWidth: width, endWidth: Math.max(1, width * 0.76),
+    })
+  }
+
+  blobs.slice(0, 7).forEach((blob, index) => {
+    const delay = index * 0.045 + blob.delay * 0.35
+    const localTime = clamp01((drift - delay) / Math.max(0.01, 0.92 - delay))
+    if (localTime <= 0) return
+    const progress = (index + 0.6 + localTime * (0.32 + churn * 0.2)) / 7
+    const base = pointAt(Math.min(1, progress), blob.tongueNoise * irregularity * 0.5)
+    const next = pointAt(Math.min(1.05, progress + 0.14), blob.tongueNoise * irregularity * 0.5)
+    const sideSign = index % 2 === 0 ? 1 : -1
+    const side = sideSign * radius * (0.08 + churn * 0.08)
+      * (0.68 + Math.sin(localTime * Math.PI) * 0.32)
+      * (1 + blob.tongueNoise * irregularity * 0.28)
+    const sideVector = rotate(side, 0)
+    const tail = smoothStep(clamp01((drift - (0.72 + index * 0.012)) / 0.22))
+    const width = radius * lerp(0.24, 0.09, index / 6) * growth * (1 - tail * 0.58)
+    primitives.push({
+      kind: 'taperedCapsule', owner: index + 1, depth: blob.depth, role: 'fire',
+      startX: base.x, startY: base.y,
+      endX: next.x + sideVector.x, endY: next.y + sideVector.y,
+      startWidth: width * (1.08 + irregularity * blob.radiusScale * 0.06),
+      endWidth: Math.max(1, width * (0.46 + index * 0.018)),
+    })
+  })
+  return primitives
+}
+
+/** Builds separated short radial shell plates pushed outward by one central flash. */
+function buildShockBlastPrimitives(
+  parameters: ExplosionParameters,
+  blobs: readonly BlobDescriptor[],
+  time: number,
+  lifecycle: number,
+): BodyPrimitive[] {
+  const radius = parameters.body.radius
+  const drift = parameters.motion.mode === 'explosion' ? time : 1 - time
+  const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
+  const rotation = parameters.body.rotation / 180 * Math.PI
+  const coreRetreat = 1 - smoothStep(clamp01((drift - 0.5) / 0.34)) * 0.7
+  const primitives: BodyPrimitive[] = [{
+    kind: 'ellipse', owner: 0, depth: parameters.volume.profile === 'moltenCore' ? 4 : 0, role: 'core',
+    x: 0, y: 0, rx: radius * 0.3 * growth * coreRetreat, ry: radius * 0.3 * growth * coreRetreat, angle: 0,
+  }]
+  const plateCount = parameters.body.pressureCount
+  for (let index = 0; index < plateCount; index += 1) {
+    const blob = blobs[index]
+    const delay = index * 0.018 + (blob?.delay ?? 0) * 0.3
+    const plateTime = clamp01((drift - delay) / Math.max(0.01, 0.84 - delay))
+    if (plateTime <= 0 || plateTime >= 0.98) continue
+    const jitter = (blob?.tongueNoise ?? 0) * parameters.body.shapeIrregularity * 0.14
+    const angle = rotation + index / plateCount * Math.PI * 2 + jitter
+    const radialCenter = radius * (0.25 + plateTime * 0.58) * growth
+    const thickness = Math.max(1, parameters.body.pressureWidth * growth * (1 - plateTime * 0.18))
+    const halfAngle = (Math.PI / plateCount) * (0.52 + (blob?.radiusScale ?? 1) * 0.08)
+    primitives.push({
+      kind: 'shellSector', owner: index + 1, depth: 2 + (blob?.depth ?? 1) * 0.2, role: 'shell',
+      innerRadius: Math.max(0, radialCenter - thickness * 0.5),
+      outerRadius: radialCenter + thickness * 0.5,
+      angle, halfAngle, sharpness: parameters.body.pressureSharpness,
     })
   }
   return primitives
@@ -802,6 +846,22 @@ function sampleBodyPrimitive(primitive: BodyPrimitive, x: number, y: number): Pr
       alphaOnly: primitive.alphaOnly === true,
     }
   }
+  if (primitive.kind === 'shellSector') {
+    const radius = Math.hypot(x, y)
+    if (radius < primitive.innerRadius || radius > primitive.outerRadius) return undefined
+    const radialProgress = (radius - primitive.innerRadius) / Math.max(1, primitive.outerRadius - primitive.innerRadius)
+    const delta = Math.atan2(Math.sin(Math.atan2(y, x) - primitive.angle), Math.cos(Math.atan2(y, x) - primitive.angle))
+    const angularLimit = primitive.halfAngle * (1 - radialProgress * primitive.sharpness * 0.28)
+    const angularDistance = Math.abs(delta) / Math.max(0.01, angularLimit)
+    if (angularDistance > 1) return undefined
+    return {
+      owner: primitive.owner, depth: primitive.depth, role: primitive.role,
+      distance: Math.max(Math.abs(radialProgress * 2 - 1), angularDistance),
+      axis: radialProgress,
+      light: clamp01(0.76 - Math.sin(primitive.angle) * 0.12 - Math.cos(primitive.angle) * 0.12 - radialProgress * 0.08),
+      alphaOnly: primitive.alphaOnly === true,
+    }
+  }
   if (primitive.kind === 'box') {
     const localX = Math.abs(x - primitive.x) / Math.max(1, primitive.halfWidth)
     const localY = Math.abs(y - primitive.y) / Math.max(1, primitive.halfHeight)
@@ -896,6 +956,14 @@ function renderVolumeBody(
     )
     if (!front) continue
     let band = front.distance * 0.72 + (1 - front.light) * 0.18
+    if (parameters.body.shape === 'turbulentFireball' && front.role === 'fire') {
+      // Only the rooted lower flame stays white-hot; upper curls cool into broader warm bands.
+      band += 0.2 + Math.min(0.3, front.owner * 0.04)
+    }
+    if (parameters.body.shape === 'shockBlast' && front.role === 'core') {
+      // Directional lighting avoids turning the central flash into concentric target rings.
+      band = 0.16 + (1 - front.light) * 0.55
+    }
     if (parameters.body.shape === 'gameFireball' && front.role === 'fire') {
       // Each lobe cools on a separate deterministic schedule while the central core stays hot longer.
       const coolingStart = 0.46 + hashUnit(parameters.seed, front.owner, 91) * 0.16
@@ -906,6 +974,10 @@ function renderVolumeBody(
     if (front.role === 'connector') band = 0.56
     if (front.role === 'smokeBridge') band = 0.64
     if (front.role === 'spark') band = 0.24 + front.distance * 0.32
+    if (front.role === 'shell') {
+      const shellCooling = smoothStep(clamp01((lifecycle - 0.52) / 0.38))
+      band = 0.16 + front.axis * 0.42 + (1 - front.light) * 0.16 + shellCooling * 0.2
+    }
     if (front.role === 'cinder') {
       const cinderCooling = smoothStep(clamp01((lifecycle - 0.7) / 0.24))
       band = 0.38 + front.distance * 0.2 + cinderCooling * 0.28
@@ -1215,7 +1287,7 @@ function shapeViews(
         }
       }
       const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle, blob.delay)
-      const centerDistance = parameters.body.radius * (parameters.body.shape === 'directionalBlast' ? 0.72 : 0.42) * growth
+      const centerDistance = parameters.body.radius * 0.42 * growth
       const blobRadius = Math.max(0.5, parameters.body.radius * 0.28 * growth * blob.radiusScale)
       return {
         angle: blob.angle,
@@ -1227,7 +1299,7 @@ function shapeViews(
       }
     })
   }
-  const count = explosionShapeCount(parameters.body.shape, parameters.body.lobeCount)
+  const count = explosionShapeCount(parameters.body.shape, parameters.body.lobeCount, parameters.body.pressureCount)
   const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
   const rotation = parameters.body.rotation / 180 * Math.PI
   return Array.from({ length: count }, (_, index) => ({

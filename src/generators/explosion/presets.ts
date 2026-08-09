@@ -19,7 +19,7 @@ import {
 /** Preset fields cover the effect while excluding canvas size and frame count. */
 export type ExplosionPresetFields = Omit<ExplosionParameters, 'canvasWidth' | 'canvasHeight' | 'frameCount'>
 
-export const EXPLOSION_PRESET_SCHEMA_VERSION = 5
+export const EXPLOSION_PRESET_SCHEMA_VERSION = 7
 export const EXPLOSION_PRESET_FAMILY = 'explosion'
 
 const MAX_PRESET_RADIUS = 256
@@ -28,7 +28,7 @@ const MAX_PRESET_TANGENTIAL_DRIFT = 64
 const MAX_PRESET_TONGUE_LENGTH = 256
 const MAX_PRESET_TONGUE_WIDTH = 64
 
-/** Captures a versioned V5 payload with stable nested ownership. */
+/** Captures a versioned V7 payload with stable nested ownership. */
 export function captureExplosionPreset(parameters: ExplosionParameters): JsonValue {
   return {
     schemaVersion: EXPLOSION_PRESET_SCHEMA_VERSION,
@@ -47,10 +47,10 @@ export function captureExplosionPreset(parameters: ExplosionParameters): JsonVal
   } as JsonValue
 }
 
-/** Parses one V5 or compatible V4 payload into typed effect fields with strict bounds. */
+/** Parses one V7 or compatible V4/V5/V6 payload into typed effect fields with strict bounds. */
 export function parseExplosionPresetPayload(value: unknown): ExplosionPresetFields {
   if (!isPlainRecord(value)) throw new RangeError('preset payload must be an object.')
-  if ((value.schemaVersion !== EXPLOSION_PRESET_SCHEMA_VERSION && value.schemaVersion !== 4) || value.family !== EXPLOSION_PRESET_FAMILY) {
+  if (![EXPLOSION_PRESET_SCHEMA_VERSION, 6, 5, 4].includes(value.schemaVersion as number) || value.family !== EXPLOSION_PRESET_FAMILY) {
     throw new RangeError('preset payload is not the current explosion schema.')
   }
   const body = readRecord(value, 'body')
@@ -76,7 +76,8 @@ export function parseExplosionPresetPayload(value: unknown): ExplosionPresetFiel
       shapeIrregularity: readNumber(body, 'shapeIrregularity', 0, 1),
       churnAmount: readNumber(body, 'churnAmount', 0, 1),
       lobeCount: readOptionalInteger(body, 'lobeCount', 3, 9, 5),
-      pressureWidth: readInteger(body, 'pressureWidth', 1, 24),
+      pressureWidth: readInteger(body, 'pressureWidth', 1, 48),
+      pressureCount: readOptionalInteger(body, 'pressureCount', 3, 12, 5),
       pressureSharpness: readNumber(body, 'pressureSharpness', 0, 1),
       blastWidth: readOptionalNumber(body, 'blastWidth', 0.2, 1, 0.58),
       blastAngle: readOptionalInteger(body, 'blastAngle', 0, 359, 0),
@@ -154,16 +155,17 @@ function parseV4Surface(value: Readonly<Record<string, unknown>>): ExplosionSurf
   }
 }
 
-/** Migrates the previous combustion shape names into the replacement geometry. */
+/** Migrates supported combustion shapes while rejecting removed directional explosions. */
 function readExplosionShape(body: Readonly<Record<string, unknown>>, version: unknown): ExplosionParameters['body']['shape'] {
   const value = body.shape
   if (version === 4) {
     if (value === 'billowingFireball') return 'gameFireball'
     if (value === 'pressureBurst') return 'gameFireball'
   }
-  if (value === 'turbulentFireball') return 'smokeBurst'
-  if (value === 'shockBlast') return 'gameFireball'
-  if (typeof value !== 'string' || !['gameFireball', 'directionalBlast', 'smokeBurst', 'legacyRadial'].includes(value)) {
+  if (version === 5 && value === 'directionalBlast') {
+    throw new RangeError('directionalBlast was removed from Explosion; use the Projectile Blast Bolt preset instead.')
+  }
+  if (typeof value !== 'string' || !['gameFireball', 'turbulentFireball', 'shockBlast', 'smokeBurst', 'legacyRadial'].includes(value)) {
     throw new RangeError('body.shape is invalid.')
   }
   return value as ExplosionParameters['body']['shape']
@@ -184,8 +186,9 @@ export function applyExplosionPreset(parameters: ExplosionParameters, payload: J
 export function clampExplosionPresetParameters(parameters: ExplosionParameters): ExplosionParameters {
   const limits = explosionFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
   const lobeCount = clampInteger(parameters.body.lobeCount, 3, 9)
+  const pressureCount = clampInteger(parameters.body.pressureCount, 3, 12)
   const smokeCount = clampInteger(parameters.body.smokeCount, 3, 9)
-  const shapeCount = explosionShapeCount(parameters.body.shape, lobeCount)
+  const shapeCount = explosionShapeCount(parameters.body.shape, lobeCount, pressureCount)
   const minSize = clampInteger(parameters.fragments.minSize, 1, 8)
   const maxSize = clampInteger(parameters.fragments.maxSize, 1, 8)
   const formationDuration = Math.min(0.8, Math.max(0.1, parameters.motion.formationDuration))
@@ -200,8 +203,9 @@ export function clampExplosionPresetParameters(parameters: ExplosionParameters):
       ...parameters.body,
       radius: clampInteger(parameters.body.radius, 2, limits.maxRadius),
       lobeCount,
+      pressureCount,
       smokeCount,
-      pressureWidth: clampInteger(parameters.body.pressureWidth, 1, 24),
+      pressureWidth: clampInteger(parameters.body.pressureWidth, 1, 48),
     },
     surface,
     motion: { ...parameters.motion, formationDuration, holdDuration },
@@ -301,14 +305,27 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
     }),
   },
   {
-    id: 'directionalBlast',
-    name: 'Directional Blast',
-    description: 'A short broad blast projected along one readable direction.',
+    id: 'pressureBurst',
+    name: 'Shock Blast',
+    description: 'A bright core drives separated short shell plates through angular gaps.',
+    payload: captureExplosionPreset({
+      ...MODERN_EXPLOSION_PARAMETERS,
+      seed: 20260811,
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'shockBlast', pressureWidth: 24, pressureSharpness: 0.78, shapeIrregularity: 0.18 },
+      volume: { enabled: true, profile: 'hardShell' },
+      core: { ...MODERN_EXPLOSION_PARAMETERS.core, radius: 13, duration: 0.18 },
+      fragments: { ...MODERN_EXPLOSION_PARAMETERS.fragments, count: 6, travelDistance: 20 },
+    }),
+  },
+  {
+    id: 'turbulentFireball',
+    name: 'Turbulent Fireball',
+    description: 'A connected flame column that rises and rolls along an asymmetric S-shaped flow.',
     payload: captureExplosionPreset({
       ...MODERN_EXPLOSION_PARAMETERS,
       seed: 20260807,
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'directionalBlast', blastWidth: 0.62, blastAngle: 0 },
-      volume: { enabled: true, profile: 'hardShell' },
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'turbulentFireball', churnAmount: 0.78, shapeIrregularity: 0.34 },
+      volume: { enabled: true, profile: 'smokeFire' },
       core: { ...MODERN_EXPLOSION_PARAMETERS.core, radius: 11, duration: 0.14 },
       fragments: { ...MODERN_EXPLOSION_PARAMETERS.fragments, enabled: false },
     }),
@@ -334,6 +351,7 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
         churnAmount: 0.5,
         lobeCount: 5,
         pressureWidth: 6,
+        pressureCount: 5,
         pressureSharpness: 0.8,
         blastWidth: 0.58,
         blastAngle: 0,

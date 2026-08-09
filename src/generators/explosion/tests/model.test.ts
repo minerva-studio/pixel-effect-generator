@@ -17,6 +17,8 @@ describe('combustion explosion parameter model', () => {
     expect(DEFAULT_EXPLOSION_PARAMETERS.surface.style).toBe('retroPixel')
     expect(DEFAULT_EXPLOSION_PARAMETERS.tongues.enabled).toBe(false)
     expect(MODERN_EXPLOSION_PARAMETERS.body.shape).toBe('gameFireball')
+    expect(MODERN_EXPLOSION_PARAMETERS.body.pressureWidth).toBe(24)
+    expect(MODERN_EXPLOSION_PARAMETERS.body.pressureCount).toBe(5)
     expect(MODERN_EXPLOSION_PARAMETERS.body.smokeCount).toBe(5)
     expect(MODERN_EXPLOSION_PARAMETERS.body.smokeMotion).toBe('billowing')
     expect(MODERN_EXPLOSION_PARAMETERS.tongues.enabled).toBe(false)
@@ -77,7 +79,9 @@ describe('combustion explosion parameter model', () => {
   it('exposes per-shape direction counts and size-dependent limits', () => {
     expect(explosionShapeCount('gameFireball')).toBe(5)
     expect(explosionShapeCount('gameFireball', 8)).toBe(8)
-    expect(explosionShapeCount('directionalBlast')).toBe(5)
+    expect(explosionShapeCount('turbulentFireball')).toBe(7)
+    expect(explosionShapeCount('shockBlast')).toBe(5)
+    expect(explosionShapeCount('shockBlast', 5, 12)).toBe(12)
     expect(explosionShapeCount('smokeBurst')).toBe(6)
     expect(explosionShapeCount('legacyRadial')).toBe(8)
     expect(explosionFrameLimits({ width: 64, height: 32 }).maxRadius).toBe(16)
@@ -114,6 +118,8 @@ describe('combustion explosion parameter model', () => {
 
   it('limits and normalizes volume profiles per active shape', () => {
     expect(explosionVolumeProfiles('gameFireball')).toEqual(['hardShell', 'moltenCore'])
+    expect(explosionVolumeProfiles('turbulentFireball')).toEqual(['smokeFire', 'hardShell'])
+    expect(explosionVolumeProfiles('shockBlast')).toEqual(['hardShell', 'moltenCore'])
     expect(explosionVolumeProfiles('smokeBurst')).toEqual(['smokeFire'])
     expect(normalizeExplosionVolume('smokeBurst', { enabled: true, profile: 'hardShell' })).toEqual({ enabled: true, profile: 'smokeFire' })
     expect(normalizeExplosionVolume('legacyRadial', { enabled: true, profile: 'moltenCore' })).toEqual({ enabled: false, profile: 'hardShell' })

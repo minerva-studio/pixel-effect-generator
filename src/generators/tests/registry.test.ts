@@ -54,7 +54,7 @@ describe('generator registry', () => {
     expect(explosionModule.definition.index).toBe(2)
     expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
     expect(explosionModule.projectCodec).toBeUndefined()
-    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'directionalBlast', 'retroBurst'])
+    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'turbulentFireball', 'retroBurst'])
     expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(10)
   })
 
@@ -74,6 +74,20 @@ describe('generator registry', () => {
       'corollaImplosion',
     ])
     expect(bloomModule.render(bloomModule.defaultParameters)).toHaveLength(10)
+  })
+
+  it('registers the projectile generator with five tabs, presets, and a project codec', () => {
+    expect(projectileModule.definition.index).toBe(4)
+    expect(projectileModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'trail', 'effects', 'palette'])
+    expect(projectileModule.projectCodec?.generatorId).toBe('projectile')
+    expect(projectileModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual([
+      'fireball',
+      'blastBolt',
+      'enchantedArrow',
+      'energyArrow',
+    ])
+    expect(projectileModule.defaultParameters.canvasWidth).toBe(128)
+    expect(projectileModule.render(projectileModule.defaultParameters)).toHaveLength(10)
   })
 })
 

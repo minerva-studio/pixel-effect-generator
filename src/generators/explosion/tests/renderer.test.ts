@@ -51,25 +51,25 @@ describe('renderExplosionFrames', () => {
     }
   })
 
-  it('produces three structurally distinct deterministic shapes', () => {
-    const signatures = (['gameFireball', 'directionalBlast', 'smokeBurst'] as const).map((shape) => {
+  it('produces four structurally distinct deterministic modern shapes', () => {
+    const signatures = (['gameFireball', 'turbulentFireball', 'shockBlast', 'smokeBurst'] as const).map((shape) => {
       const parameters = quietParameters({
         body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape },
-        volume: { enabled: true, profile: shape === 'smokeBurst' ? 'smokeFire' : 'hardShell' },
+        volume: { enabled: true, profile: shape === 'smokeBurst' || shape === 'turbulentFireball' ? 'smokeFire' : 'hardShell' },
       }, MODERN_EXPLOSION_PARAMETERS)
       const frames = renderExplosionFrames(parameters)
       expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(parameters)))
       return fullFrameHash(frames)
     })
-    expect(new Set(signatures).size).toBe(3)
+    expect(new Set(signatures).size).toBe(4)
   })
 
-  it('keeps all three active modern volume silhouettes structurally distinct', () => {
-    const shapes = ['gameFireball', 'directionalBlast', 'smokeBurst'] as const
+  it('keeps all four active modern volume silhouettes structurally distinct', () => {
+    const shapes = ['gameFireball', 'turbulentFireball', 'shockBlast', 'smokeBurst'] as const
     const signatures = shapes.map((shape) => {
       const parameters = quietParameters({
         body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape },
-        volume: { enabled: true, profile: shape === 'smokeBurst' ? 'smokeFire' : 'hardShell' },
+        volume: { enabled: true, profile: shape === 'smokeBurst' || shape === 'turbulentFireball' ? 'smokeFire' : 'hardShell' },
         shockwave: { ...MODERN_EXPLOSION_PARAMETERS.shockwave, mode: 'none' },
         tongues: { ...MODERN_EXPLOSION_PARAMETERS.tongues, enabled: false },
         fragments: { ...MODERN_EXPLOSION_PARAMETERS.fragments, enabled: false },
@@ -78,7 +78,7 @@ describe('renderExplosionFrames', () => {
       const frame = renderExplosionFrames(parameters)[4]
       return silhouetteSignature(frame)
     })
-    expect(new Set(signatures).size).toBe(3)
+    expect(new Set(signatures).size).toBe(4)
   })
 
   it('renders each volume profile deterministically with visible layering differences', () => {
@@ -130,20 +130,67 @@ describe('renderExplosionFrames', () => {
     expect(angularRadiusRatio(frame, 36)).toBeLessThanOrEqual(1.8)
   })
 
-  it('keeps the directional blast connected, wide, and confined to the forward half-plane', () => {
+  it('keeps the turbulent fireball connected while its S-shaped mass continues rising', () => {
     const parameters = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'directionalBlast', blastWidth: 0.8, blastAngle: 0, rotation: 0 },
-      volume: { enabled: true, profile: 'hardShell' },
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'turbulentFireball', churnAmount: 0.8, rotation: 0 },
+      volume: { enabled: true, profile: 'smokeFire' },
       surface: { style: 'burningLayers', coverage: 0.95, bandWarp: 0.1, edgeBreakup: 0.2 },
     }, MODERN_EXPLOSION_PARAMETERS)
-    const frame = renderExplosionFrames(parameters)[4]
-    expect(opaqueComponents(frame)).toBeGreaterThanOrEqual(2)
-    expect(opaqueComponents(frame)).toBeLessThanOrEqual(5)
-    expect(countOpaqueInside(frame, 6)).toBeGreaterThan(0)
-    const forward = countOpaqueRegion(frame, (x) => x >= frame.width / 2 + 6)
-    const backward = countOpaqueRegion(frame, (x) => x < frame.width / 2 - 6)
-    expect(forward / Math.max(1, forward + backward)).toBeGreaterThanOrEqual(0.8)
-    expect(opaqueBounds(frame).height / opaqueBounds(frame).width).toBeGreaterThan(0.35)
+    const frames = renderExplosionFrames(parameters)
+    expect(opaqueComponents(frames[4])).toBe(1)
+    expect(opaqueCentroid(frames[6]).y).toBeLessThan(opaqueCentroid(frames[3]).y)
+    expect(opaqueBounds(frames[4]).height).toBeGreaterThan(opaqueBounds(frames[4]).width)
+    const bandCenters = verticalBandCentroids(frames[4], 3)
+    expect(Math.max(...bandCenters) - Math.min(...bandCenters)).toBeGreaterThan(3)
+  })
+
+  it('renders five high-energy shock wedges that narrow monotonically away from the core', () => {
+    const parameters = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'shockBlast', pressureWidth: 14, pressureSharpness: 0.8, rotation: 0 },
+      volume: { enabled: true, profile: 'hardShell' },
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frames = renderExplosionFrames(parameters)
+    const middle = frames[4]
+    expect(opaqueComponents(middle)).toBeGreaterThanOrEqual(4)
+    expect(opaqueComponents(middle)).toBeLessThanOrEqual(6)
+    expect(countOpaqueInside(middle, 6)).toBeGreaterThan(0)
+    expect(occupiedAngleBinsOutside(middle, 72, parameters.body.radius * 0.35)).toBeLessThan(64)
+    expect(countOpaqueRegion(middle, (x, y) => Math.hypot(x - middle.width / 2, y - middle.height / 2) > parameters.body.radius * 0.3))
+      .toBeGreaterThan(countOpaqueInside(middle, parameters.body.radius * 0.3))
+    expect(countExactColorOutside(middle, parameters.palette[0], parameters.body.radius * 0.3)).toBeGreaterThan(0)
+    const wedgeSpans = [18, 23, 29].map((radius) => angularSpanNear(middle, radius, 0, 0.7))
+    expect(wedgeSpans[0]).toBeGreaterThan(wedgeSpans[1])
+    expect(wedgeSpans[1]).toBeGreaterThan(wedgeSpans[2])
+  })
+
+  it('renders the requested 3 to 12 separated shock wedges deterministically', () => {
+    for (const pressureCount of [3, 5, 12]) {
+      const parameters = quietParameters({
+        body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'shockBlast', pressureCount, pressureWidth: 14, shapeIrregularity: 0, rotation: 0 },
+        volume: { enabled: true, profile: 'hardShell' },
+      }, MODERN_EXPLOSION_PARAMETERS)
+      const frames = renderExplosionFrames(parameters)
+      expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(parameters)))
+      expect(occupiedAngleRunsOutside(frames[4], 144, parameters.body.radius * 0.35)).toBe(pressureCount)
+    }
+  })
+
+  it('changes only shock-plate radial bandwidth when shell thickness changes', () => {
+    const base = quietParameters({
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'shockBlast', pressureWidth: 4, pressureSharpness: 0.8, shapeIrregularity: 0, rotation: 0 },
+      volume: { enabled: true, profile: 'hardShell' },
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const thin = renderExplosionFrames(base)[6]
+    const normal = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 14 } })[6]
+    const thick = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 24 } })[6]
+    const maximum = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 48 } })[6]
+    const minimumRadius = base.body.radius * 0.25
+    expect(countOpaque(normal)).toBeGreaterThan(countOpaque(thin))
+    expect(countOpaque(thick)).toBeGreaterThan(countOpaque(normal))
+    expect(countOpaque(maximum)).toBeGreaterThan(countOpaque(thick))
+    expect(occupiedAngleRunsOutside(maximum, 144, minimumRadius)).toBe(5)
+    expect(Math.abs(occupiedAngleBinsOutside(thin, 72, minimumRadius) - occupiedAngleBinsOutside(thick, 72, minimumRadius))).toBeLessThanOrEqual(3)
+    expect(Math.abs(meanOpaqueRadiusOutside(thin, minimumRadius) - meanOpaqueRadiusOutside(thick, minimumRadius))).toBeLessThanOrEqual(1.5)
   })
 
   it('does not let hidden flat-surface coverage suppress volume rendering', () => {
@@ -695,6 +742,23 @@ function countExactColor(frame: PixelFrame, color: { readonly r: number; readonl
   return count
 }
 
+/** Counts one exact opaque color beyond a center-relative radius. */
+function countExactColorOutside(
+  frame: PixelFrame,
+  color: { readonly r: number; readonly g: number; readonly b: number },
+  minimumRadius: number,
+): number {
+  let count = 0
+  const cx = frame.width / 2
+  const cy = frame.height / 2
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= minimumRadius) continue
+    const offset = (y * frame.width + x) * 4
+    if (frame.pixels[offset] === color.r && frame.pixels[offset + 1] === color.g && frame.pixels[offset + 2] === color.b && frame.pixels[offset + 3] === 255) count += 1
+  }
+  return count
+}
+
 /** Measures opaque coverage inside one circular sample region. */
 function opaqueFractionInCircle(frame: PixelFrame, centerX: number, centerY: number, radius: number): number {
   let samples = 0
@@ -739,6 +803,43 @@ function opaqueBounds(frame: PixelFrame): { readonly width: number; readonly hei
     maximumY = Math.max(maximumY, y)
   }
   return { width: maximumX - minimumX + 1, height: maximumY - minimumY + 1 }
+}
+
+/** Returns the centroid of every opaque pixel in one frame. */
+function opaqueCentroid(frame: PixelFrame): { readonly x: number; readonly y: number } {
+  let totalX = 0
+  let totalY = 0
+  let count = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    totalX += x
+    totalY += y
+    count += 1
+  }
+  return { x: totalX / Math.max(1, count), y: totalY / Math.max(1, count) }
+}
+
+/** Measures horizontal mass centroids in equal vertical slices of the opaque bounds. */
+function verticalBandCentroids(frame: PixelFrame, bands: number): number[] {
+  let minimumY = frame.height
+  let maximumY = -1
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    minimumY = Math.min(minimumY, y)
+    maximumY = Math.max(maximumY, y)
+  }
+  return Array.from({ length: bands }, (_, band) => {
+    const start = minimumY + (maximumY - minimumY + 1) * band / bands
+    const end = minimumY + (maximumY - minimumY + 1) * (band + 1) / bands
+    let totalX = 0
+    let count = 0
+    for (let y = Math.floor(start); y < Math.ceil(end); y += 1) for (let x = 0; x < frame.width; x += 1) {
+      if (y < start || y >= end || frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+      totalX += x
+      count += 1
+    }
+    return totalX / Math.max(1, count)
+  })
 }
 
 /** Measures the vertical centroid of one exact palette color. */
@@ -914,6 +1015,75 @@ function occupiedAngleBins(frame: PixelFrame, bins: number): number {
     occupied.add(Math.min(bins - 1, Math.floor(angle / (Math.PI * 2) * bins)))
   }
   return occupied.size
+}
+
+/** Counts occupied angular bins beyond a centered radius, excluding the solid flash core. */
+function occupiedAngleBinsOutside(frame: PixelFrame, bins: number, minimumRadius: number): number {
+  const occupied = new Set<number>()
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    const localX = x + 0.5 - frame.width / 2
+    const localY = y + 0.5 - frame.height / 2
+    if (Math.hypot(localX, localY) < minimumRadius) continue
+    const angle = Math.atan2(localY, localX) + Math.PI
+    occupied.add(Math.min(bins - 1, Math.floor(angle / (Math.PI * 2) * bins)))
+  }
+  return occupied.size
+}
+
+/** Counts cyclic occupied angular runs beyond the centered flash core. */
+function occupiedAngleRunsOutside(frame: PixelFrame, bins: number, minimumRadius: number): number {
+  const occupied = Array.from({ length: bins }, () => false)
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    const localX = x + 0.5 - frame.width / 2
+    const localY = y + 0.5 - frame.height / 2
+    if (Math.hypot(localX, localY) < minimumRadius) continue
+    const angle = Math.atan2(localY, localX) + Math.PI
+    occupied[Math.min(bins - 1, Math.floor(angle / (Math.PI * 2) * bins))] = true
+  }
+  let runs = 0
+  for (let index = 0; index < bins; index += 1) {
+    if (occupied[index] && !occupied[(index + bins - 1) % bins]) runs += 1
+  }
+  return runs
+}
+
+/** Measures one centered wedge's occupied angular span at a sampled radius. */
+function angularSpanNear(
+  frame: PixelFrame,
+  sampleRadius: number,
+  centerAngle: number,
+  halfWindow: number,
+): number {
+  let minimum = Number.POSITIVE_INFINITY
+  let maximum = Number.NEGATIVE_INFINITY
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    const localX = x + 0.5 - frame.width / 2
+    const localY = y + 0.5 - frame.height / 2
+    if (Math.abs(Math.hypot(localX, localY) - sampleRadius) > 1.25) continue
+    const angle = Math.atan2(localY, localX)
+    const delta = Math.atan2(Math.sin(angle - centerAngle), Math.cos(angle - centerAngle))
+    if (Math.abs(delta) > halfWindow) continue
+    minimum = Math.min(minimum, delta)
+    maximum = Math.max(maximum, delta)
+  }
+  return Number.isFinite(minimum) && Number.isFinite(maximum) ? maximum - minimum : 0
+}
+
+/** Measures the mean centered radius of opaque pixels beyond a solid core. */
+function meanOpaqueRadiusOutside(frame: PixelFrame, minimumRadius: number): number {
+  let total = 0
+  let count = 0
+  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
+    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
+    const radius = Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2)
+    if (radius < minimumRadius) continue
+    total += radius
+    count += 1
+  }
+  return total / Math.max(1, count)
 }
 
 /** Splits opaque pixels into contiguous radial bands with their angular coverage. */

@@ -62,6 +62,7 @@ function toExplosionParameters(legacy: LegacyExplosionFields): ExplosionParamete
       churnAmount: 0.5,
       lobeCount: 5,
       pressureWidth: 6,
+      pressureCount: 5,
       pressureSharpness: 0.8,
       blastWidth: 0.58,
       blastAngle: 0,
