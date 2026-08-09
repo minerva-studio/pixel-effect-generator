@@ -53,10 +53,11 @@ describe('generator registry', () => {
     expect(slashModule.render(slashModule.defaultParameters)).toHaveLength(8)
   })
 
-  it('registers the combustion explosion with four tabs, presets, and no project codec', () => {
+  it('registers the combustion explosion with five tabs, presets, and project support', () => {
     expect(explosionModule.definition.index).toBe(2)
     expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
-    expect(explosionModule.projectCodec).toBeUndefined()
+    expect(explosionModule.projectCodec?.generatorId).toBe('explosion')
+    expect(explosionModule.projectCodec?.parse(explosionModule.projectCodec.serialize(explosionModule.defaultParameters))).toEqual(explosionModule.defaultParameters)
     expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
     expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(10)
   })

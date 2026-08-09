@@ -549,6 +549,7 @@ describe('ExportPanelView states', () => {
     expect(markup).toContain('aria-expanded="false"')
     expect(markup).toContain('aria-controls="atlas-preview"')
     expect(markup).not.toContain('id="atlas-preview"')
+    expect(markup.indexOf('Sprite sheet preview')).toBeLessThan(markup.indexOf('Export PNG'))
   })
 
   it('renders packed atlas, frame labels, and zoom when open', () => {

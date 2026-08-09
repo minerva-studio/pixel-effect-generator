@@ -59,6 +59,7 @@ function DesktopApp({ api }: { readonly api: DesktopAppApi }) {
   const { t } = useI18n()
   const toast = useToast()
   const sessions = useGeneratorSessions()
+  const [exportOpen, setExportOpen] = useState(false)
   const ActiveWorkspace = sessions.activeGenerator.Workspace
   const workflow = useProjectWorkflow({
     api,
@@ -72,6 +73,11 @@ function DesktopApp({ api }: { readonly api: DesktopAppApi }) {
     toast,
     t,
   })
+  /** Closes the export modal and restores keyboard focus to its menu trigger. */
+  const closeExport = useCallback(() => {
+    setExportOpen(false)
+    requestAnimationFrame(() => document.getElementById('desktop-export-button')?.focus())
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -94,7 +100,12 @@ function DesktopApp({ api }: { readonly api: DesktopAppApi }) {
 
   return (
     <div className="desktop-shell">
-      <DesktopTitleBar workflow={workflow} busy={sessions.fileOperations.activeTask !== null} />
+      <DesktopTitleBar
+        workflow={workflow}
+        busy={sessions.fileOperations.activeTask !== null}
+        exportOpen={exportOpen}
+        onExport={() => setExportOpen(true)}
+      />
       <main className="app-shell desktop-app-shell">
         <ActiveWorkspace
           session={sessions.activeSession}
@@ -105,6 +116,8 @@ function DesktopApp({ api }: { readonly api: DesktopAppApi }) {
           unitySettings={sessions.unitySettings}
           onUnitySettingsChange={sessions.setUnitySettings}
           fileOperations={sessions.fileOperations}
+          desktopExportOpen={exportOpen}
+          onCloseDesktopExport={closeExport}
         />
       </main>
     </div>

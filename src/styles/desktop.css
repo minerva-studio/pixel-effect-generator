@@ -2,6 +2,7 @@
 .desktop-app-shell { width: 100%; max-width: none; padding: 18px 20px 40px; overflow-y: auto; }
 
 .desktop-titlebar {
+  position: relative;
   display: flex;
   align-items: center;
   flex: 0 0 42px;
@@ -13,15 +14,26 @@
   user-select: none;
 }
 .titlebar-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.titlebar-menu-side { display: flex; align-items: center; height: 100%; -webkit-app-region: no-drag; }
 .titlebar-mark { flex: 0 0 auto; }
 .titlebar-app-name { color: #d6dae5; font-size: 0.75rem; font-weight: 800; white-space: nowrap; }
 .titlebar-project-name {
-  max-width: 260px;
+  max-width: max(80px, min(420px, calc(100vw - 560px)));
   overflow: hidden;
   color: var(--muted);
   font: 0.68rem ui-monospace, SFMono-Regular, Menlo, monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.titlebar-project {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 .titlebar-dirty { color: #ffd28a; font-size: 0.6rem; }
 .titlebar-drag { flex: 1 1 auto; align-self: stretch; }
@@ -29,7 +41,7 @@
 .titlebar-language {
   min-width: 96px;
   height: 28px;
-  margin: 0 8px;
+  margin: 0 6px;
   padding: 0 26px 0 9px;
   border: 1px solid #343c4e;
   border-radius: 7px;
@@ -53,6 +65,7 @@
 .titlebar-close:hover { background: #c42b1c; color: white; }
 .titlebar-file { position: relative; height: 100%; -webkit-app-region: no-drag; }
 .titlebar-file > .titlebar-button { min-width: 64px; font-size: 0.72rem; font-weight: 700; }
+.titlebar-export-button { min-width: 64px; font-size: 0.72rem; font-weight: 700; }
 .titlebar-file-menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -163,8 +176,56 @@
 }
 .project-menu-item { display: inline-flex; align-items: center; gap: 8px; }
 
+.desktop-export-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  padding: 24px;
+  place-items: center;
+  background: rgba(5, 7, 12, 0.72);
+  backdrop-filter: blur(5px);
+}
+.desktop-export-backdrop[hidden] { display: none; }
+.desktop-export-dialog {
+  display: flex;
+  width: min(780px, calc(100vw - 48px));
+  max-height: calc(100vh - 90px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #3b4355;
+  border-radius: 14px;
+  background: #11151e;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62);
+}
+.desktop-export-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 10px 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+.desktop-export-heading h2 { margin: 0; color: #e9ecf4; font-size: 0.9rem; }
+.desktop-export-close {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: #c9cddd;
+  background: transparent;
+  font-size: 1.15rem;
+}
+.desktop-export-close:hover { color: white; background: rgba(122, 156, 255, 0.12); }
+.desktop-export-content { min-height: 0; overflow-y: auto; padding: 16px; }
+.desktop-export-content .export-panel { border: 0; background: transparent; box-shadow: none; }
+
 @media (max-width: 520px) {
   .desktop-app-shell { padding: 12px 8px 32px; }
-  .titlebar-project-name { max-width: 120px; }
+  .titlebar-app-name { display: none; }
+  .titlebar-project-name { max-width: max(48px, min(120px, calc(100vw - 370px))); }
   .titlebar-language { min-width: 82px; margin-inline: 4px; }
 }

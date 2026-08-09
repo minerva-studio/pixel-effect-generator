@@ -10,6 +10,7 @@ import {
   resizeExplosionCanvas,
 } from './model'
 import { explosionPresetCapability } from './presets'
+import { explosionProjectCodec } from './project'
 import { renderExplosionFrames } from './renderer'
 
 export type ExplosionCategory = 'body' | 'motion' | 'material' | 'effects' | 'palette'
@@ -32,6 +33,7 @@ export const explosionModule = defineGenerator({
   },
   categories: EXPLOSION_CATEGORIES,
   defaultParameters: DEFAULT_EXPLOSION_PARAMETERS,
+  projectCodec: explosionProjectCodec,
   presetCapability: explosionPresetCapability,
   render: renderExplosionFrames,
   readFrameCount: (parameters) => parameters.frameCount,

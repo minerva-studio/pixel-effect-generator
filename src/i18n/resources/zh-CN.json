@@ -9,6 +9,7 @@
   "desktop": {
     "titleBar": {
       "file": "文件",
+      "export": "导出",
       "newProject": "新建项目",
       "openProject": "打开项目…",
       "openRecent": "最近项目",
@@ -21,6 +22,7 @@
       "maximize": "最大化",
       "restore": "还原",
       "close": "关闭",
+      "closeExport": "关闭导出",
       "untitled": "未命名",
       "unsaved": "有未保存的修改"
     },

@@ -454,20 +454,6 @@ export function ExportPanelView({
           {state.categoryErrors.spriteSheet ? (
             <p className="export-card-error" role="alert">{state.categoryErrors.spriteSheet}</p>
           ) : null}
-          <div className="export-category-actions">
-            <button className="primary-button" type="button" disabled={busy} onClick={state.spriteTarget === 'unity' ? onExportUnity : onExportSpriteSheet}>
-              {activeTask === 'spriteSheet' || activeTask === 'unityPackage' ? (
-                <span className="button-spinner" aria-hidden="true" />
-              ) : null}
-              <span>
-                {activeTask === 'spriteSheet' || activeTask === 'unityPackage'
-                  ? preparing
-                  : state.spriteTarget === 'unity'
-                    ? t('export.spriteSheet.exportUnityZip')
-                    : t('export.spriteSheet.exportPng')}
-              </span>
-            </button>
-          </div>
           <div className="atlas-preview">
             <button
               className="foldout-toggle"
@@ -544,6 +530,20 @@ export function ExportPanelView({
                 </div>
               </div>
             ) : null}
+          </div>
+          <div className="export-category-actions">
+            <button className="primary-button" type="button" disabled={busy} onClick={state.spriteTarget === 'unity' ? onExportUnity : onExportSpriteSheet}>
+              {activeTask === 'spriteSheet' || activeTask === 'unityPackage' ? (
+                <span className="button-spinner" aria-hidden="true" />
+              ) : null}
+              <span>
+                {activeTask === 'spriteSheet' || activeTask === 'unityPackage'
+                  ? preparing
+                  : state.spriteTarget === 'unity'
+                    ? t('export.spriteSheet.exportUnityZip')
+                    : t('export.spriteSheet.exportPng')}
+              </span>
+            </button>
           </div>
         </div>
       ) : null}

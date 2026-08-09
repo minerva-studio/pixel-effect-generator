@@ -14,6 +14,7 @@ import {
 } from '../i18n/messages'
 import { useI18n } from '../i18n/I18nProvider'
 import { useDesktopApp } from './desktop/DesktopProvider'
+import { DesktopExportDialog } from './desktop/DesktopExportDialog'
 import { buildProjectDocument } from '../shared/project/document'
 import type { GeneratorProjectCodec, ProjectExportSettings } from '../shared/project/types'
 import type { PreviewZoom } from '../shared/preview/zoom'
@@ -65,6 +66,8 @@ interface RegisteredWorkspaceProps {
   readonly unitySettings: UnityExportSettingsState
   readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
   readonly fileOperations: FileOperationController
+  readonly desktopExportOpen?: boolean
+  readonly onCloseDesktopExport?: () => void
 }
 
 /**
@@ -87,6 +90,8 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
     unitySettings,
     onUnitySettingsChange,
     fileOperations,
+    desktopExportOpen = false,
+    onCloseDesktopExport,
   }: RegisteredWorkspaceProps) => {
     const { t, locale } = useI18n()
     const isDesktop = useDesktopApp() !== null
@@ -206,16 +211,31 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
             <PreviewTools parameters={typedSession.parameters} onChange={dispatchParameters} onResize={onResize} />
           ) : undefined}
         />
-        <ExportPanel
-          frameSet={typedSession.frames}
-          previewFps={typedSession.previewFps}
-          generatorId={module.definition.id}
-          generatorName={generatorName}
-          unitySettings={unitySettings}
-          onUnitySettingsChange={onUnitySettingsChange}
-          fileOperations={fileOperations}
-          buildProjectDocument={projectBridge?.buildDocument}
-        />
+        {isDesktop ? (
+          <DesktopExportDialog open={desktopExportOpen} onClose={onCloseDesktopExport ?? (() => undefined)}>
+            <ExportPanel
+              frameSet={typedSession.frames}
+              previewFps={typedSession.previewFps}
+              generatorId={module.definition.id}
+              generatorName={generatorName}
+              unitySettings={unitySettings}
+              onUnitySettingsChange={onUnitySettingsChange}
+              fileOperations={fileOperations}
+              buildProjectDocument={projectBridge?.buildDocument}
+            />
+          </DesktopExportDialog>
+        ) : (
+          <ExportPanel
+            frameSet={typedSession.frames}
+            previewFps={typedSession.previewFps}
+            generatorId={module.definition.id}
+            generatorName={generatorName}
+            unitySettings={unitySettings}
+            onUnitySettingsChange={onUnitySettingsChange}
+            fileOperations={fileOperations}
+            buildProjectDocument={projectBridge?.buildDocument}
+          />
+        )}
       </section>
     )
   }

@@ -20,7 +20,17 @@ export function nextMenuIndex(current: number, length: number, direction: 1 | -1
 }
 
 /** Desktop-only window chrome with a draggable region and File menu. */
-export function DesktopTitleBar({ workflow, busy }: { readonly workflow: ProjectWorkflow; readonly busy: boolean }) {
+export function DesktopTitleBar({
+  workflow,
+  busy,
+  exportOpen,
+  onExport,
+}: {
+  readonly workflow: ProjectWorkflow
+  readonly busy: boolean
+  readonly exportOpen: boolean
+  readonly onExport: () => void
+}) {
   const { t, locale, setLocale } = useI18n()
   const api = useDesktopApp()
   const [maximized, setMaximized] = useState(false)
@@ -121,81 +131,86 @@ export function DesktopTitleBar({ workflow, busy }: { readonly workflow: Project
       <div className="titlebar-brand">
         <SlashMark />
         <span className="titlebar-app-name">{t('app.title')}</span>
-        <span className="titlebar-project-name">{workflow.currentFileName ?? t('desktop.titleBar.untitled')}</span>
-        {workflow.dirty ? (
-          <span className="titlebar-dirty" role="status" aria-label={t('desktop.titleBar.unsaved')}>●</span>
-        ) : null}
       </div>
-      <div className="titlebar-file" ref={fileMenuRef}>
-        <button
-          className="titlebar-button"
-          type="button"
-          ref={fileButtonRef}
-          aria-haspopup="menu"
-          aria-expanded={fileOpen}
-          aria-controls={fileMenuId}
-          onClick={() => setFileOpen((open) => !open)}
-        >
-          {t('desktop.titleBar.file')}
-        </button>
-        {fileOpen ? (
-          <div
-            className="titlebar-file-menu"
-            id={fileMenuId}
-            role="menu"
-            aria-label={t('desktop.titleBar.file')}
-            ref={fileMenuPanelRef}
-            onKeyDown={handleMenuKeyDown}
+      <div className="titlebar-menu-side">
+        <div className="titlebar-file" ref={fileMenuRef}>
+          <button
+            className="titlebar-button"
+            type="button"
+            ref={fileButtonRef}
+            aria-haspopup="menu"
+            aria-expanded={fileOpen}
+            aria-controls={fileMenuId}
+            onClick={() => setFileOpen((open) => !open)}
           >
-            <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.newProject() }}>
-              <span>{t('desktop.titleBar.newProject')}</span>
-              <kbd>Ctrl+N</kbd>
-            </button>
-            <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.openProject() }}>
-              <span>{t('desktop.titleBar.openProject')}</span>
-              <kbd>Ctrl+O</kbd>
-            </button>
-            <div className="titlebar-recent" role="group" aria-label={t('desktop.titleBar.openRecent')}>
-              <span className="titlebar-recent-label">{t('desktop.titleBar.openRecent')}</span>
-              {workflow.recents.length === 0 ? (
-                <span className="titlebar-recent-empty">{t('desktop.titleBar.noRecent')}</span>
-              ) : (
-                workflow.recents.map((recent) => (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    key={recent.id}
-                    disabled={busy}
-                    onClick={() => { setFileOpen(false); workflow.openRecent(recent.id) }}
-                  >
-                    <span className="titlebar-recent-name">{recent.name}</span>
+            {t('desktop.titleBar.file')}
+          </button>
+          {fileOpen ? (
+            <div
+              className="titlebar-file-menu"
+              id={fileMenuId}
+              role="menu"
+              aria-label={t('desktop.titleBar.file')}
+              ref={fileMenuPanelRef}
+              onKeyDown={handleMenuKeyDown}
+            >
+              <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.newProject() }}>
+                <span>{t('desktop.titleBar.newProject')}</span>
+                <kbd>Ctrl+N</kbd>
+              </button>
+              <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.openProject() }}>
+                <span>{t('desktop.titleBar.openProject')}</span>
+                <kbd>Ctrl+O</kbd>
+              </button>
+              <div className="titlebar-recent" role="group" aria-label={t('desktop.titleBar.openRecent')}>
+                <span className="titlebar-recent-label">{t('desktop.titleBar.openRecent')}</span>
+                {workflow.recents.length === 0 ? (
+                  <span className="titlebar-recent-empty">{t('desktop.titleBar.noRecent')}</span>
+                ) : (
+                  workflow.recents.map((recent) => (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      key={recent.id}
+                      disabled={busy}
+                      onClick={() => { setFileOpen(false); workflow.openRecent(recent.id) }}
+                    >
+                      <span className="titlebar-recent-name">{recent.name}</span>
+                    </button>
+                  ))
+                )}
+                {workflow.recents.length > 0 ? (
+                  <button type="button" className="titlebar-recent-clear" disabled={busy} onClick={workflow.clearRecent}>
+                    {t('desktop.titleBar.clearRecent')}
                   </button>
-                ))
-              )}
-              {workflow.recents.length > 0 ? (
-                <button type="button" className="titlebar-recent-clear" disabled={busy} onClick={workflow.clearRecent}>
-                  {t('desktop.titleBar.clearRecent')}
-                </button>
-              ) : null}
+                ) : null}
+              </div>
+              <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.saveProject() }}>
+                <span>{t('desktop.titleBar.save')}</span>
+                <kbd>Ctrl+S</kbd>
+              </button>
+              <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.saveProjectAs() }}>
+                <span>{t('desktop.titleBar.saveAs')}</span>
+                <kbd>Ctrl+Shift+S</kbd>
+              </button>
+              <span className="titlebar-menu-separator" />
+              <button type="button" role="menuitem" onClick={() => { setFileOpen(false); workflow.exitProject() }}>
+                <span>{t('desktop.titleBar.exit')}</span>
+                <kbd>Alt+F4</kbd>
+              </button>
             </div>
-            <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.saveProject() }}>
-              <span>{t('desktop.titleBar.save')}</span>
-              <kbd>Ctrl+S</kbd>
-            </button>
-            <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.saveProjectAs() }}>
-              <span>{t('desktop.titleBar.saveAs')}</span>
-              <kbd>Ctrl+Shift+S</kbd>
-            </button>
-            <span className="titlebar-menu-separator" />
-            <button type="button" role="menuitem" onClick={() => { setFileOpen(false); workflow.exitProject() }}>
-              <span>{t('desktop.titleBar.exit')}</span>
-              <kbd>Alt+F4</kbd>
-            </button>
-          </div>
-        ) : null}
-      </div>
-      <div className="titlebar-drag" onDoubleClick={() => void api.window.toggleMaximize()} />
-      <div className="titlebar-tools">
+          ) : null}
+        </div>
+        <button
+          className="titlebar-button titlebar-export-button"
+          id="desktop-export-button"
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={exportOpen}
+          onClick={onExport}
+        >
+          {t('desktop.titleBar.export')}
+        </button>
         <select
           className="titlebar-language"
           aria-label={t('app.languageLabel')}
@@ -211,6 +226,15 @@ export function DesktopTitleBar({ workflow, busy }: { readonly workflow: Project
             <option value={option} key={option}>{LOCALE_DISPLAY_NAMES[option]}</option>
           ))}
         </select>
+      </div>
+      <div className="titlebar-project" aria-label={workflow.currentFileName ?? t('desktop.titleBar.untitled')}>
+        <span className="titlebar-project-name">{workflow.currentFileName ?? t('desktop.titleBar.untitled')}</span>
+        {workflow.dirty ? (
+          <span className="titlebar-dirty" role="status" aria-label={t('desktop.titleBar.unsaved')}>●</span>
+        ) : null}
+      </div>
+      <div className="titlebar-drag" onDoubleClick={() => void api.window.toggleMaximize()} />
+      <div className="titlebar-tools">
         <button
           className="titlebar-button"
           type="button"

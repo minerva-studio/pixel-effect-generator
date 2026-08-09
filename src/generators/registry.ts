@@ -43,6 +43,8 @@ export function registerGenerator<Id extends string, Parameters, Category extend
     readonly unitySettings: UnityExportSettingsState
     readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
     readonly fileOperations: FileOperationController
+    readonly desktopExportOpen?: boolean
+    readonly onCloseDesktopExport?: () => void
   }>,
 ): RegisteredGenerator<Id> {
   type Session = GeneratorSession<Parameters, Category>

@@ -167,6 +167,8 @@ export interface RegisteredGenerator<Id extends string> {
     readonly unitySettings: UnityExportSettingsState
     readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
     readonly fileOperations: FileOperationController
+    readonly desktopExportOpen?: boolean
+    readonly onCloseDesktopExport?: () => void
   }>
 }
 

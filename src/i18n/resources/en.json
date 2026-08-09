@@ -9,6 +9,7 @@
   "desktop": {
     "titleBar": {
       "file": "File",
+      "export": "Export",
       "newProject": "New Project",
       "openProject": "Open Project…",
       "openRecent": "Open Recent",
@@ -21,6 +22,7 @@
       "maximize": "Maximize",
       "restore": "Restore",
       "close": "Close",
+      "closeExport": "Close export",
       "untitled": "Untitled",
       "unsaved": "Unsaved changes"
     },
