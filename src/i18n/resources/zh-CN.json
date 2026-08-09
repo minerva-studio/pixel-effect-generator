@@ -1,0 +1,1268 @@
+{
+  "app": {
+    "eyebrow": "像素特效工具集",
+    "title": "像素特效生成器",
+    "subtitle": "专注生成确定性、逐像素精确的游戏特效。",
+    "status": "{width} × {height} RGBA",
+    "languageLabel": "界面语言"
+  },
+  "desktop": {
+    "titleBar": {
+      "file": "文件",
+      "newProject": "新建项目",
+      "openProject": "打开项目…",
+      "openRecent": "最近项目",
+      "noRecent": "暂无最近项目",
+      "clearRecent": "清空最近项目",
+      "save": "保存",
+      "saveAs": "另存为…",
+      "exit": "退出",
+      "minimize": "最小化",
+      "maximize": "最大化",
+      "restore": "还原",
+      "close": "关闭",
+      "untitled": "未命名",
+      "unsaved": "有未保存的修改"
+    },
+    "confirm": {
+      "title": "未保存的修改",
+      "message": "要保存当前项目的修改吗？",
+      "save": "保存",
+      "discard": "不保存",
+      "cancel": "取消"
+    },
+    "toasts": {
+      "savedProject": "项目已保存",
+      "newProject": "已创建新项目",
+      "saveFailed": "保存失败，请重试。",
+      "openFailed": "无法打开该项目。",
+      "recentFailed": "无法打开该最近项目。"
+    }
+  },
+  "toast": {
+    "label": "通知",
+    "dismiss": "关闭通知"
+  },
+  "workspace": {
+    "navLabel": "特效生成器",
+    "generatorsLabel": "生成器",
+    "generatorSectionLabel": "生成器 {index} · {name}",
+    "parametersTitle": "{name} 参数",
+    "reset": "重置",
+    "categoryTabsLabel": "{name} 参数分类",
+    "categoryControls": "{label} 控件",
+    "exportDimensions": "{width} × {height} px · 透明 PNG",
+    "exportButton": "导出 PNG"
+  },
+  "preview": {
+    "livePreview": "实时预览",
+    "canvasLabel": "像素特效动画预览",
+    "play": "播放动画",
+    "pause": "暂停动画",
+    "currentFrame": "当前帧",
+    "timingSettings": "预览播放设置",
+    "totalFrames": "总帧数",
+    "playbackFps": "播放帧率",
+    "fpsPreview": "{fps} FPS 预览",
+    "generatorTools": "生成器预览工具",
+    "zoom": "缩放",
+    "zoomFit": "适应",
+    "zoomOption": "{zoom}×"
+  },
+  "previewTools": {
+    "canvas": {
+      "size": "画布尺寸",
+      "resizeProportionally": "等比缩放",
+      "scaleEffect": "缩放效果",
+      "preset": "预设",
+      "presetLabel": "画布预设",
+      "customWidth": "自定义画布宽度",
+      "customHeight": "自定义画布高度",
+      "apply": "应用",
+      "sizeError": "画布边长需为 16 到 512 的整数。",
+      "presetSquare": "方形 {width}×{height}",
+      "presetHorizontal": "横向 {width}×{height}",
+      "presetCustom": "自定义"
+    }
+  },
+  "presets": {
+    "selectLabel": "效果预设",
+    "actionsMenu": "预设",
+    "pickerOpen": "选择预设…",
+    "pickerTitle": "预设",
+    "pickerCancel": "取消",
+    "pickerClose": "关闭预设选择器",
+    "builtInGroup": "内置",
+    "customGroup": "自定义",
+    "modified": "已修改",
+    "saveAs": "另存为…",
+    "update": "更新",
+    "manage": "管理",
+    "manageDialogLabel": "管理预设",
+    "saveNameLabel": "预设名称",
+    "saveConfirm": "保存",
+    "cancel": "取消",
+    "confirm": "确定",
+    "rename": "重命名",
+    "delete": "删除",
+    "confirmDelete": "确认删除？",
+    "noCustom": "暂无自定义预设。",
+    "warning": "本地预设数据无法读取，已忽略。",
+    "storageHint": "自定义预设需要浏览器存储；内置预设仍可用。",
+    "errors": {
+      "nameLength": "预设名称需为 1–40 个字符。",
+      "limit": "每个生成器最多 32 个自定义预设。",
+      "storageUnavailable": "浏览器存储不可用。",
+      "invalidPreset": "该预设无法应用。"
+    }
+  },
+  "controls": {
+    "about": "关于 {label}",
+    "value": "{label} 数值"
+  },
+  "slash": {
+    "name": "斩击",
+    "description": "动态武器拖尾与横扫攻击弧线。",
+    "previewTitle": "扫掠效果",
+    "presets": {
+      "cleanArc": {
+        "name": "干净弧光",
+        "description": "清晰、低破碎的基础刀光。"
+      },
+      "pointedStrike": {
+        "name": "尖锋斩",
+        "description": "沿中线平滑收束的长刀光尖锋。"
+      },
+      "heavyCleave": {
+        "name": "重斩",
+        "description": "较厚、拖尾较长的重击弧线。"
+      },
+      "energySweep": {
+        "name": "能量横扫",
+        "description": "鲜亮色板与快速能量火花。"
+      },
+      "shatteredEdge": {
+        "name": "碎裂边缘",
+        "description": "明显破口与定向碎片。"
+      },
+      "fullCircle": {
+        "name": "整圆",
+        "description": "完整的 360° 环形扫击。"
+      }
+    },
+    "categories": {
+      "shape": {
+        "label": "形状",
+        "description": "定义弧线的轮廓、朝向与透视。"
+      },
+      "palette": {
+        "label": "调色板",
+        "description": "从内缘向外构建径向色带。"
+      },
+      "motion": {
+        "label": "运动",
+        "description": "控制时序、拖尾长度与扫击方向。"
+      },
+      "fragments": {
+        "label": "碎片",
+        "description": "控制从拖尾边缘释放碎片的形态与动画。"
+      },
+      "breakup": {
+        "label": "破碎",
+        "description": "控制溶解与外缘破碎效果。"
+      }
+    },
+    "controls": {
+      "radius": {
+        "label": "半径",
+        "description": "从原点到扫击外缘的距离。"
+      },
+      "thickness": {
+        "label": "厚度",
+        "description": "内缘与外缘之间彩色弧线的宽度。"
+      },
+      "tipLength": {
+        "label": "尖锋长度",
+        "description": "前缘后方沿中线收尖的长度；100% 约为斩击厚度的四倍。"
+      },
+      "startAngle": {
+        "label": "起始角度",
+        "description": "屏幕空间中的起始方向：0° 指向右，90° 指向下。"
+      },
+      "sweepAngle": {
+        "label": "扫掠角度",
+        "description": "从起始角度扫过的角度；超过 360° 会进行第二轮扫掠。"
+      },
+      "rotation": {
+        "label": "旋转",
+        "description": "旋转完整的局部扫掠路径，调整屏幕空间中的整体挥动方向。"
+      },
+      "tilt": {
+        "label": "透视倾斜",
+        "description": "压缩扫掠平面；90° 产生最薄的稳定像素投影。"
+      },
+      "sweepSpeed": {
+        "label": "扫掠速度",
+        "description": "数值越高，前缘越早走完全程。"
+      },
+      "trailLength": {
+        "label": "拖尾长度",
+        "description": "延缓拖尾边缘，让更多弧线保持可见。"
+      },
+      "dissolveMode": {
+        "label": "溶解模式",
+        "description": "拖尾边缘如何侵蚀像素：有序抖动、簇状噪点块或条纹状撕裂。"
+      },
+      "edgeMode": {
+        "label": "边缘模式",
+        "description": "外缘如何破碎：2×2 方块、锯齿轮廓或楔形切口。"
+      },
+      "dissolve": {
+        "label": "溶解",
+        "description": "紧邻拖尾边缘前方的溶解过渡长度。"
+      },
+      "edgeBreakup": {
+        "label": "边缘破碎",
+        "description": "当前边缘模式的外缘移除强度。"
+      },
+      "breakupDepth": {
+        "label": "破碎深度",
+        "description": "在保留核心弧线的前提下，边缘破碎的最大深度。"
+      },
+      "fragmentMode": {
+        "label": "碎片模式",
+        "description": "碎片如何绘制：方块碎片、切向碎片或快速消散的火花。"
+      },
+      "amount": {
+        "label": "数量",
+        "description": "拖尾边缘经过时释放的彩色碎片数量。"
+      },
+      "minSize": {
+        "label": "最小尺寸",
+        "description": "所选碎片模式中最小的方块边长、碎片线段长度或火花拖尾长度。"
+      },
+      "maxSize": {
+        "label": "最大尺寸",
+        "description": "所选碎片模式中最大的方块边长、碎片线段长度或火花拖尾长度。"
+      },
+      "tangentSpeed": {
+        "label": "切向速度",
+        "description": "每个动画周期沿扫掠方向的位移。"
+      },
+      "outwardSpeed": {
+        "label": "外扩速度",
+        "description": "每个动画周期远离扫掠中心的位移。"
+      },
+      "lifetime": {
+        "label": "存活时间",
+        "description": "碎片脱离后在动画中存活的时间比例。"
+      },
+      "direction": {
+        "label": "扫掠方向",
+        "description": "沿同一弧线改变时间行进方向，而不翻转渲染图像。"
+      },
+      "paletteOrder": {
+        "label": "调色板顺序",
+        "description": "色带直接在像素网格上采样，不引入混合颜色。"
+      },
+      "randomSeed": {
+        "label": "随机种子",
+        "description": "重新输入相同的无符号 32 位数值，可精确复现破碎效果。"
+      }
+    },
+    "options": {
+      "ordered": "有序",
+      "clusteredNoise": "簇状噪点",
+      "directionalStreaks": "定向条纹",
+      "blockChips": "方块碎片",
+      "jaggedContour": "锯齿轮廓",
+      "slashCuts": "斩切划痕",
+      "pixelChunks": "像素方块",
+      "directionalShards": "定向碎片",
+      "energySparks": "能量火花",
+      "clockwise": "顺时针",
+      "counterClockwise": "逆时针"
+    },
+    "palette": {
+      "innerEdge": "内缘",
+      "outerEdge": "外缘",
+      "band": "色带 {index}",
+      "removeBand": "删除色带 {index}",
+      "remove": "删除",
+      "alpha": "透明度",
+      "addColorBand": "添加色带"
+    },
+    "seed": {
+      "randomize": "随机化"
+    }
+  },
+  "explosion": {
+    "name": "燃烧爆炸",
+    "description": "物理火焰、压力释放、翻滚火团与复古爆炸。",
+    "previewTitle": "火焰爆发研究",
+    "categories": {
+      "body": {
+        "label": "主体",
+        "description": "选择燃烧剪影并调节主体几何。"
+      },
+      "motion": {
+        "label": "动态",
+        "description": "控制方向、成形、保持与运动曲线。"
+      },
+      "material": {
+        "label": "材质",
+        "description": "选择内部结构；旧版平面预设继续保留表面与消散参数。"
+      },
+      "effects": {
+        "label": "附加效果",
+        "description": "开关并调节闪核、冲击波、火舌与碎片。"
+      },
+      "palette": {
+        "label": "颜色",
+        "description": "从白热点到暗色外缘排列离散颜色。"
+      }
+    },
+    "controls": {
+      "shape": {
+        "label": "主体形状",
+        "description": "选择燃烧剪影；卡片循环播放固定种子预览。"
+      },
+      "radius": {
+        "label": "半径",
+        "description": "居中火球的最大半径。"
+      },
+      "volume": {
+        "label": "体积层级",
+        "description": "以后景热核、前景火团和遮挡缝构成立体主体。"
+      },
+      "volumeProfile": {
+        "label": "内部结构",
+        "description": "选择主体内部的热核、外壳与前景火团如何分层。"
+      },
+      "fixedVolumeProfile": "内部结构：烟火混合（由烟尘爆开固定）。",
+      "flatCompatibility": "此预设正在使用旧版平面渲染；下方参数仍会保持原样生效。",
+      "convertToVolume": "转换为体积表现",
+      "churnAmount": {
+        "label": "火团膨胀",
+        "description": "控制各火团错时成形后继续翻滚并向外膨胀的幅度。"
+      },
+      "lobeCount": {
+        "label": "火团数量",
+        "description": "构成翻滚火团的重叠火团数量。"
+      },
+      "pressureCount": {
+        "label": "壳片数量",
+        "description": "围绕闪核向外释放的硬边压力楔形数量。"
+      },
+      "pressureWidth": {
+        "label": "壳片厚度",
+        "description": "每块外推冲击壳片的径向像素厚度。"
+      },
+      "pressureSharpness": {
+        "label": "壳片锐度",
+        "description": "壳片向前缘收窄的程度。"
+      },
+      "blastWidth": {
+        "label": "爆破宽度",
+        "description": "中心连通压力体积的宽度。"
+      },
+      "blastAngle": {
+        "label": "爆破角度",
+        "description": "短而宽的爆破主方向。"
+      },
+      "smokeSpread": {
+        "label": "烟尘扩散",
+        "description": "低矮烟团的横向扩散程度。"
+      },
+      "smokeRise": {
+        "label": "烟尘上升",
+        "description": "分别控制各烟团向上漂移的距离。"
+      },
+      "smokeCount": {
+        "label": "烟团数量",
+        "description": "紧密堆积成同一片翻卷烟云的主烟团数量。"
+      },
+      "smokeMotion": {
+        "label": "烟雾动态",
+        "description": "选择持续翻卷的烟云，或拆成独立像素烟块的颗粒消散。"
+      },
+      "shapeIrregularity": {
+        "label": "轮廓不规则度",
+        "description": "改变火团角度、尺寸与时序；设为零时轮廓规则。"
+      },
+      "rotation": {
+        "label": "整体旋转",
+        "description": "同时旋转主体、火舌与定向冲击波。"
+      },
+      "surfaceStyle": {
+        "label": "表面材质",
+        "description": "选择火体如何分层、形成烟炱或被像素侵蚀。"
+      },
+      "dissolveStyle": {
+        "label": "消散方式",
+        "description": "消散开始后复古像素的消失方式。"
+      },
+      "dissolveSize": {
+        "label": "圆点大小",
+        "description": "圆形消散圆点的半径（像素）。"
+      },
+      "dissolveJitter": {
+        "label": "错位强度",
+        "description": "圆点中心偏离网格的幅度。"
+      },
+      "dissolveDensity": {
+        "label": "密度",
+        "description": "圆形消散圆点之间的间距；越大越稀疏。"
+      },
+      "dissolveSpeed": {
+        "label": "消散速度",
+        "description": "消散开始后完成的快慢。"
+      },
+      "coverage": {
+        "label": "主体完整度",
+        "description": "保留更多主体几何，不改变当前表面的噪点粒度。"
+      },
+      "bandWarp": {
+        "label": "色带弯曲",
+        "description": "使用连续低频变化弯曲燃烧层边界。"
+      },
+      "edgeBreakup": {
+        "label": "边缘破碎度",
+        "description": "控制燃烧层从外向内侵蚀时的不均匀程度。"
+      },
+      "sootAmount": {
+        "label": "烟炱数量",
+        "description": "控制数量受限的暗色翻滚烟云。"
+      },
+      "sootScale": {
+        "label": "烟炱尺度",
+        "description": "连续烟云的空间尺度。"
+      },
+      "mode": {
+        "label": "方向",
+        "description": "向外爆炸或向内聚合，时序对称。"
+      },
+      "motionCurve": {
+        "label": "运动曲线",
+        "description": "塑造成形与压力释放的加速方式。"
+      },
+      "formationDuration": {
+        "label": "成形时间",
+        "description": "主体到达完整尺寸所占的动画时间比例。"
+      },
+      "holdDuration": {
+        "label": "保持时间",
+        "description": "主体保持完整尺寸后开始消散的时间比例。"
+      },
+      "dissolveStart": {
+        "label": "消散时间",
+        "description": "主体开始按自身规则破碎的时间点。"
+      },
+      "core": {
+        "label": "闪核",
+        "description": "冲击端短暂出现的高温中心闪光。"
+      },
+      "coreRadius": {
+        "label": "闪核半径",
+        "description": "启用后闪核的最大半径。"
+      },
+      "coreDuration": {
+        "label": "闪核时长",
+        "description": "闪核占据整个动画的时间比例。"
+      },
+      "shockwave": {
+        "label": "冲击波",
+        "description": "不干扰主体轮廓的中心极坐标波前。"
+      },
+      "shockwaveMode": {
+        "label": "冲击波类型",
+        "description": "关闭冲击波，或选择完整圆环与多道圆环；圆环可压扁。"
+      },
+      "shockwaveColorMode": {
+        "label": "配色模式",
+        "description": "单色填充，或在每个波环带宽内使用径向渐变。"
+      },
+      "shockwaveThickness": {
+        "label": "厚度",
+        "description": "每个冲击波圆环的径向带宽度。"
+      },
+      "shockwaveStartRadius": {
+        "label": "起始半径",
+        "description": "以主体半径百分比表示的波前起点。"
+      },
+      "shockwaveEndRadius": {
+        "label": "终止半径",
+        "description": "以主体半径百分比表示的波前终点。"
+      },
+      "shockwaveStartTime": {
+        "label": "开始时间",
+        "description": "冲击波开始移动的动画时间点。"
+      },
+      "shockwaveDuration": {
+        "label": "持续时间",
+        "description": "冲击波走完起止半径所占的动画时间比例。"
+      },
+      "shockwaveRingCount": {
+        "label": "环数",
+        "description": "沿同一路径依次追逐展开的完整圆环数量。"
+      },
+      "shockwaveRingSpacing": {
+        "label": "环间距",
+        "description": "相邻圆环之间的时间错位；数值越大越分散。"
+      },
+      "shockwaveSquash": {
+        "label": "压扁程度",
+        "description": "沿压扁轴的椭圆压扁程度，用于营造冲击感。"
+      },
+      "shockwaveSquashAngle": {
+        "label": "压扁角度",
+        "description": "压扁轴的角度，单位为度。"
+      },
+      "tongues": {
+        "label": "火焰喷流",
+        "description": "从均衡选择的主体尖端发射的填充式收细火焰。"
+      },
+      "tongueCount": {
+        "label": "喷流数量",
+        "description": "围绕主体均衡分布的准确喷流数量。"
+      },
+      "tongueLength": {
+        "label": "喷流长度",
+        "description": "从所选尖端向外延伸的最大长度。"
+      },
+      "tongueWidth": {
+        "label": "根部宽度",
+        "description": "喷流与主体尖端重叠位置的宽度。"
+      },
+      "tongueCurvature": {
+        "label": "弯曲度",
+        "description": "不改变分布的受限横向弯曲程度。"
+      },
+      "tongueVariation": {
+        "label": "长度变化",
+        "description": "所选喷流之间受限且可复现的长度差异。"
+      },
+      "fragments": {
+        "label": "焦炭碎片",
+        "description": "向外飞散或向内汇入的可复现方块碎片。"
+      },
+      "fragmentCount": {
+        "label": "碎片数量",
+        "description": "实际生成的准确碎片数量。"
+      },
+      "fragmentMinSize": {
+        "label": "最小尺寸",
+        "description": "最小方块碎片的边长。"
+      },
+      "fragmentMaxSize": {
+        "label": "最大尺寸",
+        "description": "最大方块碎片的边长。"
+      },
+      "fragmentTravelDistance": {
+        "label": "飞行距离",
+        "description": "碎片向外飞散或向内汇入的距离。"
+      },
+      "fragmentTangentialDrift": {
+        "label": "切向漂移",
+        "description": "碎片偏离径向路径的横向距离。"
+      },
+      "fragmentLifetime": {
+        "label": "存活时间",
+        "description": "碎片参与动画的时间比例。"
+      },
+      "seed": {
+        "label": "随机种子",
+        "description": "用于精确复现同一效果的无符号 32 位数值。"
+      }
+    },
+    "options": {
+      "explosion": "爆炸",
+      "implosion": "内聚",
+      "crisp": "利落",
+      "balanced": "均衡",
+      "drifting": "飘移",
+      "rollingFireball": "翻滚火团",
+      "shockBlast": "冲击爆破",
+      "smokeBurst": "烟尘爆开",
+      "legacyRadial": "复古径向",
+      "burningLayers": "燃烧分层",
+      "rollingSoot": "翻滚烟炱",
+      "retroPixel": "复古像素",
+      "dissolvePixelNoise": "像素噪声",
+      "dissolveScanSweep": "扫描消散",
+      "dissolveBlockFade": "分块消散",
+      "dissolveCircleFade": "圆形块消散",
+      "dissolveEdgeRoll": "边缘内卷",
+      "shockwaveNone": "关闭",
+      "shockwaveMultiRing": "复合多环",
+      "shockwaveColorFlat": "单色",
+      "shockwaveColorGradient": "径向渐变",
+      "shockwaveRing": "完整圆环",
+      "hardShell": "硬边火团",
+      "moltenCore": "熔融热核",
+      "smokeFire": "烟火混合",
+      "billowing": "翻卷扩散",
+      "particulate": "颗粒消散"
+    },
+    "shapeDescriptions": {
+      "rollingFireball": "多个火团作为一个连通爆炸体持续向外翻滚膨胀。",
+      "shockBlast": "亮核推动带角向缺口的短宽外壳裂片向外释放。",
+      "smokeBurst": "低矮宽阔的烟团包围热余烬。",
+      "legacyRadial": "原有密集径向像素爆炸。"
+    },
+    "effects": {
+      "enabled": "开启",
+      "disabled": "关闭"
+    },
+    "palette": {
+      "hotCore": "白热点",
+      "outerEdge": "暗色外缘",
+      "band": "爆炸色带 {index}",
+      "removeBand": "删除爆炸色带 {index}",
+      "remove": "删除",
+      "alpha": "透明度",
+      "addColorBand": "添加色带"
+    },
+    "presets": {
+      "rollingFireball": {
+        "name": "翻滚火团",
+        "description": "多个火团错时膨胀、翻滚并逐步冷却。"
+      },
+      "pressureBurst": {
+        "name": "冲击爆破",
+        "description": "宽根部外壳裂片从亮核向外释放。"
+      },
+      "smokeBurst": {
+        "name": "烟尘爆开",
+        "description": "低矮宽阔的烟团与克制的余烬碎片。"
+      },
+      "particleSmokeBurst": {
+        "name": "颗粒烟尘爆开",
+        "description": "烟云拆成独立漂移的像素烟块。"
+      },
+      "retroBurst": {
+        "name": "复古爆发",
+        "description": "原有径向圆环与密集逐像素噪点。"
+      },
+      "moltenCoreFireball": {
+        "name": "熔融热核火球",
+        "description": "暗色外壳包住持续透出的熔融热核。"
+      }
+    },
+    "seed": {
+      "randomize": "随机化"
+    }
+  },
+  "energyBloom": {
+    "name": "能量绽放",
+    "description": "花瓣、星芒与花冠能量效果，配绚丽内聚。",
+    "previewTitle": "能量绽放研究",
+    "categories": {
+      "body": {
+        "label": "主体",
+        "description": "选择绽放形状，调节尺寸、轮廓与表面材质。"
+      },
+      "motion": {
+        "label": "动态",
+        "description": "控制方向、成形、保持与运动曲线。"
+      },
+      "material": {
+        "label": "材质",
+        "description": "选择表面材质并调节其消散方式。"
+      },
+      "effects": {
+        "label": "附加效果",
+        "description": "开关并调节闪核、冲击波、能量焰舌与晶片。"
+      },
+      "palette": {
+        "label": "颜色",
+        "description": "从明亮中心到深邃外缘排列离散颜色。"
+      }
+    },
+    "controls": {
+      "shape": {
+        "label": "绽放形状",
+        "description": "选择花瓣、星芒或花冠剪影；卡片循环播放固定种子预览。"
+      },
+      "radius": {
+        "label": "半径",
+        "description": "居中绽放的最大半径。"
+      },
+      "petalCount": {
+        "label": "花瓣数量",
+        "description": "围绕共同中心分布的圆润花瓣数量。"
+      },
+      "petalStretch": {
+        "label": "花瓣伸长度",
+        "description": "控制每片花瓣远离共同核心的拉伸程度。"
+      },
+      "rayCount": {
+        "label": "星芒数量",
+        "description": "从中心向外辐射的锥形光瓣数量。"
+      },
+      "rayTaper": {
+        "label": "星芒锐度",
+        "description": "数值越高光瓣越尖锐，越低越柔和。"
+      },
+      "corollaLayers": {
+        "label": "花冠层数",
+        "description": "围绕中心的两到三层错位花瓣环。"
+      },
+      "layerDelay": {
+        "label": "分层延迟",
+        "description": "让各层花冠错时展开；外层后开或先收。"
+      },
+      "shapeIrregularity": {
+        "label": "轮廓不规则度",
+        "description": "改变花瓣角度、尺寸与时序；设为零时轮廓规则。"
+      },
+      "rotation": {
+        "label": "整体旋转",
+        "description": "同时旋转主体、能量焰舌与定向冲击波。"
+      },
+      "surfaceStyle": {
+        "label": "表面材质",
+        "description": "选择绽放主体如何分层、空腔、开裂或侵蚀。"
+      },
+      "dissolveStyle": {
+        "label": "消散方式",
+        "description": "消散开始后像素噪点材质的消失方式。"
+      },
+      "dissolveSize": {
+        "label": "圆点大小",
+        "description": "圆形消散圆点的半径（像素）。"
+      },
+      "dissolveJitter": {
+        "label": "错位强度",
+        "description": "圆点中心偏离网格的幅度。"
+      },
+      "dissolveDensity": {
+        "label": "密度",
+        "description": "圆形消散圆点之间的间距；越大越稀疏。"
+      },
+      "dissolveSpeed": {
+        "label": "消散速度",
+        "description": "消散开始后完成的快慢。"
+      },
+      "coverage": {
+        "label": "主体完整度",
+        "description": "保留更多主体几何，不改变当前表面的噪点粒度。"
+      },
+      "bandWarp": {
+        "label": "色带弯曲",
+        "description": "使用连续低频变化弯曲赛璐璐色带边界。"
+      },
+      "edgeBreakup": {
+        "label": "边缘破碎度",
+        "description": "控制赛璐璐轮廓从外向内侵蚀时的不均匀程度。"
+      },
+      "cavityAmount": {
+        "label": "空腔数量",
+        "description": "控制数量受限的熔融空腔。"
+      },
+      "cavityScale": {
+        "label": "空腔尺度",
+        "description": "连续熔融空腔的空间尺度。"
+      },
+      "chunkSize": {
+        "label": "裂片尺寸",
+        "description": "晶体裂片表面的稳定分区尺寸。"
+      },
+      "crackWidth": {
+        "label": "裂缝宽度",
+        "description": "晶体板块之间一到两个像素的间隔。"
+      },
+      "mode": {
+        "label": "方向",
+        "description": "向外绽放或向内收敛，时序对称。"
+      },
+      "motionCurve": {
+        "label": "运动曲线",
+        "description": "塑造成形与收敛的加速方式。"
+      },
+      "formationDuration": {
+        "label": "成形时间",
+        "description": "主体到达完整尺寸所占的动画时间比例。"
+      },
+      "holdDuration": {
+        "label": "保持时间",
+        "description": "主体保持完整尺寸后开始消散的时间比例。"
+      },
+      "dissolveStart": {
+        "label": "消散时间",
+        "description": "主体开始按自身规则破碎的时间点。"
+      },
+      "core": {
+        "label": "闪核",
+        "description": "冲击端短暂出现的明亮中心闪光。"
+      },
+      "coreRadius": {
+        "label": "闪核半径",
+        "description": "启用后闪核的最大半径。"
+      },
+      "coreDuration": {
+        "label": "闪核时长",
+        "description": "闪核占据整个动画的时间比例。"
+      },
+      "shockwave": {
+        "label": "冲击波",
+        "description": "不干扰主体轮廓的中心极坐标波前。"
+      },
+      "shockwaveMode": {
+        "label": "冲击波类型",
+        "description": "关闭冲击波，或选择完整圆环与多道圆环；圆环可压扁。"
+      },
+      "shockwaveColorMode": {
+        "label": "配色模式",
+        "description": "单色填充，或在每个波环带宽内使用径向渐变。"
+      },
+      "shockwaveThickness": {
+        "label": "厚度",
+        "description": "每个冲击波圆环的径向带宽度。"
+      },
+      "shockwaveStartRadius": {
+        "label": "起始半径",
+        "description": "以主体半径百分比表示的波前起点。"
+      },
+      "shockwaveEndRadius": {
+        "label": "终止半径",
+        "description": "以主体半径百分比表示的波前终点。"
+      },
+      "shockwaveStartTime": {
+        "label": "开始时间",
+        "description": "冲击波开始移动的动画时间点。"
+      },
+      "shockwaveDuration": {
+        "label": "持续时间",
+        "description": "冲击波走完起止半径所占的动画时间比例。"
+      },
+      "shockwaveRingCount": {
+        "label": "环数",
+        "description": "沿同一路径依次追逐展开的完整圆环数量。"
+      },
+      "shockwaveRingSpacing": {
+        "label": "环间距",
+        "description": "相邻圆环之间的时间错位；数值越大越分散。"
+      },
+      "shockwaveSquash": {
+        "label": "压扁程度",
+        "description": "沿压扁轴的椭圆压扁程度，用于营造冲击感。"
+      },
+      "shockwaveSquashAngle": {
+        "label": "压扁角度",
+        "description": "压扁轴的角度，单位为度。"
+      },
+      "tongues": {
+        "label": "能量焰舌",
+        "description": "从花瓣或星芒尖端发射的填充式收细能量带。"
+      },
+      "tongueCount": {
+        "label": "焰舌数量",
+        "description": "围绕主体均衡分布的准确焰舌数量。"
+      },
+      "tongueLength": {
+        "label": "焰舌长度",
+        "description": "从所选尖端向外延伸的最大长度。"
+      },
+      "tongueWidth": {
+        "label": "根部宽度",
+        "description": "焰舌与所属尖端重叠位置的宽度。"
+      },
+      "tongueCurvature": {
+        "label": "弯曲度",
+        "description": "不改变分布的受限横向弯曲程度。"
+      },
+      "tongueVariation": {
+        "label": "长度变化",
+        "description": "所选焰舌之间受限且可复现的长度差异。"
+      },
+      "fragments": {
+        "label": "能量晶片",
+        "description": "向外飞散或向内汇入的可复现菱形晶片。"
+      },
+      "fragmentCount": {
+        "label": "晶片数量",
+        "description": "实际生成的准确晶片数量。"
+      },
+      "fragmentMinSize": {
+        "label": "最小尺寸",
+        "description": "最小菱形晶片的尺寸。"
+      },
+      "fragmentMaxSize": {
+        "label": "最大尺寸",
+        "description": "最大菱形晶片的尺寸。"
+      },
+      "fragmentTravelDistance": {
+        "label": "飞行距离",
+        "description": "晶片向外飞散或向内汇入的距离。"
+      },
+      "fragmentTangentialDrift": {
+        "label": "切向漂移",
+        "description": "晶片偏离径向路径的横向距离。"
+      },
+      "fragmentLifetime": {
+        "label": "存活时间",
+        "description": "晶片参与动画的时间比例。"
+      },
+      "seed": {
+        "label": "随机种子",
+        "description": "用于精确复现同一效果的无符号 32 位数值。"
+      }
+    },
+    "options": {
+      "explosion": "绽放",
+      "implosion": "收敛",
+      "crisp": "利落",
+      "balanced": "均衡",
+      "drifting": "飘移",
+      "softPetals": "圆润花瓣",
+      "sharpStarburst": "锐利星芒",
+      "layeredCorolla": "分层花冠",
+      "arcaneBurst": "魔法爆裂",
+      "celBands": "赛璐璐色带",
+      "moltenCavities": "熔融空腔",
+      "crystalShards": "晶体裂片",
+      "gridNoise": "方格噪点",
+      "pixelNoise": "像素噪点",
+      "dissolvePixelNoise": "像素噪声",
+      "dissolveScanSweep": "扫描消散",
+      "dissolveBlockFade": "分块消散",
+      "dissolveCircleFade": "圆形块消散",
+      "dissolveEdgeRoll": "边缘内卷",
+      "shockwaveNone": "关闭",
+      "shockwaveMultiRing": "复合多环",
+      "shockwaveColorFlat": "单色",
+      "shockwaveColorGradient": "径向渐变",
+      "shockwaveRing": "完整圆环"
+    },
+    "shapeDescriptions": {
+      "softPetals": "向外展开的圆润卡通花瓣。",
+      "sharpStarburst": "受控的锥形锐利星芒。",
+      "layeredCorolla": "按层错时展开的花瓣环。",
+      "arcaneBurst": "没有花瓣轮廓的明亮受控能量外壳。"
+    },
+    "effects": {
+      "enabled": "开启",
+      "disabled": "关闭"
+    },
+    "palette": {
+      "hotCore": "明亮中心",
+      "outerEdge": "深邃外缘",
+      "band": "绽放色带 {index}",
+      "removeBand": "删除绽放色带 {index}",
+      "remove": "删除",
+      "alpha": "透明度",
+      "addColorBand": "添加色带"
+    },
+    "presets": {
+      "softPetals": {
+        "name": "圆润花瓣",
+        "description": "赛璐璐色带的圆润卡通花瓣；默认关闭火舌。"
+      },
+      "sharpStarburst": {
+        "name": "锐利星芒",
+        "description": "受控锥形星芒配晶体表面。"
+      },
+      "layeredCorolla": {
+        "name": "分层花冠",
+        "description": "两圈错位花瓣按序展开。"
+      },
+      "arcaneBurst": {
+        "name": "魔法爆裂",
+        "description": "没有花瓣轮廓的明亮受控能量外壳。"
+      },
+      "softPetalsImplosion": {
+        "name": "圆润花瓣·内聚",
+        "description": "圆润花瓣向收拢的闪光中心坍缩。"
+      },
+      "starburstImplosion": {
+        "name": "星芒·内聚",
+        "description": "锐利星芒从外缘向中心收束。"
+      },
+      "corollaImplosion": {
+        "name": "花冠·内聚",
+        "description": "错位花冠由外层向内收拢。"
+      }
+    },
+    "seed": {
+      "randomize": "随机化"
+    }
+  },
+  "projectile": {
+    "name": "弹射物",
+    "description": "火球与魔法箭的无缝飞行循环。",
+    "previewTitle": "飞行循环预览",
+    "categories": {
+      "body": {
+        "label": "主体",
+        "description": "选择弹体类型、尺寸与烘焙朝向。"
+      },
+      "motion": {
+        "label": "运动",
+        "description": "控制循环圈数、脉动与轻微摆动。"
+      },
+      "trail": {
+        "label": "尾迹",
+        "description": "选择弹体后方拖曳的火焰或能量带。"
+      },
+      "effects": {
+        "label": "特效",
+        "description": "开关火花与残像并调节其行为。"
+      },
+      "palette": {
+        "label": "颜色",
+        "description": "为实体箭身与所有能量表面配色。"
+      }
+    },
+    "controls": {
+      "kind": {
+        "label": "弹体类型",
+        "description": "火球或魔法箭，共用同一画布中心锚点。"
+      },
+      "arrowMaterial": {
+        "label": "箭矢材质",
+        "description": "实体金属箭身，或带清晰边缘辉光的纯能量轮廓。"
+      },
+      "radius": {
+        "label": "尺寸",
+        "description": "弹体半径（像素），飞行循环保持居中。"
+      },
+      "bodyLength": {
+        "label": "主体长度",
+        "description": "方向性弹体的长度；箭矢使用完整长度，火球以此控制横向拉伸。"
+      },
+      "silhouetteVariation": {
+        "label": "轮廓变化",
+        "description": "火球或箭矢轮廓的可复现凹凸程度。"
+      },
+      "rotation": {
+        "label": "烘焙旋转",
+        "description": "主体、尾迹、火花与残像一起旋转。"
+      },
+      "loopCycles": {
+        "label": "循环圈数",
+        "description": "每个循环内脉动与摆动的整数周期数，保证无缝循环。"
+      },
+      "pulseAmount": {
+        "label": "脉动幅度",
+        "description": "弹体在每个循环周期内呼吸的强度。"
+      },
+      "wobbleAmount": {
+        "label": "轻微摆动",
+        "description": "围绕中心锚点的轻微垂直浮动。"
+      },
+      "trailMode": {
+        "label": "尾迹类型",
+        "description": "关闭、闪烁火焰带或起伏能量带。"
+      },
+      "trailLength": {
+        "label": "尾迹长度",
+        "description": "尾迹在弹体后方延伸的距离。"
+      },
+      "trailWidth": {
+        "label": "尾迹宽度",
+        "description": "尾迹带厚度（像素）。"
+      },
+      "trailWave": {
+        "label": "尾迹波动",
+        "description": "沿尾迹传播的横向波浪。"
+      },
+      "trailBreakup": {
+        "label": "尾迹破碎",
+        "description": "散布在尾迹中的可复现孔洞。"
+      },
+      "sparks": {
+        "label": "火花",
+        "description": "弹体后方闪烁的碎屑。"
+      },
+      "sparkCount": {
+        "label": "火花数量",
+        "description": "可复现的火花位置数量。"
+      },
+      "sparkSpread": {
+        "label": "火花扩散",
+        "description": "火花偏离飞行路径的横向幅度。"
+      },
+      "sparkSpacing": {
+        "label": "火花间距",
+        "description": "最近与最远火花之间的径向距离。"
+      },
+      "sparkFade": {
+        "label": "火花衰减",
+        "description": "越远的火花中越小比例被绘制得更小。"
+      },
+      "afterimages": {
+        "label": "残像",
+        "description": "沿飞行路径拖曳的幻影副本。"
+      },
+      "afterimageCount": {
+        "label": "残像数量",
+        "description": "弹体后方的幻影副本数量。"
+      },
+      "afterimageSpacing": {
+        "label": "残像间距",
+        "description": "相邻幻影副本之间的距离。"
+      },
+      "afterimageDecay": {
+        "label": "残像衰减",
+        "description": "副本缩向最暗颜色的速度。"
+      },
+      "randomSeed": {
+        "label": "随机种子",
+        "description": "重新输入相同的无符号 32 位数值可精确复现效果。"
+      }
+    },
+    "options": {
+      "fireball": "火球",
+      "arrow": "魔法箭",
+      "solid": "实体",
+      "energy": "能量",
+      "trailOff": "关闭",
+      "trailFire": "火焰",
+      "trailEnergy": "能量带"
+    },
+    "palette": {
+      "bodyTitle": "箭身配色",
+      "energyTitle": "能量配色",
+      "bodyBand": "箭身颜色 {index}",
+      "energyBand": "能量颜色 {index}",
+      "removeBand": "删除颜色 {index}",
+      "remove": "删除",
+      "alpha": "透明度",
+      "addBodyColor": "添加箭身颜色",
+      "addEnergyColor": "添加能量颜色"
+    },
+    "effects": {
+      "enabled": "开启",
+      "disabled": "关闭"
+    },
+    "presets": {
+      "fireball": {
+        "name": "火球",
+        "description": "带闪烁火焰尾迹与火花的脉动火球。"
+      },
+      "blastBolt": {
+        "name": "爆破弹",
+        "description": "紧凑火焰弹体拖出宽阔破碎尾迹与明显定向火花。"
+      },
+      "enchantedArrow": {
+        "name": "附魔箭",
+        "description": "实体魔法箭身缠绕能量尾迹。"
+      },
+      "energyArrow": {
+        "name": "能量箭",
+        "description": "带清晰边缘辉光与宽扩散火花的纯能量箭。"
+      }
+    },
+    "seed": {
+      "randomize": "随机化"
+    }
+  },
+  "project": {
+    "menu": "项目",
+    "open": "打开项目…",
+    "save": "保存项目",
+    "opening": "打开中…",
+    "saving": "保存中…",
+    "imported": "项目导入成功。",
+    "fileLabel": "项目 JSON 文件",
+    "fileName": "pixel-{name}-{width}x{height}-{frameCount}-帧.json",
+    "errors": {
+      "projectFileUnreadable": "无法读取所选文件。",
+      "invalidJson": "文件不是有效的 JSON。",
+      "unsupportedSchema": "这不是像素特效项目。",
+      "unsupportedVersion": "不支持此项目版本。",
+      "wrongGenerator": "此项目保存自其他生成器。",
+      "invalidParameters": "项目参数无效。",
+      "invalidFps": "不支持的播放帧率。",
+      "invalidPpu": "每单位像素必须为 1 到 1024 的整数。",
+      "invalidGuid": "固定 GUID 必须为空或有效 GUID。",
+      "renderFailed": "项目无法渲染。",
+      "downloadFailed": "保存失败，请重试。"
+    }
+  },
+  "export": {
+    "fileName": "pixel-{name}-{width}x{height}-{frameCount}-帧.png",
+    "sectionLabel": "导出",
+    "title": "导出帧",
+    "summary": "{width} × {height} 画布 · {frameCount} 帧 · {fps} FPS",
+    "tabsLabel": "导出分类",
+    "tabs": {
+      "spriteSheet": "精灵图",
+      "animation": "动图",
+      "frameZip": "逐帧 ZIP"
+    },
+    "spriteSheet": {
+      "layout": "布局",
+      "horizontal": "横向",
+      "compactGrid": "紧凑网格",
+      "target": "目标",
+      "pngTarget": "PNG",
+      "unityTarget": "Unity 6 素材包",
+      "expectedSize": "{width} × {height} px",
+      "exportPng": "导出 PNG",
+      "exportUnityZip": "导出 Unity ZIP",
+      "pixelsPerUnit": "每单位像素",
+      "stableGuid": "固定 GUID",
+      "stableGuidPlaceholder": "可选 GUID…",
+      "stableGuidValue": "规范化 GUID：{guid}",
+      "unityHint": "填写 GUID 可让导出保持稳定；留空时每次导出生成新 GUID。"
+    },
+    "animation": {
+      "format": "格式",
+      "loop": "循环",
+      "loopLabel": "循环动画",
+      "gif": "GIF",
+      "apng": "APNG",
+      "summary": "{width} × {height} px · {frameCount} 帧 · {fps} FPS",
+      "exportGif": "导出 GIF",
+      "exportApng": "导出 APNG"
+    },
+    "atlasPreview": {
+      "toggle": "精灵图预览",
+      "meta": "{width} × {height} px · {layout}",
+      "layoutHorizontal": "横向",
+      "layoutCompact": "紧凑网格",
+      "zoomLabel": "预览缩放",
+      "zoomFit": "适应",
+      "zoomOption": "{zoom}×",
+      "canvasLabel": "打包精灵图预览"
+    },
+    "frameZip": {
+      "summary": "{frameCount} 帧 · {width} × {height} px · {fps} FPS",
+      "includesManifest": "包含 manifest.json 帧元数据。",
+      "exportButton": "导出逐帧 ZIP"
+    },
+    "preparing": "准备中…",
+    "encoding": "编码中…",
+    "toasts": {
+      "exportingPng": "正在导出 PNG…",
+      "exportingGif": "正在编码 GIF…",
+      "exportingApng": "正在编码 APNG…",
+      "exportingFrameZip": "正在准备逐帧 ZIP…",
+      "exportingUnityZip": "正在准备 Unity 素材包…",
+      "savingProject": "正在保存项目…",
+      "exportedPng": "已导出 PNG",
+      "exportedGif": "已导出 GIF",
+      "exportedApng": "已导出 APNG",
+      "exportedFrameZip": "已导出逐帧 ZIP",
+      "exportedUnityZip": "已导出 Unity 素材包"
+    },
+    "errors": {
+      "invalidPpu": "每单位像素必须为 1 到 1024 的整数。",
+      "invalidGuid": "固定 GUID 必须为空或有效 GUID。",
+      "unityAtlasTooLarge": "Unity 图集为 {width} × {height} px；Unity 6 每边上限为 16384 px。",
+      "exportFailed": "导出失败，请重试。"
+    },
+    "fileNames": {
+      "compactPng": "pixel-{name}-{width}x{height}-{frameCount}-帧-compact.png",
+      "frameZip": "pixel-{name}-{width}x{height}-{frameCount}-帧.zip",
+      "folderSequence": "pixel-{name}-{width}x{height}-{frameCount}-帧",
+      "unityZip": "pixel-{name}-{width}x{height}-{frameCount}-帧-{layout}-unity6.zip",
+      "unityImage": "pixel-{name}-{width}x{height}-{frameCount}-帧-{layout}.png",
+      "folder": "pixel-{name}-{width}x{height}-{frameCount}-帧-{layout}-unity6"
+    },
+    "gifFileName": "pixel-{name}-{width}x{height}-{frameCount}-帧-{fps}fps.gif",
+    "apngFileName": "pixel-{name}-{width}x{height}-{frameCount}-帧-{fps}fps-animated.png"
+  }
+}

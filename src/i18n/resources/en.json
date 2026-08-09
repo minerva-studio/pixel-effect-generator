@@ -1,0 +1,1268 @@
+{
+  "app": {
+    "eyebrow": "PIXEL EFFECT TOOLKIT",
+    "title": "Pixel Effect Generator",
+    "subtitle": "Focused generators for deterministic, pixel-perfect game VFX.",
+    "status": "{width} × {height} RGBA",
+    "languageLabel": "Interface language"
+  },
+  "desktop": {
+    "titleBar": {
+      "file": "File",
+      "newProject": "New Project",
+      "openProject": "Open Project…",
+      "openRecent": "Open Recent",
+      "noRecent": "No recent projects",
+      "clearRecent": "Clear recent projects",
+      "save": "Save",
+      "saveAs": "Save As…",
+      "exit": "Exit",
+      "minimize": "Minimize",
+      "maximize": "Maximize",
+      "restore": "Restore",
+      "close": "Close",
+      "untitled": "Untitled",
+      "unsaved": "Unsaved changes"
+    },
+    "confirm": {
+      "title": "Unsaved changes",
+      "message": "Save changes to the current project?",
+      "save": "Save",
+      "discard": "Discard",
+      "cancel": "Cancel"
+    },
+    "toasts": {
+      "savedProject": "Saved project",
+      "newProject": "Created a new project",
+      "saveFailed": "Save failed. Please try again.",
+      "openFailed": "Could not open this project.",
+      "recentFailed": "The recent project could not be opened."
+    }
+  },
+  "toast": {
+    "label": "Notifications",
+    "dismiss": "Dismiss notification"
+  },
+  "workspace": {
+    "navLabel": "Effect generators",
+    "generatorsLabel": "GENERATORS",
+    "generatorSectionLabel": "GENERATOR {index} · {name}",
+    "parametersTitle": "{name} parameters",
+    "reset": "Reset",
+    "categoryTabsLabel": "{name} parameter categories",
+    "categoryControls": "{label} controls",
+    "exportDimensions": "{width} × {height} px · transparent PNG",
+    "exportButton": "Export PNG"
+  },
+  "preview": {
+    "livePreview": "LIVE PREVIEW",
+    "canvasLabel": "Animated pixel effect preview",
+    "play": "Play animation",
+    "pause": "Pause animation",
+    "currentFrame": "Current frame",
+    "timingSettings": "Preview timing settings",
+    "totalFrames": "Total frames",
+    "playbackFps": "Playback FPS",
+    "fpsPreview": "{fps} FPS preview",
+    "generatorTools": "Generator preview tools",
+    "zoom": "Zoom",
+    "zoomFit": "Fit",
+    "zoomOption": "{zoom}×"
+  },
+  "previewTools": {
+    "canvas": {
+      "size": "Canvas size",
+      "resizeProportionally": "Resize proportionally",
+      "scaleEffect": "Scale effect",
+      "preset": "Preset",
+      "presetLabel": "Canvas preset",
+      "customWidth": "Custom canvas width",
+      "customHeight": "Custom canvas height",
+      "apply": "Apply",
+      "sizeError": "Use whole pixels from 16 to 512.",
+      "presetSquare": "Square {width}×{height}",
+      "presetHorizontal": "Horizontal {width}×{height}",
+      "presetCustom": "Custom"
+    }
+  },
+  "presets": {
+    "selectLabel": "Effect presets",
+    "actionsMenu": "Presets",
+    "pickerOpen": "Select preset…",
+    "pickerTitle": "Presets",
+    "pickerCancel": "Cancel",
+    "pickerClose": "Close preset picker",
+    "builtInGroup": "Built-in",
+    "customGroup": "Custom",
+    "modified": "Modified",
+    "saveAs": "Save as…",
+    "update": "Update",
+    "manage": "Manage",
+    "manageDialogLabel": "Manage presets",
+    "saveNameLabel": "Preset name",
+    "saveConfirm": "Save",
+    "cancel": "Cancel",
+    "confirm": "OK",
+    "rename": "Rename",
+    "delete": "Delete",
+    "confirmDelete": "Confirm delete?",
+    "noCustom": "No custom presets yet.",
+    "warning": "Local preset data was unreadable and was ignored.",
+    "storageHint": "Custom presets need browser storage; built-in presets still work.",
+    "errors": {
+      "nameLength": "Preset name must be 1–40 characters.",
+      "limit": "Maximum 32 custom presets per generator.",
+      "storageUnavailable": "Browser storage is unavailable.",
+      "invalidPreset": "This preset could not be applied."
+    }
+  },
+  "controls": {
+    "about": "About {label}",
+    "value": "{label} value"
+  },
+  "slash": {
+    "name": "Slash",
+    "description": "Animated weapon trails and sweeping attack arcs.",
+    "previewTitle": "Sweep study",
+    "presets": {
+      "cleanArc": {
+        "name": "Clean Arc",
+        "description": "A crisp, low-breakup base slash."
+      },
+      "pointedStrike": {
+        "name": "Pointed Strike",
+        "description": "A long, centered blade tip with a clean directional finish."
+      },
+      "heavyCleave": {
+        "name": "Heavy Cleave",
+        "description": "A thick arc with a long, heavy trail."
+      },
+      "energySweep": {
+        "name": "Energy Sweep",
+        "description": "A bright palette with fast energy sparks."
+      },
+      "shatteredEdge": {
+        "name": "Shattered Edge",
+        "description": "A heavily broken edge with directional shards."
+      },
+      "fullCircle": {
+        "name": "Full Circle",
+        "description": "A complete 360-degree ring sweep."
+      }
+    },
+    "categories": {
+      "shape": {
+        "label": "Shape",
+        "description": "Define the arc silhouette, orientation, and perspective."
+      },
+      "palette": {
+        "label": "Palette",
+        "description": "Build the radial color bands from the inner edge outward."
+      },
+      "motion": {
+        "label": "Motion",
+        "description": "Control timing, trail length, and the direction of the sweep."
+      },
+      "fragments": {
+        "label": "Fragments",
+        "description": "Shape and animate debris released from the trailing edge."
+      },
+      "breakup": {
+        "label": "Breakup",
+        "description": "Control dissolve and outer-edge damage patterns."
+      }
+    },
+    "controls": {
+      "radius": {
+        "label": "Radius",
+        "description": "Distance from the origin to the slash's outer edge."
+      },
+      "thickness": {
+        "label": "Thickness",
+        "description": "Width of the colored arc between its inner and outer edges."
+      },
+      "tipLength": {
+        "label": "Tip length",
+        "description": "Length of the centered taper behind the leading edge; 100% spans about four times the slash thickness."
+      },
+      "startAngle": {
+        "label": "Start angle",
+        "description": "Starting direction in screen space: 0° points right and 90° points down."
+      },
+      "sweepAngle": {
+        "label": "Sweep angle",
+        "description": "Degrees travelled from the start angle; values above 360° create a second pass."
+      },
+      "rotation": {
+        "label": "Rotation",
+        "description": "Rotates the complete local slash path to aim the overall swing in screen space."
+      },
+      "tilt": {
+        "label": "Perspective tilt",
+        "description": "Compresses the slash plane; 90° produces the thinnest stable pixel projection."
+      },
+      "sweepSpeed": {
+        "label": "Sweep speed",
+        "description": "Higher values make the leading edge complete its path sooner."
+      },
+      "trailLength": {
+        "label": "Trail length",
+        "description": "Delays the trailing edge so more of the arc remains visible."
+      },
+      "dissolveMode": {
+        "label": "Dissolve mode",
+        "description": "How the trailing edge erodes pixels: ordered dither, clustered noise blocks, or streak-like tears."
+      },
+      "edgeMode": {
+        "label": "Edge mode",
+        "description": "How the outer edge breaks up: 2×2 chips, a jagged contour, or wedge-shaped slash cuts."
+      },
+      "dissolve": {
+        "label": "Dissolve",
+        "description": "Length of the dissolution transition immediately ahead of the trailing edge."
+      },
+      "edgeBreakup": {
+        "label": "Edge breakup",
+        "description": "Intensity of outer-edge removal for the active edge mode."
+      },
+      "breakupDepth": {
+        "label": "Breakup depth",
+        "description": "Maximum depth of edge breakup while preserving the core arc."
+      },
+      "fragmentMode": {
+        "label": "Fragment mode",
+        "description": "How debris is drawn: square chunks, tangent-aligned shards, or fast short-lived sparks."
+      },
+      "amount": {
+        "label": "Amount",
+        "description": "Amount of colored debris released as the trailing edge passes."
+      },
+      "minSize": {
+        "label": "Minimum size",
+        "description": "Smallest chunk width, shard line length, or spark trail length for the selected fragment mode."
+      },
+      "maxSize": {
+        "label": "Maximum size",
+        "description": "Largest chunk width, shard line length, or spark trail length for the selected fragment mode."
+      },
+      "tangentSpeed": {
+        "label": "Tangent speed",
+        "description": "Motion along the direction of the sweep per animation cycle."
+      },
+      "outwardSpeed": {
+        "label": "Outward speed",
+        "description": "Motion away from the slash center per animation cycle."
+      },
+      "lifetime": {
+        "label": "Lifetime",
+        "description": "Fraction of the animation for which detached fragments remain alive."
+      },
+      "direction": {
+        "label": "Sweep direction",
+        "description": "Changes temporal travel along the same arc without flipping the rendered image."
+      },
+      "paletteOrder": {
+        "label": "Palette order",
+        "description": "Bands are sampled directly on the pixel grid. No blended colors are introduced."
+      },
+      "randomSeed": {
+        "label": "Random seed",
+        "description": "Re-enter the same unsigned 32-bit value to reproduce breakup exactly."
+      }
+    },
+    "options": {
+      "ordered": "Ordered",
+      "clusteredNoise": "Clustered noise",
+      "directionalStreaks": "Directional streaks",
+      "blockChips": "Block chips",
+      "jaggedContour": "Jagged contour",
+      "slashCuts": "Slash cuts",
+      "pixelChunks": "Pixel chunks",
+      "directionalShards": "Directional shards",
+      "energySparks": "Energy sparks",
+      "clockwise": "Clockwise",
+      "counterClockwise": "Counter"
+    },
+    "palette": {
+      "innerEdge": "Inner edge",
+      "outerEdge": "Outer edge",
+      "band": "Palette band {index}",
+      "removeBand": "Remove palette band {index}",
+      "remove": "Remove",
+      "alpha": "Alpha",
+      "addColorBand": "Add color band"
+    },
+    "seed": {
+      "randomize": "Randomize"
+    }
+  },
+  "explosion": {
+    "name": "Explosion",
+    "description": "Physical fire, pressure release, rolling fire masses, and retro blasts.",
+    "previewTitle": "Fire burst study",
+    "categories": {
+      "body": {
+        "label": "Body",
+        "description": "Pick the combustion silhouette and tune its geometry."
+      },
+      "motion": {
+        "label": "Motion",
+        "description": "Control direction, formation, hold, and the motion curve."
+      },
+      "material": {
+        "label": "Material",
+        "description": "Choose the internal structure; legacy flat presets retain their surface and dissolve controls."
+      },
+      "effects": {
+        "label": "Effects",
+        "description": "Toggle and tune flash core, shockwave, fire jets, and fragments."
+      },
+      "palette": {
+        "label": "Palette",
+        "description": "Order discrete colors from the hot core to the dark edge."
+      }
+    },
+    "controls": {
+      "shape": {
+        "label": "Body shape",
+        "description": "Choose a combustion silhouette; cards loop a fixed-seed preview."
+      },
+      "radius": {
+        "label": "Radius",
+        "description": "Maximum radius of the centered fireball."
+      },
+      "volume": {
+        "label": "Volume layering",
+        "description": "Build the body from rear heat, foreground fire, and occlusion seams."
+      },
+      "volumeProfile": {
+        "label": "Internal structure",
+        "description": "Choose how heat, shell, and foreground fire are layered inside the body."
+      },
+      "fixedVolumeProfile": "Internal structure: Smoke and fire (fixed by Smoke Burst).",
+      "flatCompatibility": "This preset uses the legacy flat renderer. Its surface controls remain available below.",
+      "convertToVolume": "Convert to volume rendering",
+      "churnAmount": {
+        "label": "Fire-mass expansion",
+        "description": "Controls how strongly individual fire masses keep rolling outward after their staggered formation."
+      },
+      "lobeCount": {
+        "label": "Fire-mass count",
+        "description": "Number of overlapping fire masses forming the rolling fireball."
+      },
+      "pressureCount": {
+        "label": "Shell count",
+        "description": "Number of hard pressure wedges released around the flash core."
+      },
+      "pressureWidth": {
+        "label": "Shell thickness",
+        "description": "Radial pixel thickness of each outward-moving shell plate."
+      },
+      "pressureSharpness": {
+        "label": "Shell sharpness",
+        "description": "How strongly each shell plate narrows toward its leading edge."
+      },
+      "blastWidth": {
+        "label": "Blast width",
+        "description": "Width of the connected pressure volume."
+      },
+      "blastAngle": {
+        "label": "Blast angle",
+        "description": "Direction of the short broad blast."
+      },
+      "smokeSpread": {
+        "label": "Smoke spread",
+        "description": "Horizontal spread of the low smoke cloud."
+      },
+      "smokeRise": {
+        "label": "Smoke rise",
+        "description": "Upward travel applied independently to each smoke puff."
+      },
+      "smokeCount": {
+        "label": "Smoke puff count",
+        "description": "Number of main puffs packed into one connected, billowing smoke cluster."
+      },
+      "smokeMotion": {
+        "label": "Smoke motion",
+        "description": "Choose rolling billows or a cloud that breaks into drifting pixel chunks."
+      },
+      "shapeIrregularity": {
+        "label": "Shape irregularity",
+        "description": "Varies blob angle, size, and timing; zero produces a regular outline."
+      },
+      "rotation": {
+        "label": "Rotation",
+        "description": "Rotates the body, fire jets, and directional shock fronts together."
+      },
+      "surfaceStyle": {
+        "label": "Surface material",
+        "description": "Choose how the fire body is layered, sooted, or pixel-eroded."
+      },
+      "dissolveStyle": {
+        "label": "Dissolve style",
+        "description": "How retro pixels disappear once the dissolve starts."
+      },
+      "dissolveSize": {
+        "label": "Circle size",
+        "description": "Radius of the round dissolve dots in pixels."
+      },
+      "dissolveJitter": {
+        "label": "Scatter",
+        "description": "How much the round dot centers shift off their grid."
+      },
+      "dissolveDensity": {
+        "label": "Density",
+        "description": "Spacing between round dissolve dots; higher spreads them apart."
+      },
+      "dissolveSpeed": {
+        "label": "Dissolve speed",
+        "description": "How quickly the dissolve finishes after it starts."
+      },
+      "coverage": {
+        "label": "Body integrity",
+        "description": "Keeps more of the body geometry without changing the surface grain."
+      },
+      "bandWarp": {
+        "label": "Band curvature",
+        "description": "Bends burning layer boundaries with smooth low-frequency variation."
+      },
+      "edgeBreakup": {
+        "label": "Edge breakup",
+        "description": "Controls how unevenly burning layers erode inward from the silhouette."
+      },
+      "sootAmount": {
+        "label": "Soot amount",
+        "description": "Controls the bounded amount of dark rolling soot clouds."
+      },
+      "sootScale": {
+        "label": "Soot scale",
+        "description": "Spatial scale of smooth soot clouds."
+      },
+      "mode": {
+        "label": "Direction",
+        "description": "Outward explosion or inward implosion with mirrored timing."
+      },
+      "motionCurve": {
+        "label": "Motion curve",
+        "description": "Shapes how quickly formation and pressure release accelerate."
+      },
+      "formationDuration": {
+        "label": "Formation time",
+        "description": "Fraction of the animation used to reach full size."
+      },
+      "holdDuration": {
+        "label": "Hold time",
+        "description": "Fraction of the animation held at full size before dissolving."
+      },
+      "dissolveStart": {
+        "label": "Dissolve time",
+        "description": "Point at which the body begins its defined breakup."
+      },
+      "core": {
+        "label": "Flash core",
+        "description": "Short-lived hot center flash at the impact end."
+      },
+      "coreRadius": {
+        "label": "Core radius",
+        "description": "Maximum radius of the enabled hot flash."
+      },
+      "coreDuration": {
+        "label": "Core duration",
+        "description": "Fraction of the animation occupied by the flash core."
+      },
+      "shockwave": {
+        "label": "Shockwave",
+        "description": "A centered polar front that never perturbs the body outline."
+      },
+      "shockwaveMode": {
+        "label": "Shockwave type",
+        "description": "Disable the wave or choose a full ring or compound multi-ring; rings can be squashed."
+      },
+      "shockwaveColorMode": {
+        "label": "Color mode",
+        "description": "Flat single color or a radial gradient across each wave band."
+      },
+      "shockwaveThickness": {
+        "label": "Thickness",
+        "description": "Radial band thickness of each wave ring."
+      },
+      "shockwaveStartRadius": {
+        "label": "Start radius",
+        "description": "Wave start radius as a percentage of the body radius."
+      },
+      "shockwaveEndRadius": {
+        "label": "End radius",
+        "description": "Wave end radius as a percentage of the body radius."
+      },
+      "shockwaveStartTime": {
+        "label": "Start time",
+        "description": "Point in the animation when the wave begins moving."
+      },
+      "shockwaveDuration": {
+        "label": "Duration",
+        "description": "Fraction of the animation used to travel between the two radii."
+      },
+      "shockwaveRingCount": {
+        "label": "Ring count",
+        "description": "Number of complete rings that chase each other across the same path."
+      },
+      "shockwaveRingSpacing": {
+        "label": "Ring spacing",
+        "description": "Time stagger between consecutive rings; higher values spread them out."
+      },
+      "shockwaveSquash": {
+        "label": "Squash amount",
+        "description": "Elliptical flattening along the squash axis for an impact feel."
+      },
+      "shockwaveSquashAngle": {
+        "label": "Squash angle",
+        "description": "Angle of the flattening axis in degrees."
+      },
+      "tongues": {
+        "label": "Fire jets",
+        "description": "Filled tapered flames launched from balanced body tips."
+      },
+      "tongueCount": {
+        "label": "Jet count",
+        "description": "Exact number of angularly balanced active flames."
+      },
+      "tongueLength": {
+        "label": "Jet length",
+        "description": "Maximum filled extension beyond each selected tip."
+      },
+      "tongueWidth": {
+        "label": "Root width",
+        "description": "Width where each jet overlaps its owning body tip."
+      },
+      "tongueCurvature": {
+        "label": "Curvature",
+        "description": "Bounded sideways bend without changing jet distribution."
+      },
+      "tongueVariation": {
+        "label": "Length variation",
+        "description": "Bounded deterministic length difference between selected jets."
+      },
+      "fragments": {
+        "label": "Char fragments",
+        "description": "Deterministic square debris flying outward or inward."
+      },
+      "fragmentCount": {
+        "label": "Fragment count",
+        "description": "Exact number of generated fragments."
+      },
+      "fragmentMinSize": {
+        "label": "Minimum size",
+        "description": "Smallest square fragment size."
+      },
+      "fragmentMaxSize": {
+        "label": "Maximum size",
+        "description": "Largest square fragment size."
+      },
+      "fragmentTravelDistance": {
+        "label": "Travel distance",
+        "description": "Distance fragments travel away from or toward the center."
+      },
+      "fragmentTangentialDrift": {
+        "label": "Tangential drift",
+        "description": "Sideways deviation from each fragment radial path."
+      },
+      "fragmentLifetime": {
+        "label": "Lifetime",
+        "description": "Fraction of the animation in which fragments participate."
+      },
+      "seed": {
+        "label": "Random seed",
+        "description": "Unsigned 32-bit value used to reproduce the same effect."
+      }
+    },
+    "options": {
+      "explosion": "Explosion",
+      "implosion": "Implosion",
+      "crisp": "Crisp",
+      "balanced": "Balanced",
+      "drifting": "Drifting",
+      "rollingFireball": "Rolling fireball",
+      "shockBlast": "Shock blast",
+      "smokeBurst": "Smoke burst",
+      "legacyRadial": "Legacy radial",
+      "burningLayers": "Burning layers",
+      "rollingSoot": "Rolling soot",
+      "retroPixel": "Retro pixel",
+      "dissolvePixelNoise": "Pixel noise",
+      "dissolveScanSweep": "Scan sweep",
+      "dissolveBlockFade": "Block fade",
+      "dissolveCircleFade": "Circle fade",
+      "dissolveEdgeRoll": "Edge roll",
+      "shockwaveNone": "Off",
+      "shockwaveMultiRing": "Compound multi-ring",
+      "shockwaveColorFlat": "Single color",
+      "shockwaveColorGradient": "Radial gradient",
+      "shockwaveRing": "Complete ring",
+      "hardShell": "Hard shell",
+      "moltenCore": "Molten core",
+      "smokeFire": "Smoke and fire",
+      "billowing": "Rolling billows",
+      "particulate": "Particle dissolve"
+    },
+    "shapeDescriptions": {
+      "rollingFireball": "Overlapping fire masses roll outward as one connected explosion.",
+      "shockBlast": "A bright core drives separated short shell plates through angular gaps.",
+      "smokeBurst": "A low broad smoke mass expands around hot embers.",
+      "legacyRadial": "The original dense radial pixel explosion."
+    },
+    "effects": {
+      "enabled": "On",
+      "disabled": "Off"
+    },
+    "palette": {
+      "hotCore": "Hot core",
+      "outerEdge": "Dark edge",
+      "band": "Explosion palette band {index}",
+      "removeBand": "Remove explosion palette band {index}",
+      "remove": "Remove",
+      "alpha": "Alpha",
+      "addColorBand": "Add color band"
+    },
+    "presets": {
+      "rollingFireball": {
+        "name": "Rolling Fireball",
+        "description": "Overlapping fire masses expand and cool on staggered schedules."
+      },
+      "pressureBurst": {
+        "name": "Shock Blast",
+        "description": "Broad shell lobes release from a bright core."
+      },
+      "smokeBurst": {
+        "name": "Smoke Burst",
+        "description": "A low broad smoke mass with restrained ember fragments."
+      },
+      "particleSmokeBurst": {
+        "name": "Particle Smoke Burst",
+        "description": "A smoke cloud that breaks into independently drifting pixel chunks."
+      },
+      "retroBurst": {
+        "name": "Retro Burst",
+        "description": "The original radial ring with dense per-pixel noise."
+      },
+      "moltenCoreFireball": {
+        "name": "Molten Core Fireball",
+        "description": "A dark shell with a persistent exposed molten core."
+      }
+    },
+    "seed": {
+      "randomize": "Randomize"
+    }
+  },
+  "energyBloom": {
+    "name": "Energy Bloom",
+    "description": "Petal, star, and corolla energy effects with vivid convergence.",
+    "previewTitle": "Bloom study",
+    "categories": {
+      "body": {
+        "label": "Body",
+        "description": "Pick the bloom shape and tune its size, outline, and surface material."
+      },
+      "motion": {
+        "label": "Motion",
+        "description": "Control direction, formation, hold, and the motion curve."
+      },
+      "material": {
+        "label": "Material",
+        "description": "Choose the surface material and tune how it dissolves."
+      },
+      "effects": {
+        "label": "Effects",
+        "description": "Toggle and tune flash core, shockwave, energy tongues, and shards."
+      },
+      "palette": {
+        "label": "Palette",
+        "description": "Order discrete colors from the bright center to the deep outer edge."
+      }
+    },
+    "controls": {
+      "shape": {
+        "label": "Bloom shape",
+        "description": "Choose a petal, star, or corolla silhouette; cards loop a fixed-seed preview."
+      },
+      "radius": {
+        "label": "Radius",
+        "description": "Maximum radius of the centered bloom."
+      },
+      "petalCount": {
+        "label": "Petal count",
+        "description": "Number of rounded petals around the shared center."
+      },
+      "petalStretch": {
+        "label": "Petal stretch",
+        "description": "Elongates each petal away from the shared center."
+      },
+      "rayCount": {
+        "label": "Ray count",
+        "description": "Number of tapered star rays radiating from the center."
+      },
+      "rayTaper": {
+        "label": "Ray taper",
+        "description": "Sharper wedges as the value rises; lower values read as soft rays."
+      },
+      "corollaLayers": {
+        "label": "Corolla layers",
+        "description": "Two or three staggered petal rings around the center."
+      },
+      "layerDelay": {
+        "label": "Layer delay",
+        "description": "Staggers each corolla layer; outer layers open later or close first."
+      },
+      "shapeIrregularity": {
+        "label": "Shape irregularity",
+        "description": "Varies petal angle, size, and timing; zero produces a regular bloom."
+      },
+      "rotation": {
+        "label": "Rotation",
+        "description": "Rotates the body, energy tongues, and directional shock fronts together."
+      },
+      "surfaceStyle": {
+        "label": "Surface material",
+        "description": "Choose how the bloom body is banded, hollowed, cracked, or eroded."
+      },
+      "dissolveStyle": {
+        "label": "Dissolve style",
+        "description": "How retro pixels disappear once the dissolve starts."
+      },
+      "dissolveSize": {
+        "label": "Circle size",
+        "description": "Radius of the round dissolve dots in pixels."
+      },
+      "dissolveJitter": {
+        "label": "Scatter",
+        "description": "How much the round dot centers shift off their grid."
+      },
+      "dissolveDensity": {
+        "label": "Density",
+        "description": "Spacing between round dissolve dots; higher spreads them apart."
+      },
+      "dissolveSpeed": {
+        "label": "Dissolve speed",
+        "description": "How quickly the dissolve finishes after it starts."
+      },
+      "coverage": {
+        "label": "Body integrity",
+        "description": "Keeps more of the body geometry without changing the surface grain."
+      },
+      "bandWarp": {
+        "label": "Band curvature",
+        "description": "Bends cel-shaded band boundaries with smooth low-frequency variation."
+      },
+      "edgeBreakup": {
+        "label": "Edge breakup",
+        "description": "Controls how unevenly cel shading erodes inward from the silhouette."
+      },
+      "cavityAmount": {
+        "label": "Cavity amount",
+        "description": "Controls the bounded amount of hollow molten regions."
+      },
+      "cavityScale": {
+        "label": "Cavity scale",
+        "description": "Spatial scale of smooth molten cavities."
+      },
+      "chunkSize": {
+        "label": "Chunk size",
+        "description": "Stable plate size used by the crystal shard surface."
+      },
+      "crackWidth": {
+        "label": "Crack width",
+        "description": "One- or two-pixel separation between crystal plates."
+      },
+      "mode": {
+        "label": "Direction",
+        "description": "Outward bloom or inward convergence with mirrored timing."
+      },
+      "motionCurve": {
+        "label": "Motion curve",
+        "description": "Shapes how quickly formation and convergence accelerate."
+      },
+      "formationDuration": {
+        "label": "Formation time",
+        "description": "Fraction of the animation used to reach full size."
+      },
+      "holdDuration": {
+        "label": "Hold time",
+        "description": "Fraction of the animation held at full size before dissolving."
+      },
+      "dissolveStart": {
+        "label": "Dissolve time",
+        "description": "Point at which the body begins its defined breakup."
+      },
+      "core": {
+        "label": "Flash core",
+        "description": "Short-lived bright center flash at the impact end."
+      },
+      "coreRadius": {
+        "label": "Core radius",
+        "description": "Maximum radius of the enabled flash."
+      },
+      "coreDuration": {
+        "label": "Core duration",
+        "description": "Fraction of the animation occupied by the flash core."
+      },
+      "shockwave": {
+        "label": "Shockwave",
+        "description": "A centered polar front that never perturbs the bloom outline."
+      },
+      "shockwaveMode": {
+        "label": "Shockwave type",
+        "description": "Disable the wave or choose a full ring or compound multi-ring; rings can be squashed."
+      },
+      "shockwaveColorMode": {
+        "label": "Color mode",
+        "description": "Flat single color or a radial gradient across each wave band."
+      },
+      "shockwaveThickness": {
+        "label": "Thickness",
+        "description": "Radial band thickness of each wave ring."
+      },
+      "shockwaveStartRadius": {
+        "label": "Start radius",
+        "description": "Wave start radius as a percentage of the body radius."
+      },
+      "shockwaveEndRadius": {
+        "label": "End radius",
+        "description": "Wave end radius as a percentage of the body radius."
+      },
+      "shockwaveStartTime": {
+        "label": "Start time",
+        "description": "Point in the animation when the wave begins moving."
+      },
+      "shockwaveDuration": {
+        "label": "Duration",
+        "description": "Fraction of the animation used to travel between the two radii."
+      },
+      "shockwaveRingCount": {
+        "label": "Ring count",
+        "description": "Number of complete rings that chase each other across the same path."
+      },
+      "shockwaveRingSpacing": {
+        "label": "Ring spacing",
+        "description": "Time stagger between consecutive rings; higher values spread them out."
+      },
+      "shockwaveSquash": {
+        "label": "Squash amount",
+        "description": "Elliptical flattening along the squash axis for an impact feel."
+      },
+      "shockwaveSquashAngle": {
+        "label": "Squash angle",
+        "description": "Angle of the flattening axis in degrees."
+      },
+      "tongues": {
+        "label": "Energy tongues",
+        "description": "Filled tapered ribbons launched from petal or star tips."
+      },
+      "tongueCount": {
+        "label": "Tongue count",
+        "description": "Exact number of angularly balanced active tongues."
+      },
+      "tongueLength": {
+        "label": "Tongue length",
+        "description": "Maximum filled extension beyond each selected tip."
+      },
+      "tongueWidth": {
+        "label": "Root width",
+        "description": "Width where each tongue overlaps its owning tip."
+      },
+      "tongueCurvature": {
+        "label": "Curvature",
+        "description": "Bounded sideways bend without changing tongue distribution."
+      },
+      "tongueVariation": {
+        "label": "Length variation",
+        "description": "Bounded deterministic length difference between selected tongues."
+      },
+      "fragments": {
+        "label": "Energy shards",
+        "description": "Deterministic diamond shards flying outward or inward."
+      },
+      "fragmentCount": {
+        "label": "Shard count",
+        "description": "Exact number of generated shards."
+      },
+      "fragmentMinSize": {
+        "label": "Minimum size",
+        "description": "Smallest diamond shard size."
+      },
+      "fragmentMaxSize": {
+        "label": "Maximum size",
+        "description": "Largest diamond shard size."
+      },
+      "fragmentTravelDistance": {
+        "label": "Travel distance",
+        "description": "Distance shards travel away from or toward the center."
+      },
+      "fragmentTangentialDrift": {
+        "label": "Tangential drift",
+        "description": "Sideways deviation from each shard radial path."
+      },
+      "fragmentLifetime": {
+        "label": "Lifetime",
+        "description": "Fraction of the animation in which shards participate."
+      },
+      "seed": {
+        "label": "Random seed",
+        "description": "Unsigned 32-bit value used to reproduce the same effect."
+      }
+    },
+    "options": {
+      "explosion": "Bloom",
+      "implosion": "Converge",
+      "crisp": "Crisp",
+      "balanced": "Balanced",
+      "drifting": "Drifting",
+      "softPetals": "Soft petals",
+      "sharpStarburst": "Sharp starburst",
+      "layeredCorolla": "Layered corolla",
+      "arcaneBurst": "Arcane burst",
+      "celBands": "Cel bands",
+      "moltenCavities": "Molten cavities",
+      "crystalShards": "Crystal shards",
+      "gridNoise": "Grid noise",
+      "pixelNoise": "Pixel noise",
+      "dissolvePixelNoise": "Pixel noise",
+      "dissolveScanSweep": "Scan sweep",
+      "dissolveBlockFade": "Block fade",
+      "dissolveCircleFade": "Circle fade",
+      "dissolveEdgeRoll": "Edge roll",
+      "shockwaveNone": "Off",
+      "shockwaveMultiRing": "Compound multi-ring",
+      "shockwaveColorFlat": "Single color",
+      "shockwaveColorGradient": "Radial gradient",
+      "shockwaveRing": "Complete ring"
+    },
+    "shapeDescriptions": {
+      "softPetals": "Rounded cartoon petals that open outward.",
+      "sharpStarburst": "Controlled tapered star rays.",
+      "layeredCorolla": "Staggered petal layers opening in sequence.",
+      "arcaneBurst": "A bright controlled energy shell without petals."
+    },
+    "effects": {
+      "enabled": "On",
+      "disabled": "Off"
+    },
+    "palette": {
+      "hotCore": "Bright center",
+      "outerEdge": "Deep edge",
+      "band": "Bloom palette band {index}",
+      "removeBand": "Remove bloom palette band {index}",
+      "remove": "Remove",
+      "alpha": "Alpha",
+      "addColorBand": "Add color band"
+    },
+    "presets": {
+      "softPetals": {
+        "name": "Soft Petals",
+        "description": "Rounded cartoon petals with cel bands; tongues are off by default."
+      },
+      "sharpStarburst": {
+        "name": "Sharp Starburst",
+        "description": "Controlled tapered star rays with a crystalline surface."
+      },
+      "layeredCorolla": {
+        "name": "Layered Corolla",
+        "description": "Two staggered petal layers that open in sequence."
+      },
+      "arcaneBurst": {
+        "name": "Arcane Burst",
+        "description": "A bright controlled energy shell without petals."
+      },
+      "softPetalsImplosion": {
+        "name": "Soft Petals Implosion",
+        "description": "Rounded petals collapse inward onto a closing flash."
+      },
+      "starburstImplosion": {
+        "name": "Starburst Implosion",
+        "description": "Sharp star rays converge into the center from the rim."
+      },
+      "corollaImplosion": {
+        "name": "Corolla Implosion",
+        "description": "Staggered corolla layers close inward, outer layer first."
+      }
+    },
+    "seed": {
+      "randomize": "Randomize"
+    }
+  },
+  "projectile": {
+    "name": "Projectile",
+    "description": "Seamless flight loops for fireballs and magic arrows.",
+    "previewTitle": "Flight loop study",
+    "categories": {
+      "body": {
+        "label": "Body",
+        "description": "Pick the projectile body, size, and baked facing."
+      },
+      "motion": {
+        "label": "Motion",
+        "description": "Control loop cycles, pulsing, and gentle bobbing."
+      },
+      "trail": {
+        "label": "Trail",
+        "description": "Choose a fire or energy band trailing behind the body."
+      },
+      "effects": {
+        "label": "Effects",
+        "description": "Toggle sparks and afterimages and tune their behavior."
+      },
+      "palette": {
+        "label": "Palette",
+        "description": "Color the solid arrow body and every energy surface."
+      }
+    },
+    "controls": {
+      "kind": {
+        "label": "Projectile",
+        "description": "Fireball or magic arrow sharing the same centered anchor."
+      },
+      "arrowMaterial": {
+        "label": "Arrow material",
+        "description": "Solid metal body or a pure energy silhouette with a crisp edge glow."
+      },
+      "radius": {
+        "label": "Size",
+        "description": "Body radius in pixels; the flight loop stays centered."
+      },
+      "bodyLength": {
+        "label": "Body length",
+        "description": "Length of the directional body; arrows use the full value while fireballs use it as elongation."
+      },
+      "silhouetteVariation": {
+        "label": "Silhouette variation",
+        "description": "Deterministic lumpiness of the fireball or arrow outline."
+      },
+      "rotation": {
+        "label": "Baked rotation",
+        "description": "Rotates body, trail, sparks, and afterimages together."
+      },
+      "loopCycles": {
+        "label": "Loop cycles",
+        "description": "Whole pulse and wobble cycles per loop for a seamless repeat."
+      },
+      "pulseAmount": {
+        "label": "Pulse",
+        "description": "How strongly the body breathes during each loop cycle."
+      },
+      "wobbleAmount": {
+        "label": "Wobble",
+        "description": "Gentle perpendicular bobbing around the centered anchor."
+      },
+      "trailMode": {
+        "label": "Trail",
+        "description": "Off, a flickering fire band, or an undulating energy band."
+      },
+      "trailLength": {
+        "label": "Trail length",
+        "description": "How far the band extends behind the body rear."
+      },
+      "trailWidth": {
+        "label": "Trail width",
+        "description": "Band thickness in pixels."
+      },
+      "trailWave": {
+        "label": "Trail wave",
+        "description": "Lateral wave traveling along the band."
+      },
+      "trailBreakup": {
+        "label": "Trail breakup",
+        "description": "Deterministic holes scattered through the band."
+      },
+      "sparks": {
+        "label": "Sparks",
+        "description": "Flickering debris released behind the body."
+      },
+      "sparkCount": {
+        "label": "Spark count",
+        "description": "Number of deterministic spark positions."
+      },
+      "sparkSpread": {
+        "label": "Spark spread",
+        "description": "How far sparks scatter sideways from the flight path."
+      },
+      "sparkSpacing": {
+        "label": "Spark spacing",
+        "description": "Radial distance between the nearest and farthest sparks."
+      },
+      "sparkFade": {
+        "label": "Spark fade",
+        "description": "Fraction of sparks drawn smaller as they recede."
+      },
+      "afterimages": {
+        "label": "Afterimages",
+        "description": "Ghost copies trailing the body along the flight path."
+      },
+      "afterimageCount": {
+        "label": "Afterimage count",
+        "description": "Number of ghost copies behind the body."
+      },
+      "afterimageSpacing": {
+        "label": "Afterimage spacing",
+        "description": "Distance between consecutive ghost copies."
+      },
+      "afterimageDecay": {
+        "label": "Afterimage decay",
+        "description": "How quickly copies shrink toward the darkest palette color."
+      },
+      "randomSeed": {
+        "label": "Random seed",
+        "description": "Re-enter the same unsigned 32-bit value to reproduce the effect exactly."
+      }
+    },
+    "options": {
+      "fireball": "Fireball",
+      "arrow": "Magic arrow",
+      "solid": "Solid",
+      "energy": "Energy",
+      "trailOff": "Off",
+      "trailFire": "Fire",
+      "trailEnergy": "Energy band"
+    },
+    "palette": {
+      "bodyTitle": "Arrow body",
+      "energyTitle": "Energy palette",
+      "bodyBand": "Arrow body color {index}",
+      "energyBand": "Energy color {index}",
+      "removeBand": "Remove color {index}",
+      "remove": "Remove",
+      "alpha": "Alpha",
+      "addBodyColor": "Add arrow body color",
+      "addEnergyColor": "Add energy color"
+    },
+    "effects": {
+      "enabled": "On",
+      "disabled": "Off"
+    },
+    "presets": {
+      "fireball": {
+        "name": "Fireball",
+        "description": "A pulsing fireball with a flickering flame trail and sparks."
+      },
+      "blastBolt": {
+        "name": "Blast Bolt",
+        "description": "A compact fire projectile with a broad broken wake and strongly advected sparks."
+      },
+      "enchantedArrow": {
+        "name": "Enchanted Arrow",
+        "description": "A solid magic arrow wrapped in an energy trail."
+      },
+      "energyArrow": {
+        "name": "Energy Arrow",
+        "description": "A pure energy arrow with a crisp edge glow and wide spark spread."
+      }
+    },
+    "seed": {
+      "randomize": "Randomize"
+    }
+  },
+  "project": {
+    "menu": "Project",
+    "open": "Open project…",
+    "save": "Save project",
+    "opening": "Opening…",
+    "saving": "Saving…",
+    "imported": "Project imported successfully.",
+    "fileLabel": "Project JSON file",
+    "fileName": "pixel-{name}-{width}x{height}-{frameCount}-frames.json",
+    "errors": {
+      "projectFileUnreadable": "Could not read the selected file.",
+      "invalidJson": "The file is not valid JSON.",
+      "unsupportedSchema": "This is not a Pixel Effect project.",
+      "unsupportedVersion": "This project version is not supported.",
+      "wrongGenerator": "This project was saved for a different generator.",
+      "invalidParameters": "The project parameters are invalid.",
+      "invalidFps": "The playback FPS is not supported.",
+      "invalidPpu": "Pixels Per Unit must be an integer from 1 to 1024.",
+      "invalidGuid": "Stable GUID must be empty or a valid GUID.",
+      "renderFailed": "The project could not be rendered.",
+      "downloadFailed": "Save failed. Please try again."
+    }
+  },
+  "export": {
+    "fileName": "pixel-{name}-{width}x{height}-{frameCount}-frames.png",
+    "sectionLabel": "EXPORT",
+    "title": "Export frames",
+    "summary": "{width} × {height} canvas · {frameCount} frames · {fps} FPS",
+    "tabsLabel": "Export categories",
+    "tabs": {
+      "spriteSheet": "Sprite Sheet",
+      "animation": "Animation",
+      "frameZip": "Frame ZIP"
+    },
+    "spriteSheet": {
+      "layout": "Layout",
+      "horizontal": "Horizontal",
+      "compactGrid": "Compact grid",
+      "target": "Target",
+      "pngTarget": "PNG",
+      "unityTarget": "Unity 6 package",
+      "expectedSize": "{width} × {height} px",
+      "exportPng": "Export PNG",
+      "exportUnityZip": "Export Unity ZIP",
+      "pixelsPerUnit": "Pixels Per Unit",
+      "stableGuid": "Stable GUID",
+      "stableGuidPlaceholder": "Optional GUID…",
+      "stableGuidValue": "Normalized GUID: {guid}",
+      "unityHint": "Fill in a GUID to keep exports stable; leave empty to generate a new one each export."
+    },
+    "animation": {
+      "format": "Format",
+      "loop": "Loop",
+      "loopLabel": "Loop animation",
+      "gif": "GIF",
+      "apng": "APNG",
+      "summary": "{width} × {height} px · {frameCount} frames · {fps} FPS",
+      "exportGif": "Export GIF",
+      "exportApng": "Export APNG"
+    },
+    "atlasPreview": {
+      "toggle": "Sprite sheet preview",
+      "meta": "{width} × {height} px · {layout}",
+      "layoutHorizontal": "Horizontal",
+      "layoutCompact": "Compact grid",
+      "zoomLabel": "Preview zoom",
+      "zoomFit": "Fit",
+      "zoomOption": "{zoom}×",
+      "canvasLabel": "Packed sprite sheet preview"
+    },
+    "frameZip": {
+      "summary": "{frameCount} frames · {width} × {height} px · {fps} FPS",
+      "includesManifest": "Includes manifest.json for frame metadata.",
+      "exportButton": "Export Frame ZIP"
+    },
+    "preparing": "Preparing…",
+    "encoding": "Encoding…",
+    "toasts": {
+      "exportingPng": "Exporting PNG…",
+      "exportingGif": "Encoding GIF…",
+      "exportingApng": "Encoding APNG…",
+      "exportingFrameZip": "Preparing frame ZIP…",
+      "exportingUnityZip": "Preparing Unity package…",
+      "savingProject": "Saving project…",
+      "exportedPng": "Exported PNG",
+      "exportedGif": "Exported GIF",
+      "exportedApng": "Exported APNG",
+      "exportedFrameZip": "Exported frame ZIP",
+      "exportedUnityZip": "Exported Unity package"
+    },
+    "errors": {
+      "invalidPpu": "Pixels Per Unit must be an integer from 1 to 1024.",
+      "invalidGuid": "Stable GUID must be empty or a valid GUID.",
+      "unityAtlasTooLarge": "The Unity atlas is {width} × {height} px; Unity 6 supports up to 16384 px per side.",
+      "exportFailed": "Export failed. Please try again."
+    },
+    "fileNames": {
+      "compactPng": "pixel-{name}-{width}x{height}-{frameCount}-frames-compact.png",
+      "frameZip": "pixel-{name}-{width}x{height}-{frameCount}-frames.zip",
+      "folderSequence": "pixel-{name}-{width}x{height}-{frameCount}-frames",
+      "unityZip": "pixel-{name}-{width}x{height}-{frameCount}-frames-{layout}-unity6.zip",
+      "unityImage": "pixel-{name}-{width}x{height}-{frameCount}-frames-{layout}.png",
+      "folder": "pixel-{name}-{width}x{height}-{frameCount}-frames-{layout}-unity6"
+    },
+    "gifFileName": "pixel-{name}-{width}x{height}-{frameCount}-frames-{fps}fps.gif",
+    "apngFileName": "pixel-{name}-{width}x{height}-{frameCount}-frames-{fps}fps-animated.png"
+  }
+}
