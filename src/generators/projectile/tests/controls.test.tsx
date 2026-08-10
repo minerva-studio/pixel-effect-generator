@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../../i18n/I18nProvider'
-import { ProjectileControls, ProjectilePreviewTools } from '../controls'
+import { ProjectileControls, ProjectilePreviewTools, selectBodyCard, selectedBodyCard } from '../controls'
 import { DEFAULT_PROJECTILE_PARAMETERS, type ProjectileParameters } from '../model'
 import type { ProjectileCategory } from '../module'
 
@@ -14,15 +14,36 @@ function renderControls(category: ProjectileCategory, locale: 'en' | 'zh-CN' = '
 }
 
 describe('projectile controls', () => {
-  it('renders the body category with conditional arrow material', () => {
+  it('renders three body thumbnail cards with one selected identity', () => {
     const body = renderControls('body')
     expect(body).toContain('Fireball')
-    expect(body).toContain('Magic arrow')
-    expect(body).not.toContain('Arrow material')
-    const arrow = renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow' })
-    expect(arrow).toContain('Arrow material')
-    expect(arrow).toContain('Solid')
-    expect(arrow).toContain('Energy')
+    expect(body).toContain('Solid arrow')
+    expect(body).toContain('Energy arrow')
+    expect(body.match(/aria-pressed="(?:true|false)"/g)).toHaveLength(3)
+    expect(body.match(/aria-pressed="true"/g)).toHaveLength(1)
+
+    const energyArrow = renderControls('body', 'en', {
+      ...DEFAULT_PROJECTILE_PARAMETERS,
+      kind: 'arrow',
+      arrowMaterial: 'energy',
+    })
+    expect(energyArrow.match(/aria-pressed="true"/g)).toHaveLength(1)
+    expect(energyArrow).toMatch(/shape-card active[^>]+aria-pressed="true"[^>]*>[\s\S]*?Energy arrow/)
+  })
+
+  it('maps every body card without changing unrelated parameters', () => {
+    const base = { ...DEFAULT_PROJECTILE_PARAMETERS, radius: 23, arrowMaterial: 'energy' as const }
+    const fireball = selectBodyCard(base, 'fireball')
+    expect(fireball).toMatchObject({ kind: 'fireball', arrowMaterial: 'energy', radius: 23 })
+    expect(selectedBodyCard(fireball)).toBe('fireball')
+
+    const solidArrow = selectBodyCard(base, 'solidArrow')
+    expect(solidArrow).toMatchObject({ kind: 'arrow', arrowMaterial: 'solid', radius: 23 })
+    expect(selectedBodyCard(solidArrow)).toBe('solidArrow')
+
+    const energyArrow = selectBodyCard(base, 'energyArrow')
+    expect(energyArrow).toMatchObject({ kind: 'arrow', arrowMaterial: 'energy', radius: 23 })
+    expect(selectedBodyCard(energyArrow)).toBe('energyArrow')
   })
 
   it('renders the trail category with conditional fields', () => {
@@ -63,9 +84,9 @@ describe('projectile controls', () => {
 
   it('renders localized labels and shared preview tools', () => {
     const body = renderControls('body', 'zh-CN')
-    expect(body).toContain('弹体类型')
+    expect(body).toContain('实体箭')
     expect(body).toContain('火球')
-    expect(body).toContain('魔法箭')
+    expect(body).toContain('能量箭')
     expect(renderControls('trail', 'zh-CN')).toContain('尾迹类型')
     expect(renderControls('effects', 'zh-CN')).toContain('火花')
     vi.stubGlobal('navigator', { language: 'en-US' })

@@ -1114,6 +1114,20 @@
         "description": "Re-enter the same unsigned 32-bit value to reproduce the effect exactly."
       }
     },
+    "bodyCards": {
+      "fireball": {
+        "label": "Fireball",
+        "description": "A compact burning body."
+      },
+      "solidArrow": {
+        "label": "Solid arrow",
+        "description": "A physical arrow with a metal body."
+      },
+      "energyArrow": {
+        "label": "Energy arrow",
+        "description": "A pure energy silhouette with a bright edge."
+      }
+    },
     "options": {
       "fireball": "Fireball",
       "arrow": "Magic arrow",

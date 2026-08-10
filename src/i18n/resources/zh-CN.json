@@ -1114,6 +1114,20 @@
         "description": "重新输入相同的无符号 32 位数值可精确复现效果。"
       }
     },
+    "bodyCards": {
+      "fireball": {
+        "label": "火球",
+        "description": "紧凑燃烧的火焰主体。"
+      },
+      "solidArrow": {
+        "label": "实体箭",
+        "description": "带实体金属箭身的弹体。"
+      },
+      "energyArrow": {
+        "label": "能量箭",
+        "description": "带明亮边缘的纯能量轮廓。"
+      }
+    },
     "options": {
       "fireball": "火球",
       "arrow": "魔法箭",

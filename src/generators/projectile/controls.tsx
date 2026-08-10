@@ -5,6 +5,11 @@ import { useI18n } from '../../i18n/I18nProvider'
 import { hexToRgb, rgbaToHex, type RgbColor } from '../../shared/pixel/color'
 import type { FrameSize } from '../../shared/pixel/frame'
 import {
+  ShapeCardGrid,
+  type ShapeCardOption,
+} from '../shared-effects/controls'
+import {
+  DEFAULT_PROJECTILE_PARAMETERS,
   MAX_AFTERIMAGE_COUNT,
   MAX_BODY_PALETTE_SIZE,
   MAX_CANVAS_SIZE,
@@ -18,6 +23,7 @@ import {
   type ProjectileParameters,
 } from './model'
 import type { ProjectileCategory } from './module'
+import { renderProjectileFrames } from './renderer'
 
 interface ProjectileControlsProps {
   readonly category: ProjectileCategory
@@ -42,28 +48,14 @@ export function ProjectileControls({ category, parameters, onChange }: Projectil
     case 'body':
       return (
         <div className="control-list">
-          <SelectControl
+          <ShapeCardGrid
+            familyId="projectile"
             label={t('projectile.controls.kind.label')}
-            description={t('projectile.controls.kind.description')}
-            value={parameters.kind}
-            options={[
-              { value: 'fireball', label: t('projectile.options.fireball') },
-              { value: 'arrow', label: t('projectile.options.arrow') },
-            ]}
-            onChange={(value) => update('kind', value)}
+            options={BODY_CARD_OPTIONS}
+            selected={selectedBodyCard(parameters)}
+            render={renderProjectileFrames}
+            onSelect={(value) => onChange(selectBodyCard(parameters, value as ProjectileBodyCard))}
           />
-          {parameters.kind === 'arrow' ? (
-            <SelectControl
-              label={t('projectile.controls.arrowMaterial.label')}
-              description={t('projectile.controls.arrowMaterial.description')}
-              value={parameters.arrowMaterial}
-              options={[
-                { value: 'solid', label: t('projectile.options.solid') },
-                { value: 'energy', label: t('projectile.options.energy') },
-              ]}
-              onChange={(value) => update('arrowMaterial', value)}
-            />
-          ) : null}
           <NumberControl label={t('projectile.controls.radius.label')} description={t('projectile.controls.radius.description')} value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />
           <NumberControl label={t('projectile.controls.bodyLength.label')} description={t('projectile.controls.bodyLength.description')} value={parameters.bodyLength} minimum={4} maximum={limits.maxBodyLength} unit="px" onChange={(value) => update('bodyLength', value)} />
           <NumberControl label={t('projectile.controls.silhouetteVariation.label')} description={t('projectile.controls.silhouetteVariation.description')} value={parameters.silhouetteVariation} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('silhouetteVariation', value)} />
@@ -161,6 +153,56 @@ export function ProjectileControls({ category, parameters, onChange }: Projectil
           />
         </div>
       )
+  }
+}
+
+type ProjectileBodyCard = 'fireball' | 'solidArrow' | 'energyArrow'
+
+/** Fixed, body-only parameters keep the three animated thumbnails comparable. */
+const BODY_THUMBNAIL_BASE: ProjectileParameters = {
+  ...DEFAULT_PROJECTILE_PARAMETERS,
+  seed: 1337,
+  trailMode: 'off',
+  sparksEnabled: false,
+  afterimagesEnabled: false,
+}
+
+const BODY_CARD_OPTIONS: readonly ShapeCardOption<ProjectileParameters>[] = [
+  {
+    value: 'fireball',
+    labelKey: 'projectile.bodyCards.fireball.label',
+    descriptionKey: 'projectile.bodyCards.fireball.description',
+    buildParameters: () => BODY_THUMBNAIL_BASE,
+  },
+  {
+    value: 'solidArrow',
+    labelKey: 'projectile.bodyCards.solidArrow.label',
+    descriptionKey: 'projectile.bodyCards.solidArrow.description',
+    buildParameters: () => ({ ...BODY_THUMBNAIL_BASE, kind: 'arrow', arrowMaterial: 'solid', radius: 7, bodyLength: 54, trailWidth: 6 }),
+  },
+  {
+    value: 'energyArrow',
+    labelKey: 'projectile.bodyCards.energyArrow.label',
+    descriptionKey: 'projectile.bodyCards.energyArrow.description',
+    buildParameters: () => ({ ...BODY_THUMBNAIL_BASE, kind: 'arrow', arrowMaterial: 'energy', radius: 8, bodyLength: 50, trailWidth: 6 }),
+  },
+]
+
+/** Maps persisted projectile parameters to exactly one selected body card. */
+export function selectedBodyCard(parameters: ProjectileParameters): ProjectileBodyCard {
+  if (parameters.kind === 'fireball') return 'fireball'
+  return parameters.arrowMaterial === 'solid' ? 'solidArrow' : 'energyArrow'
+}
+
+/** Applies only the body identity represented by a thumbnail card. */
+export function selectBodyCard(parameters: ProjectileParameters, card: ProjectileBodyCard): ProjectileParameters {
+  switch (card) {
+    case 'fireball':
+      return { ...parameters, kind: 'fireball' }
+    case 'solidArrow':
+      return { ...parameters, kind: 'arrow', arrowMaterial: 'solid' }
+    case 'energyArrow':
+      return { ...parameters, kind: 'arrow', arrowMaterial: 'energy' }
   }
 }
 
