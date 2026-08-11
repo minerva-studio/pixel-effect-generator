@@ -77,10 +77,11 @@ function drawFireballCometTrail(
   radius: number,
   bodyLength: number,
 ): void {
-  const halfLength = Math.max(radius * 0.8, bodyLength / 2)
-  const rootX = -halfLength * 0.58
+  const frontHalfLength = Math.max(radius * 0.8, bodyLength / 2)
+  const rearHalfLength = frontHalfLength * (1 + parameters.fireRearExtension * 0.45)
+  const rootX = -rearHalfLength * 0.58
   const length = Math.max(1, parameters.trailLength * radius * 5)
-  const rootHalfWidth = fireballHalfWidthAt(rootX, radius, halfLength, parameters, phase)
+  const rootHalfWidth = fireballHalfWidthAt(rootX, radius, frontHalfLength, rearHalfLength, parameters, phase)
   const palette = parameters.energyPalette
 
   for (let localX = Math.floor(rootX - length); localX <= Math.ceil(rootX); localX += 1) {
@@ -290,10 +291,19 @@ function drawProjectileBody(
     drawFireball(pixels, width, height, parameters, palette, centerX, centerY, cosine, sine, radius, bodyLength, phase)
     return
   }
-  if (parameters.arrowMaterial === 'energy' && palette.length > 1) {
-    drawArrow(pixels, width, height, parameters, [lastColor(palette)], centerX, centerY, cosine, sine, radius + 2, bodyLength + 3)
+  if (parameters.kind === 'crystal') {
+    if (parameters.crystalForm === 'core') {
+      drawCrystalCore(pixels, width, height, parameters, centerX, centerY, cosine, sine, radius, phase)
+    } else {
+      drawCrystalSpear(pixels, width, height, parameters, centerX, centerY, cosine, sine, radius, bodyLength, phase)
+    }
+    return
   }
-  drawArrow(pixels, width, height, parameters, palette, centerX, centerY, cosine, sine, radius, bodyLength)
+  if (parameters.arrowMaterial === 'energy') {
+    drawEnergySpear(pixels, width, height, parameters, centerX, centerY, cosine, sine, radius, bodyLength, phase)
+    return
+  }
+  drawSolidArrow(pixels, width, height, parameters, palette, centerX, centerY, cosine, sine, radius, bodyLength)
 }
 
 /** Draws an animated comet-like head with a rounded leading cap and turbulent rear edge. */
@@ -311,25 +321,31 @@ function drawFireball(
   bodyLength: number,
   phase: number,
 ): void {
-  const halfLength = Math.max(radius * 0.8, bodyLength / 2)
-  const rear = -halfLength
-  const front = halfLength
+  const frontHalfLength = Math.max(radius * 0.8, bodyLength / 2)
+  const rearHalfLength = frontHalfLength * (1 + parameters.fireRearExtension * 0.45)
+  const rear = -rearHalfLength
+  const front = frontHalfLength
   for (let localX = Math.floor(rear - 2); localX <= Math.ceil(front + 2); localX += 1) {
-    const normalizedX = localX / halfLength
+    const normalizedX = localX / (localX < 0 ? rearHalfLength : frontHalfLength)
     if (Math.abs(normalizedX) > 1) continue
     const rearBias = clamp01(-normalizedX)
-    const halfWidth = fireballHalfWidthAt(localX, radius, halfLength, parameters, phase)
+    const halfWidth = fireballHalfWidthAt(localX, radius, frontHalfLength, rearHalfLength, parameters, phase)
     for (let localY = Math.floor(-halfWidth); localY <= Math.ceil(halfWidth); localY += 1) {
+      // The shared cross-section is the body boundary as well as the tail root.
+      // Keeping this normalization here prevents a second ellipse from smoothing
+      // away the deliberately turbulent rear contour.
+      const crossSection = Math.abs(localY) / Math.max(1, halfWidth)
+      if (crossSection > 1) continue
       const radial = Math.hypot(normalizedX, localY / Math.max(1, radius))
-      if (radial > 1) continue
-      const swirl = 0.5 + 0.5 * Math.sin(localY * 0.72 - localX * 0.43 + phase * 2.2)
-      const flicker = 0.5 + 0.5 * Math.sin(localY * 1.37 + localX * 0.29 - phase * 1.4)
+      const swirl = 0.5 + 0.5 * Math.sin(localY * 0.72 - localX * 0.43 + phase * 2.2 * parameters.fireFlowSpeed)
+      const flicker = 0.5 + 0.5 * Math.sin(localY * 1.37 + localX * 0.29 - phase * 1.4 * parameters.fireFlowSpeed)
       const depth = clamp01(
         radial * 0.68
         + rearBias * 0.18
         + (swirl * 0.13 + flicker * 0.07) * parameters.silhouetteVariation,
       )
-      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localX, localY, paletteColor(palette, depth))
+      const mottleDepth = fireballMottleDepth(depth, radial, rearBias, localX, localY, parameters, phase, palette.length)
+      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localX, localY, paletteColor(palette, mottleDepth))
     }
   }
 }
@@ -338,16 +354,43 @@ function drawFireball(
 function fireballHalfWidthAt(
   localX: number,
   radius: number,
-  halfLength: number,
+  frontHalfLength: number,
+  rearHalfLength: number,
   parameters: ProjectileParameters,
   phase: number,
 ): number {
-  const normalizedX = localX / halfLength
+  const normalizedX = localX / (localX < 0 ? rearHalfLength : frontHalfLength)
   const ellipseHalf = radius * Math.sqrt(Math.max(0, 1 - normalizedX * normalizedX))
   const rearBias = clamp01(-normalizedX)
-  const contourWave = Math.sin(localX * 0.55 + phase * 1.5)
-    + 0.55 * Math.sin(localX * 1.17 - phase * 2.1 + parameters.seed * 0.0007)
-  return Math.max(0, ellipseHalf * (1 + parameters.silhouetteVariation * 0.16 * contourWave * (0.35 + rearBias)))
+  const contourWave = 0.25 * Math.sin(localX * 0.18 + phase * 1.5 * parameters.fireFlowSpeed)
+    + 0.1 * Math.sin(localX * 0.43 - phase * 2.1 * parameters.fireFlowSpeed + parameters.seed * 0.0007)
+  return Math.max(0, ellipseHalf * (1 + parameters.fireRearTurbulence * contourWave * rearBias))
+}
+
+/** Applies sparse, opaque, heat-flowing color-band shifts to the fireball middle and rear. */
+function fireballMottleDepth(
+  depth: number,
+  radial: number,
+  rearBias: number,
+  localX: number,
+  localY: number,
+  parameters: ProjectileParameters,
+  phase: number,
+  paletteLength: number,
+): number {
+  if (parameters.fireMottleAmount <= 0) return depth
+  // Preserve the bright thermal core even when its local coordinates overlap
+  // the middle/rear mask during a stretched fireball pose.
+  if (depth < 0.5) return depth
+  const middleMask = smoothStep(0.38, 0.55, radial) * (1 - smoothStep(0.62, 0.8, radial))
+  const rearMask = smoothStep(0.28, 0.75, rearBias)
+  const coverage = middleMask * rearMask
+  if (coverage <= 0) return depth
+  const flowPhase = phase * parameters.fireFlowSpeed
+  const field = 0.5 + 0.5 * Math.sin(localX * 0.38 + localY * 0.23 + flowPhase * 0.72 + parameters.seed * 0.0003)
+  if (field < 1 - parameters.fireMottleAmount * coverage * 0.35) return depth
+  const bandStep = 1 / Math.max(2, paletteLength)
+  return clamp01(depth + bandStep)
 }
 
 /** Smoothly transitions a normalized value between two endpoints. */
@@ -357,7 +400,7 @@ function smoothStep(edge0: number, edge1: number, value: number): number {
 }
 
 /** Draws an arrow with separately readable fletching, shaft, and head geometry. */
-function drawArrow(
+function drawSolidArrow(
   pixels: Uint8ClampedArray,
   width: number,
   height: number,
@@ -373,9 +416,9 @@ function drawArrow(
   const tail = -bodyLength / 2
   const tip = bodyLength / 2
   const fletchEnd = tail + bodyLength * 0.26
-  const headStart = tip - bodyLength * 0.3
-  const shaftHalf = Math.max(1, Math.round(radius * 0.16))
-  const fletchHalf = Math.max(shaftHalf + 1, Math.round(radius * 0.58))
+  const headStart = tip - bodyLength * parameters.solidHeadLength
+  const shaftHalf = Math.max(1, Math.round(radius * parameters.solidShaftWidth))
+  const fletchHalf = Math.max(shaftHalf + 1, Math.round(radius * parameters.solidFletchingSpread))
   const headHalf = Math.max(shaftHalf + 2, Math.round(radius * 0.82))
   for (let localX = Math.floor(tail); localX <= Math.ceil(tip); localX += 1) {
     let half = shaftHalf
@@ -391,6 +434,159 @@ function drawArrow(
     for (let offset = -half; offset <= half; offset += 1) {
       const depth = half === 0 ? 0 : Math.abs(offset) / half
       writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localX, offset, paletteColor(palette, depth))
+    }
+  }
+}
+
+/** Draws a self-contained non-physical energy spear without trailing fragments. */
+function drawEnergySpear(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  parameters: ProjectileParameters,
+  centerX: number,
+  centerY: number,
+  cosine: number,
+  sine: number,
+  radius: number,
+  bodyLength: number,
+  _phase: number,
+): void {
+  const palette = parameters.energyPalette
+  drawEnergySpearLayer(pixels, width, height, centerX, centerY, cosine, sine, radius * (1 + parameters.energyShellWidth), bodyLength + 5, parameters.energyTipSharpness, lastColor(palette))
+  drawEnergySpearLayer(pixels, width, height, centerX, centerY, cosine, sine, radius, bodyLength, parameters.energyTipSharpness, palette[1] ?? palette[0])
+  const coreLength = Math.max(6, bodyLength * parameters.energyCoreLength)
+  drawEnergySpearLayer(pixels, width, height, centerX + cosine * bodyLength * 0.08, centerY + sine * bodyLength * 0.08, cosine, sine, Math.max(1, radius * 0.38), coreLength, parameters.energyTipSharpness, palette[0])
+}
+
+/** Rasterizes one sharp diamond spear layer without physical arrow fletching. */
+function drawEnergySpearLayer(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  centerX: number,
+  centerY: number,
+  cosine: number,
+  sine: number,
+  radius: number,
+  bodyLength: number,
+  tipSharpness: number,
+  color: RgbColor,
+): void {
+  const tail = -bodyLength * 0.48
+  const tip = bodyLength * 0.52
+  const widestX = tail + bodyLength * (1 - tipSharpness)
+  for (let localX = Math.floor(tail); localX <= Math.ceil(tip); localX += 1) {
+    const slope = localX <= widestX
+      ? (localX - tail) / Math.max(1, widestX - tail)
+      : (tip - localX) / Math.max(1, tip - widestX)
+    const halfWidth = Math.max(0, Math.round(radius * clamp01(slope)))
+    for (let localY = -halfWidth; localY <= halfWidth; localY += 1) {
+      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localX, localY, color)
+    }
+  }
+}
+
+/** Draws an elongated faceted crystal body without a second trailing effect. */
+function drawCrystalSpear(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  parameters: ProjectileParameters,
+  centerX: number,
+  centerY: number,
+  cosine: number,
+  sine: number,
+  radius: number,
+  bodyLength: number,
+  _phase: number,
+): void {
+  const palette = parameters.energyPalette
+  drawFacetedCrystal(pixels, width, height, centerX, centerY, cosine, sine, radius * parameters.crystalSpearThickness, bodyLength, parameters.crystalSpearTaper, parameters.crystalRefractionStrength, palette)
+}
+
+/** Draws a crystal nucleus with orbiting facets that visibly progress through the loop. */
+function drawCrystalCore(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  parameters: ProjectileParameters,
+  centerX: number,
+  centerY: number,
+  cosine: number,
+  sine: number,
+  radius: number,
+  phase: number,
+): void {
+  const palette = parameters.energyPalette
+  const coreRadius = radius * parameters.crystalCoreScale
+  drawFacetedCrystal(pixels, width, height, centerX, centerY, cosine, sine, coreRadius, Math.max(8, coreRadius * 1.45), 0.5, parameters.crystalRefractionStrength, palette)
+  const orbitRadius = coreRadius * parameters.crystalOrbitRadius
+  for (let index = 0; index < 3; index += 1) {
+    const angle = phase * parameters.crystalOrbitSpeed + index * Math.PI * 2 / 3
+    drawCrystalShard(
+      pixels,
+      width,
+      height,
+      centerX,
+      centerY,
+      cosine,
+      sine,
+      Math.cos(angle) * orbitRadius,
+      Math.sin(angle) * orbitRadius * 0.72,
+      Math.max(1, Math.round(radius * 0.26)),
+      palette[1] ?? palette[0],
+      lastColor(palette),
+    )
+  }
+}
+
+/** Draws a two-tone faceted diamond with a brighter leading plane. */
+function drawFacetedCrystal(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  centerX: number,
+  centerY: number,
+  cosine: number,
+  sine: number,
+  radius: number,
+  bodyLength: number,
+  taper: number,
+  refractionStrength: number,
+  palette: readonly RgbColor[],
+): void {
+  const halfLength = bodyLength / 2
+  for (let localX = Math.floor(-halfLength); localX <= Math.ceil(halfLength); localX += 1) {
+    const profile = Math.max(0, 1 - Math.abs(localX) / Math.max(1, halfLength))
+    const halfWidth = Math.max(0, Math.round(radius * profile ** (0.6 + taper)))
+    for (let localY = -halfWidth; localY <= halfWidth; localY += 1) {
+      const leading = clamp01((localX + halfLength) / Math.max(1, bodyLength))
+      const plane = localY < 0 ? 0.2 - refractionStrength * 0.12 : 0.55 + refractionStrength * 0.18
+      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localX, localY, paletteColor(palette, clamp01(plane + (1 - leading) * 0.32)))
+    }
+  }
+}
+
+/** Draws a small diamond satellite in local projectile space. */
+function drawCrystalShard(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  centerX: number,
+  centerY: number,
+  cosine: number,
+  sine: number,
+  localCenterX: number,
+  localCenterY: number,
+  radius: number,
+  bright: RgbColor,
+  dark: RgbColor,
+): void {
+  for (let localX = -radius; localX <= radius; localX += 1) {
+    const halfWidth = Math.max(0, radius - Math.abs(localX))
+    for (let localY = -halfWidth; localY <= halfWidth; localY += 1) {
+      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localCenterX + localX, localCenterY + localY, localY <= 0 ? bright : dark)
     }
   }
 }

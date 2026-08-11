@@ -46,11 +46,22 @@ describe('projectile project codec', () => {
 
   it('fails when every required field is missing or invalid', () => {
     const json = serializeProjectileParameters(DEFAULT_PROJECTILE_PARAMETERS) as Record<string, unknown>
-    for (const key of Object.keys(json)) {
+    const optionalLegacyFields = new Set([
+      'crystalForm', 'fireRearExtension', 'fireRearTurbulence', 'fireFlowSpeed', 'fireMottleAmount',
+      'solidHeadLength', 'solidShaftWidth', 'solidFletchingSpread',
+      'energyCoreLength', 'energyShellWidth', 'energyTipSharpness',
+      'crystalSpearTaper', 'crystalSpearThickness', 'crystalRefractionStrength',
+      'crystalCoreScale', 'crystalOrbitRadius', 'crystalOrbitSpeed',
+    ])
+    for (const key of Object.keys(json).filter((key) => !optionalLegacyFields.has(key))) {
       const { [key]: _removed, ...rest } = json
       expect(() => parseProjectileParameters(rest), `missing ${key}`).toThrow(RangeError)
     }
     expect(() => parseProjectileParameters({ ...json, kind: 'comet' })).toThrow(RangeError)
+    const { crystalForm: _crystalForm, ...legacy } = json
+    expect(parseProjectileParameters(legacy)).toMatchObject({ crystalForm: 'spear' })
+    const { fireRearExtension: _extension, fireMottleAmount: _mottle, energyCoreLength: _coreLength, ...legacyParameters } = json
+    expect(parseProjectileParameters(legacyParameters)).toMatchObject({ fireRearExtension: 0.5, fireMottleAmount: 0, energyCoreLength: 0.55 })
     expect(() => parseProjectileParameters({ ...json, radius: 65 })).toThrow(RangeError)
     expect(() => parseProjectileParameters({ ...json, bodyLength: 125 })).toThrow(RangeError)
     expect(() => parseProjectileParameters({ ...json, trailMode: 'glow' })).toThrow(RangeError)

@@ -89,6 +89,8 @@ describe('generator registry', () => {
       'blastBolt',
       'enchantedArrow',
       'energyArrow',
+      'crystalSpear',
+      'crystalCore',
     ])
     expect(projectileModule.defaultParameters.canvasWidth).toBe(128)
     expect(projectileModule.render(projectileModule.defaultParameters)).toHaveLength(10)

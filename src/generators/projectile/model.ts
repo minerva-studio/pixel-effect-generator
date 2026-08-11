@@ -17,8 +17,9 @@ export const MAX_BODY_PALETTE_SIZE = 4
 export const MIN_ENERGY_PALETTE_SIZE = 2
 export const MAX_ENERGY_PALETTE_SIZE = 6
 
-export type ProjectileKind = 'fireball' | 'arrow'
+export type ProjectileKind = 'fireball' | 'arrow' | 'crystal'
 export type ArrowMaterial = 'solid' | 'energy'
+export type CrystalForm = 'spear' | 'core'
 export type TrailMode = 'off' | 'fire' | 'energy'
 
 export interface ProjectileParameters {
@@ -28,6 +29,23 @@ export interface ProjectileParameters {
   readonly seed: number
   readonly kind: ProjectileKind
   readonly arrowMaterial: ArrowMaterial
+  readonly crystalForm: CrystalForm
+  readonly fireRearExtension: number
+  readonly fireRearTurbulence: number
+  readonly fireFlowSpeed: number
+  readonly fireMottleAmount: number
+  readonly solidHeadLength: number
+  readonly solidShaftWidth: number
+  readonly solidFletchingSpread: number
+  readonly energyCoreLength: number
+  readonly energyShellWidth: number
+  readonly energyTipSharpness: number
+  readonly crystalSpearTaper: number
+  readonly crystalSpearThickness: number
+  readonly crystalRefractionStrength: number
+  readonly crystalCoreScale: number
+  readonly crystalOrbitRadius: number
+  readonly crystalOrbitSpeed: number
   readonly radius: number
   readonly bodyLength: number
   readonly silhouetteVariation: number
@@ -135,9 +153,26 @@ export const DEFAULT_PROJECTILE_PARAMETERS: ProjectileParameters = {
   seed: 20260806,
   kind: 'fireball',
   arrowMaterial: 'solid',
+  crystalForm: 'spear',
+  fireRearExtension: 0.5,
+  fireRearTurbulence: 0.6,
+  fireFlowSpeed: 1,
+  fireMottleAmount: 0.22,
+  solidHeadLength: 0.3,
+  solidShaftWidth: 0.16,
+  solidFletchingSpread: 0.58,
+  energyCoreLength: 0.55,
+  energyShellWidth: 0.25,
+  energyTipSharpness: 0.55,
+  crystalSpearTaper: 0.5,
+  crystalSpearThickness: 1,
+  crystalRefractionStrength: 0.55,
+  crystalCoreScale: 1,
+  crystalOrbitRadius: 1.35,
+  crystalOrbitSpeed: 1,
   radius: 18,
   bodyLength: 38,
-  silhouetteVariation: 0.25,
+  silhouetteVariation: 0.4,
   rotationDegrees: 0,
   loopCycles: 1,
   pulseAmount: 0.18,
@@ -162,10 +197,10 @@ export const DEFAULT_PROJECTILE_PARAMETERS: ProjectileParameters = {
     { r: 74, g: 60, b: 52, a: 255 },
   ],
   energyPalette: [
-    { r: 255, g: 255, b: 255, a: 255 },
-    { r: 255, g: 200, b: 80, a: 255 },
-    { r: 255, g: 110, b: 40, a: 255 },
-    { r: 130, g: 40, b: 30, a: 255 },
+    { r: 255, g: 244, b: 176, a: 255 },
+    { r: 255, g: 196, b: 77, a: 255 },
+    { r: 240, g: 107, b: 36, a: 255 },
+    { r: 122, g: 30, b: 22, a: 255 },
   ],
 }
 
@@ -175,12 +210,31 @@ export function assertValidProjectileParameters(parameters: ProjectileParameters
   assertInRange(parameters.canvasHeight, MIN_CANVAS_SIZE, MAX_CANVAS_SIZE, 'canvasHeight')
   assertInRange(parameters.frameCount, MIN_FRAME_COUNT, MAX_FRAME_COUNT, 'frameCount')
   assertInRange(parameters.seed, 0, 0xffffffff, 'seed')
-  if (parameters.kind !== 'fireball' && parameters.kind !== 'arrow') {
+  if (parameters.kind !== 'fireball' && parameters.kind !== 'arrow' && parameters.kind !== 'crystal') {
     throw new RangeError('kind is invalid.')
   }
   if (parameters.arrowMaterial !== 'solid' && parameters.arrowMaterial !== 'energy') {
     throw new RangeError('arrowMaterial is invalid.')
   }
+  if (parameters.crystalForm !== 'spear' && parameters.crystalForm !== 'core') {
+    throw new RangeError('crystalForm is invalid.')
+  }
+  assertInRange(parameters.fireRearExtension, 0, 1, 'fireRearExtension')
+  assertInRange(parameters.fireRearTurbulence, 0, 1, 'fireRearTurbulence')
+  assertInRange(parameters.fireFlowSpeed, 0.25, 3, 'fireFlowSpeed')
+  assertInRange(parameters.fireMottleAmount, 0, 1, 'fireMottleAmount')
+  assertInRange(parameters.solidHeadLength, 0.15, 0.55, 'solidHeadLength')
+  assertInRange(parameters.solidShaftWidth, 0.08, 0.4, 'solidShaftWidth')
+  assertInRange(parameters.solidFletchingSpread, 0.2, 1, 'solidFletchingSpread')
+  assertInRange(parameters.energyCoreLength, 0.25, 0.85, 'energyCoreLength')
+  assertInRange(parameters.energyShellWidth, 0.05, 0.5, 'energyShellWidth')
+  assertInRange(parameters.energyTipSharpness, 0.2, 0.8, 'energyTipSharpness')
+  assertInRange(parameters.crystalSpearTaper, 0.2, 0.8, 'crystalSpearTaper')
+  assertInRange(parameters.crystalSpearThickness, 0.5, 1.5, 'crystalSpearThickness')
+  assertInRange(parameters.crystalRefractionStrength, 0, 1, 'crystalRefractionStrength')
+  assertInRange(parameters.crystalCoreScale, 0.5, 1.5, 'crystalCoreScale')
+  assertInRange(parameters.crystalOrbitRadius, 0.75, 2.25, 'crystalOrbitRadius')
+  assertInRange(parameters.crystalOrbitSpeed, 0.25, 3, 'crystalOrbitSpeed')
   const limits = projectileFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
   assertInRange(parameters.radius, 2, limits.maxRadius, 'radius')
   assertInRange(parameters.bodyLength, 4, limits.maxBodyLength, 'bodyLength')

@@ -1037,6 +1037,22 @@
         "label": "轮廓变化",
         "description": "火球或箭矢轮廓的可复现凹凸程度。"
       },
+      "fireRearExtension": { "label": "后焰伸展", "description": "只向彗星尾根部延展火球后半部。" },
+      "fireRearTurbulence": { "label": "后缘湍动", "description": "低频动态后缘轮廓的强度。" },
+      "fireFlowSpeed": { "label": "热流速度", "description": "火球内部颜色流动的速度。" },
+      "fireMottleAmount": { "label": "表面杂色", "description": "随热流穿过火球中后部的稀疏色阶变化。" },
+      "solidHeadLength": { "label": "箭头长度", "description": "实体箭中尖锐箭头所占的长度比例。" },
+      "solidShaftWidth": { "label": "箭杆粗细", "description": "实体箭中央箭杆的厚度。" },
+      "solidFletchingSpread": { "label": "尾羽张角", "description": "实体箭后方尾羽的展开宽度。" },
+      "energyCoreLength": { "label": "能量核长度", "description": "明亮内层能量矛核的长度。" },
+      "energyShellWidth": { "label": "能量外壳", "description": "深色外层能量壳额外增加的宽度。" },
+      "energyTipSharpness": { "label": "菱形尖锐度", "description": "将菱形最宽处移向更尖锐或更宽阔的前端。" },
+      "crystalSpearTaper": { "label": "晶体尖锐度", "description": "晶体矛多面端点的尖锐程度。" },
+      "crystalSpearThickness": { "label": "晶体厚度", "description": "晶体矛横截面的厚度。" },
+      "crystalRefractionStrength": { "label": "折射层强度", "description": "晶体明暗切面之间的对比度。" },
+      "crystalCoreScale": { "label": "核心尺寸", "description": "中央晶体核心的大小。" },
+      "crystalOrbitRadius": { "label": "卫星轨道半径", "description": "卫星碎晶与晶核之间的距离。" },
+      "crystalOrbitSpeed": { "label": "卫星转速", "description": "卫星碎晶在无缝循环内的旋转速度。" },
       "rotation": {
         "label": "烘焙旋转",
         "description": "主体、尾迹、火花与残像一起旋转。"
@@ -1126,6 +1142,14 @@
       "energyArrow": {
         "label": "能量箭",
         "description": "带明亮边缘的纯能量轮廓。"
+      },
+      "crystalSpear": {
+        "label": "晶体矛",
+        "description": "轮廓完整的多面晶体弹射物。"
+      },
+      "crystalCore": {
+        "label": "晶核",
+        "description": "由卫星晶面的悬浮晶体核心。"
       }
     },
     "options": {
@@ -1168,6 +1192,14 @@
       "energyArrow": {
         "name": "能量箭",
         "description": "带清晰边缘辉光与宽扩散火花的纯能量箭。"
+      },
+      "crystalSpear": {
+        "name": "晶体矛",
+        "description": "带漂移碎片与短折射尾迹的多面晶体矛。"
+      },
+      "crystalCore": {
+        "name": "晶核",
+        "description": "被稳定多面碎晶环绕的悬浮晶体核心。"
       }
     },
     "seed": {

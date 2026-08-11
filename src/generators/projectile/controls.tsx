@@ -59,6 +59,32 @@ export function ProjectileControls({ category, parameters, onChange }: Projectil
           <NumberControl label={t('projectile.controls.radius.label')} description={t('projectile.controls.radius.description')} value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />
           <NumberControl label={t('projectile.controls.bodyLength.label')} description={t('projectile.controls.bodyLength.description')} value={parameters.bodyLength} minimum={4} maximum={limits.maxBodyLength} unit="px" onChange={(value) => update('bodyLength', value)} />
           <NumberControl label={t('projectile.controls.silhouetteVariation.label')} description={t('projectile.controls.silhouetteVariation.description')} value={parameters.silhouetteVariation} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('silhouetteVariation', value)} />
+          {parameters.kind === 'fireball' ? <>
+            <NumberControl label={t('projectile.controls.fireRearExtension.label')} description={t('projectile.controls.fireRearExtension.description')} value={parameters.fireRearExtension} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fireRearExtension', value)} />
+            <NumberControl label={t('projectile.controls.fireRearTurbulence.label')} description={t('projectile.controls.fireRearTurbulence.description')} value={parameters.fireRearTurbulence} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fireRearTurbulence', value)} />
+            <NumberControl label={t('projectile.controls.fireFlowSpeed.label')} description={t('projectile.controls.fireFlowSpeed.description')} value={parameters.fireFlowSpeed} minimum={0.25} maximum={3} step={0.05} unit="×" onChange={(value) => update('fireFlowSpeed', value)} />
+            <NumberControl label={t('projectile.controls.fireMottleAmount.label')} description={t('projectile.controls.fireMottleAmount.description')} value={parameters.fireMottleAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fireMottleAmount', value)} />
+          </> : null}
+          {parameters.kind === 'arrow' && parameters.arrowMaterial === 'solid' ? <>
+            <NumberControl label={t('projectile.controls.solidHeadLength.label')} description={t('projectile.controls.solidHeadLength.description')} value={parameters.solidHeadLength} minimum={0.15} maximum={0.55} step={0.01} scale={100} unit="%" onChange={(value) => update('solidHeadLength', value)} />
+            <NumberControl label={t('projectile.controls.solidShaftWidth.label')} description={t('projectile.controls.solidShaftWidth.description')} value={parameters.solidShaftWidth} minimum={0.08} maximum={0.4} step={0.01} scale={100} unit="%" onChange={(value) => update('solidShaftWidth', value)} />
+            <NumberControl label={t('projectile.controls.solidFletchingSpread.label')} description={t('projectile.controls.solidFletchingSpread.description')} value={parameters.solidFletchingSpread} minimum={0.2} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('solidFletchingSpread', value)} />
+          </> : null}
+          {parameters.kind === 'arrow' && parameters.arrowMaterial === 'energy' ? <>
+            <NumberControl label={t('projectile.controls.energyCoreLength.label')} description={t('projectile.controls.energyCoreLength.description')} value={parameters.energyCoreLength} minimum={0.25} maximum={0.85} step={0.01} scale={100} unit="%" onChange={(value) => update('energyCoreLength', value)} />
+            <NumberControl label={t('projectile.controls.energyShellWidth.label')} description={t('projectile.controls.energyShellWidth.description')} value={parameters.energyShellWidth} minimum={0.05} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(value) => update('energyShellWidth', value)} />
+            <NumberControl label={t('projectile.controls.energyTipSharpness.label')} description={t('projectile.controls.energyTipSharpness.description')} value={parameters.energyTipSharpness} minimum={0.2} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(value) => update('energyTipSharpness', value)} />
+          </> : null}
+          {parameters.kind === 'crystal' && parameters.crystalForm === 'spear' ? <>
+            <NumberControl label={t('projectile.controls.crystalSpearTaper.label')} description={t('projectile.controls.crystalSpearTaper.description')} value={parameters.crystalSpearTaper} minimum={0.2} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalSpearTaper', value)} />
+            <NumberControl label={t('projectile.controls.crystalSpearThickness.label')} description={t('projectile.controls.crystalSpearThickness.description')} value={parameters.crystalSpearThickness} minimum={0.5} maximum={1.5} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalSpearThickness', value)} />
+            <NumberControl label={t('projectile.controls.crystalRefractionStrength.label')} description={t('projectile.controls.crystalRefractionStrength.description')} value={parameters.crystalRefractionStrength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalRefractionStrength', value)} />
+          </> : null}
+          {parameters.kind === 'crystal' && parameters.crystalForm === 'core' ? <>
+            <NumberControl label={t('projectile.controls.crystalCoreScale.label')} description={t('projectile.controls.crystalCoreScale.description')} value={parameters.crystalCoreScale} minimum={0.5} maximum={1.5} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalCoreScale', value)} />
+            <NumberControl label={t('projectile.controls.crystalOrbitRadius.label')} description={t('projectile.controls.crystalOrbitRadius.description')} value={parameters.crystalOrbitRadius} minimum={0.75} maximum={2.25} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalOrbitRadius', value)} />
+            <NumberControl label={t('projectile.controls.crystalOrbitSpeed.label')} description={t('projectile.controls.crystalOrbitSpeed.description')} value={parameters.crystalOrbitSpeed} minimum={0.25} maximum={3} step={0.05} unit="×" onChange={(value) => update('crystalOrbitSpeed', value)} />
+          </> : null}
           <NumberControl label={t('projectile.controls.rotation.label')} description={t('projectile.controls.rotation.description')} value={parameters.rotationDegrees} minimum={0} maximum={359} unit="°" onChange={(value) => update('rotationDegrees', value)} />
         </div>
       )
@@ -156,7 +182,7 @@ export function ProjectileControls({ category, parameters, onChange }: Projectil
   }
 }
 
-type ProjectileBodyCard = 'fireball' | 'solidArrow' | 'energyArrow'
+type ProjectileBodyCard = 'fireball' | 'solidArrow' | 'energyArrow' | 'crystalSpear' | 'crystalCore'
 
 /** Fixed, body-only parameters keep the three animated thumbnails comparable. */
 const BODY_THUMBNAIL_BASE: ProjectileParameters = {
@@ -186,11 +212,24 @@ const BODY_CARD_OPTIONS: readonly ShapeCardOption<ProjectileParameters>[] = [
     descriptionKey: 'projectile.bodyCards.energyArrow.description',
     buildParameters: () => ({ ...BODY_THUMBNAIL_BASE, kind: 'arrow', arrowMaterial: 'energy', radius: 8, bodyLength: 50, trailWidth: 6 }),
   },
+  {
+    value: 'crystalSpear',
+    labelKey: 'projectile.bodyCards.crystalSpear.label',
+    descriptionKey: 'projectile.bodyCards.crystalSpear.description',
+    buildParameters: () => ({ ...BODY_THUMBNAIL_BASE, kind: 'crystal', crystalForm: 'spear', radius: 10, bodyLength: 46, trailWidth: 6 }),
+  },
+  {
+    value: 'crystalCore',
+    labelKey: 'projectile.bodyCards.crystalCore.label',
+    descriptionKey: 'projectile.bodyCards.crystalCore.description',
+    buildParameters: () => ({ ...BODY_THUMBNAIL_BASE, kind: 'crystal', crystalForm: 'core', radius: 13, bodyLength: 28, trailWidth: 5 }),
+  },
 ]
 
 /** Maps persisted projectile parameters to exactly one selected body card. */
 export function selectedBodyCard(parameters: ProjectileParameters): ProjectileBodyCard {
   if (parameters.kind === 'fireball') return 'fireball'
+  if (parameters.kind === 'crystal') return parameters.crystalForm === 'spear' ? 'crystalSpear' : 'crystalCore'
   return parameters.arrowMaterial === 'solid' ? 'solidArrow' : 'energyArrow'
 }
 
@@ -203,6 +242,10 @@ export function selectBodyCard(parameters: ProjectileParameters, card: Projectil
       return { ...parameters, kind: 'arrow', arrowMaterial: 'solid' }
     case 'energyArrow':
       return { ...parameters, kind: 'arrow', arrowMaterial: 'energy' }
+    case 'crystalSpear':
+      return { ...parameters, kind: 'crystal', crystalForm: 'spear', trailMode: 'energy' }
+    case 'crystalCore':
+      return { ...parameters, kind: 'crystal', crystalForm: 'core', trailMode: 'energy' }
   }
 }
 

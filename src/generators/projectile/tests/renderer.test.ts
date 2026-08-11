@@ -67,16 +67,100 @@ describe('renderProjectileFrames', () => {
     expect(frameBytes(withTrail)).not.toEqual(frameBytes(noAfterimages))
   })
 
-  it('produces non-empty, distinct outputs for fireball, solid arrow, and energy arrow', () => {
+  it('produces non-empty, distinct outputs for every projectile family', () => {
     const fireball = renderProjectileFrames(DEFAULT_PROJECTILE_PARAMETERS)
     const solidArrow = renderProjectileFrames({ ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'solid' })
     const energyArrow = renderProjectileFrames({ ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'energy' })
-    for (const frames of [fireball, solidArrow, energyArrow]) {
+    const crystalSpear = renderProjectileFrames({ ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'spear' })
+    const crystalCore = renderProjectileFrames({ ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'core' })
+    for (const frames of [fireball, solidArrow, energyArrow, crystalSpear, crystalCore]) {
       expect(countOpaque(frames)).toBeGreaterThan(20)
     }
     expect(hashFrames(fireball)).not.toBe(hashFrames(solidArrow))
     expect(hashFrames(solidArrow)).not.toBe(hashFrames(energyArrow))
     expect(hashFrames(energyArrow)).not.toBe(hashFrames(fireball))
+    expect(hashFrames(crystalSpear)).not.toBe(hashFrames(crystalCore))
+  })
+
+  it('gives solid arrows and energy spears different alpha silhouettes even with matching colors', () => {
+    const palette = DEFAULT_PROJECTILE_PARAMETERS.energyPalette
+    const base = {
+      ...DEFAULT_PROJECTILE_PARAMETERS,
+      kind: 'arrow' as const,
+      bodyPalette: palette,
+      energyPalette: palette,
+      trailMode: 'off' as const,
+      sparksEnabled: false,
+      afterimagesEnabled: false,
+      pulseAmount: 0,
+      wobbleAmount: 0,
+    }
+    const solid = renderProjectileFrame({ ...base, arrowMaterial: 'solid' }, 0)
+    const energy = renderProjectileFrame({ ...base, arrowMaterial: 'energy' }, 0)
+    expect(alphaMask(solid)).not.toEqual(alphaMask(energy))
+  })
+
+  it('moves crystal-core satellites while preserving its loop seam and rotation', () => {
+    const parameters = {
+      ...DEFAULT_PROJECTILE_PARAMETERS,
+      kind: 'crystal' as const,
+      crystalForm: 'core' as const,
+      trailMode: 'off' as const,
+      sparksEnabled: false,
+      afterimagesEnabled: false,
+      rotationDegrees: 90,
+    }
+    expect(frameBytes([renderProjectileFrame(parameters, 0)])).toEqual(frameBytes([renderProjectileFrame(parameters, 1)]))
+    expect(alphaMask(renderProjectileFrame(parameters, 0))).not.toEqual(alphaMask(renderProjectileFrame(parameters, 0.25)))
+  })
+
+  it('keeps energy arrows and crystal spears self-contained when the common trail is disabled', () => {
+    const quiet = {
+      ...DEFAULT_PROJECTILE_PARAMETERS,
+      trailMode: 'off' as const,
+      sparksEnabled: false,
+      afterimagesEnabled: false,
+      pulseAmount: 0,
+      wobbleAmount: 0,
+    }
+    const energyArrow = { ...quiet, kind: 'arrow' as const, arrowMaterial: 'energy' as const }
+    const crystalSpear = { ...quiet, kind: 'crystal' as const, crystalForm: 'spear' as const }
+    expect(frameBytes([renderProjectileFrame(energyArrow, 0)])).toEqual(frameBytes([renderProjectileFrame(energyArrow, 0.25)]))
+    expect(frameBytes([renderProjectileFrame(crystalSpear, 0)])).toEqual(frameBytes([renderProjectileFrame(crystalSpear, 0.25)]))
+  })
+
+  it('changes only the matching body family when a dedicated control is adjusted', () => {
+    const quiet = {
+      ...DEFAULT_PROJECTILE_PARAMETERS,
+      trailMode: 'off' as const,
+      sparksEnabled: false,
+      afterimagesEnabled: false,
+      pulseAmount: 0,
+      wobbleAmount: 0,
+    }
+    const fireball = renderProjectileFrame(quiet, 0)
+    expect(frameBytes([fireball])).not.toEqual(frameBytes([renderProjectileFrame({ ...quiet, fireRearExtension: 1 }, 0)]))
+    const arrow = { ...quiet, kind: 'arrow' as const, arrowMaterial: 'solid' as const }
+    expect(frameBytes([renderProjectileFrame(arrow, 0)])).toEqual(frameBytes([renderProjectileFrame({ ...arrow, fireRearExtension: 1 }, 0)]))
+    expect(frameBytes([renderProjectileFrame(arrow, 0)])).not.toEqual(frameBytes([renderProjectileFrame({ ...arrow, solidHeadLength: 0.55 }, 0)]))
+  })
+
+  it('adds deterministic opaque mottling only to the fireball middle and rear', () => {
+    const quiet = {
+      ...DEFAULT_PROJECTILE_PARAMETERS,
+      trailMode: 'off' as const,
+      sparksEnabled: false,
+      afterimagesEnabled: false,
+      pulseAmount: 0,
+      wobbleAmount: 0,
+    }
+    const plain = renderProjectileFrame({ ...quiet, fireMottleAmount: 0 }, 0.25)
+    const mottled = renderProjectileFrame({ ...quiet, fireMottleAmount: 1 }, 0.25)
+    expect(Array.from(plain.pixels.filter((_, index) => index % 4 === 3))).toEqual(Array.from(mottled.pixels.filter((_, index) => index % 4 === 3)))
+    expect(frameBytes([plain])).not.toEqual(frameBytes([mottled]))
+    expect(frameBytes([renderProjectileFrame({ ...quiet, fireMottleAmount: 1 }, 0)])).toEqual(frameBytes([renderProjectileFrame({ ...quiet, fireMottleAmount: 1 }, 1)]))
+    const arrow = { ...quiet, kind: 'arrow' as const, arrowMaterial: 'energy' as const }
+    expect(frameBytes([renderProjectileFrame(arrow, 0.25)])).toEqual(frameBytes([renderProjectileFrame({ ...arrow, fireMottleAmount: 1 }, 0.25)]))
   })
 
   it('uses only the owning palettes with binary alpha', () => {
@@ -351,4 +435,11 @@ function hashFrames(frames: readonly PixelFrame[]): string {
     }
   }
   return (hash >>> 0).toString(16)
+}
+
+/** Captures opaque-pixel geometry without allowing color differences to hide a shared silhouette. */
+function alphaMask(frame: PixelFrame): number[] {
+  const mask: number[] = []
+  for (let offset = 3; offset < frame.pixels.length; offset += 4) mask.push(frame.pixels[offset])
+  return mask
 }

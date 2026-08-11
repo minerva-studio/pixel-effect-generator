@@ -12,8 +12,8 @@ import {
 } from '../presets'
 
 describe('projectile built-in presets', () => {
-  it('exposes four unique valid presets', () => {
-    expect(PROJECTILE_BUILTIN_PRESETS.map(({ id }) => id)).toEqual(['fireball', 'blastBolt', 'enchantedArrow', 'energyArrow'])
+  it('exposes six unique valid presets', () => {
+    expect(PROJECTILE_BUILTIN_PRESETS.map(({ id }) => id)).toEqual(['fireball', 'blastBolt', 'enchantedArrow', 'energyArrow', 'crystalSpear', 'crystalCore'])
     for (const preset of PROJECTILE_BUILTIN_PRESETS) {
       expect(validateProjectilePreset(preset.payload).ok).toBe(true)
       expect(() => renderProjectileFrames(applyProjectilePreset(DEFAULT_PROJECTILE_PARAMETERS, preset.payload))).not.toThrow()
@@ -22,6 +22,7 @@ describe('projectile built-in presets', () => {
     expect((PROJECTILE_BUILTIN_PRESETS[1].payload as Record<string, unknown>)).toMatchObject({ kind: 'fireball', trailMode: 'fire', sparkCount: 22 })
     expect((PROJECTILE_BUILTIN_PRESETS[2].payload as Record<string, unknown>).arrowMaterial).toBe('solid')
     expect((PROJECTILE_BUILTIN_PRESETS[3].payload as Record<string, unknown>).arrowMaterial).toBe('energy')
+    expect((PROJECTILE_BUILTIN_PRESETS[3].payload as Record<string, unknown>)).toMatchObject({ energyCoreLength: 0.64, energyShellWidth: 0.32 })
   })
 
   it('preserves canvas size and frame count when applying presets', () => {
@@ -73,6 +74,12 @@ describe('projectile built-in presets', () => {
       bodyPalette: DEFAULT_PROJECTILE_PARAMETERS.bodyPalette.map((color, index) => ({ ...color, a: 220 - index * 30 })),
     }
     expect(applyProjectilePreset(custom, captureProjectilePreset(custom)).bodyPalette).toEqual(custom.bodyPalette)
+  })
+
+  it('loads legacy custom presets with default body-specific fields', () => {
+    const payload = captureProjectilePreset(DEFAULT_PROJECTILE_PARAMETERS) as Record<string, unknown>
+    const { crystalForm: _form, crystalOrbitSpeed: _orbitSpeed, ...legacy } = payload
+    expect(parseProjectilePresetPayload(legacy)).toMatchObject({ crystalForm: 'spear', crystalOrbitSpeed: 1 })
   })
 
   it('capture/apply round-trips to pixel-identical frames', () => {

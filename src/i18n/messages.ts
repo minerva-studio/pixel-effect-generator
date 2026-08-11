@@ -229,6 +229,8 @@ const PRESET_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Prese
     blastBolt: { name: 'projectile.presets.blastBolt.name', description: 'projectile.presets.blastBolt.description' },
     enchantedArrow: { name: 'projectile.presets.enchantedArrow.name', description: 'projectile.presets.enchantedArrow.description' },
     energyArrow: { name: 'projectile.presets.energyArrow.name', description: 'projectile.presets.energyArrow.description' },
+    crystalSpear: { name: 'projectile.presets.crystalSpear.name', description: 'projectile.presets.crystalSpear.description' },
+    crystalCore: { name: 'projectile.presets.crystalCore.name', description: 'projectile.presets.crystalCore.description' },
   },
 }
 

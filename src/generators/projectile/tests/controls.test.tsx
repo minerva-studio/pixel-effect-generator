@@ -14,12 +14,14 @@ function renderControls(category: ProjectileCategory, locale: 'en' | 'zh-CN' = '
 }
 
 describe('projectile controls', () => {
-  it('renders three body thumbnail cards with one selected identity', () => {
+  it('renders five body thumbnail cards with one selected identity', () => {
     const body = renderControls('body')
     expect(body).toContain('Fireball')
     expect(body).toContain('Solid arrow')
     expect(body).toContain('Energy arrow')
-    expect(body.match(/aria-pressed="(?:true|false)"/g)).toHaveLength(3)
+    expect(body).toContain('Crystal spear')
+    expect(body).toContain('Crystal core')
+    expect(body.match(/aria-pressed="(?:true|false)"/g)).toHaveLength(5)
     expect(body.match(/aria-pressed="true"/g)).toHaveLength(1)
 
     const energyArrow = renderControls('body', 'en', {
@@ -44,6 +46,26 @@ describe('projectile controls', () => {
     const energyArrow = selectBodyCard(base, 'energyArrow')
     expect(energyArrow).toMatchObject({ kind: 'arrow', arrowMaterial: 'energy', radius: 23 })
     expect(selectedBodyCard(energyArrow)).toBe('energyArrow')
+
+    const crystalSpear = selectBodyCard(base, 'crystalSpear')
+    expect(crystalSpear).toMatchObject({ kind: 'crystal', crystalForm: 'spear', trailMode: 'energy' })
+    expect(selectedBodyCard(crystalSpear)).toBe('crystalSpear')
+
+    const crystalCore = selectBodyCard(base, 'crystalCore')
+    expect(crystalCore).toMatchObject({ kind: 'crystal', crystalForm: 'core', trailMode: 'energy' })
+    expect(selectedBodyCard(crystalCore)).toBe('crystalCore')
+  })
+
+  it('shows only the selected body family controls', () => {
+    const fireball = renderControls('body')
+    expect(fireball).toContain('Rear flame reach')
+    expect(fireball).toContain('Surface mottling')
+    expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'solid' })).toContain('Arrowhead length')
+    expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'energy' })).toContain('Energy core length')
+    expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'spear' })).toContain('Crystal taper')
+    const core = renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'core' })
+    expect(core).toContain('Orbit radius')
+    expect(core).not.toContain('Crystal taper')
   })
 
   it('renders the trail category with conditional fields', () => {
@@ -78,7 +100,7 @@ describe('projectile controls', () => {
     expect(palette.match(/type="range"/g)).toHaveLength(7)
     expect(palette).toContain('min="0"')
     expect(palette).toContain('max="255"')
-    expect(palette).toContain('#FFFFFFFF')
+    expect(palette).toContain('#FFF4B0FF')
     expect(palette).toContain('Alpha')
   })
 

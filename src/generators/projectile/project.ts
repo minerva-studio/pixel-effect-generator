@@ -16,6 +16,7 @@ import {
   MIN_FRAME_COUNT,
   projectileFrameLimits,
   type ArrowMaterial,
+  type CrystalForm,
   type ProjectileKind,
   type ProjectileParameters,
   type TrailMode,
@@ -65,6 +66,23 @@ export function serializeProjectileParameters(parameters: ProjectileParameters):
     seed: parameters.seed,
     kind: parameters.kind,
     arrowMaterial: parameters.arrowMaterial,
+    crystalForm: parameters.crystalForm,
+    fireRearExtension: parameters.fireRearExtension,
+    fireRearTurbulence: parameters.fireRearTurbulence,
+    fireFlowSpeed: parameters.fireFlowSpeed,
+    fireMottleAmount: parameters.fireMottleAmount,
+    solidHeadLength: parameters.solidHeadLength,
+    solidShaftWidth: parameters.solidShaftWidth,
+    solidFletchingSpread: parameters.solidFletchingSpread,
+    energyCoreLength: parameters.energyCoreLength,
+    energyShellWidth: parameters.energyShellWidth,
+    energyTipSharpness: parameters.energyTipSharpness,
+    crystalSpearTaper: parameters.crystalSpearTaper,
+    crystalSpearThickness: parameters.crystalSpearThickness,
+    crystalRefractionStrength: parameters.crystalRefractionStrength,
+    crystalCoreScale: parameters.crystalCoreScale,
+    crystalOrbitRadius: parameters.crystalOrbitRadius,
+    crystalOrbitSpeed: parameters.crystalOrbitSpeed,
     radius: parameters.radius,
     bodyLength: parameters.bodyLength,
     silhouetteVariation: parameters.silhouetteVariation,
@@ -109,8 +127,27 @@ export function parseProjectileParameters(value: unknown): ProjectileParameters 
     canvasHeight,
     frameCount: readInteger(value, 'frameCount', MIN_FRAME_COUNT, MAX_FRAME_COUNT),
     seed: readInteger(value, 'seed', 0, 0xffffffff),
-    kind: readEnum(value, 'kind', ['fireball', 'arrow']),
+    kind: readEnum(value, 'kind', ['fireball', 'arrow', 'crystal']),
     arrowMaterial: readEnum(value, 'arrowMaterial', ['solid', 'energy']),
+    // Crystal form was added after the first projectile projects shipped;
+    // old documents resolve to the compact spear rather than being rejected.
+    crystalForm: readOptionalEnum(value, 'crystalForm', ['spear', 'core'], 'spear'),
+    fireRearExtension: readOptionalNumber(value, 'fireRearExtension', 0, 1, 0.5),
+    fireRearTurbulence: readOptionalNumber(value, 'fireRearTurbulence', 0, 1, 0.6),
+    fireFlowSpeed: readOptionalNumber(value, 'fireFlowSpeed', 0.25, 3, 1),
+    fireMottleAmount: readOptionalNumber(value, 'fireMottleAmount', 0, 1, 0),
+    solidHeadLength: readOptionalNumber(value, 'solidHeadLength', 0.15, 0.55, 0.3),
+    solidShaftWidth: readOptionalNumber(value, 'solidShaftWidth', 0.08, 0.4, 0.16),
+    solidFletchingSpread: readOptionalNumber(value, 'solidFletchingSpread', 0.2, 1, 0.58),
+    energyCoreLength: readOptionalNumber(value, 'energyCoreLength', 0.25, 0.85, 0.55),
+    energyShellWidth: readOptionalNumber(value, 'energyShellWidth', 0.05, 0.5, 0.25),
+    energyTipSharpness: readOptionalNumber(value, 'energyTipSharpness', 0.2, 0.8, 0.55),
+    crystalSpearTaper: readOptionalNumber(value, 'crystalSpearTaper', 0.2, 0.8, 0.5),
+    crystalSpearThickness: readOptionalNumber(value, 'crystalSpearThickness', 0.5, 1.5, 1),
+    crystalRefractionStrength: readOptionalNumber(value, 'crystalRefractionStrength', 0, 1, 0.55),
+    crystalCoreScale: readOptionalNumber(value, 'crystalCoreScale', 0.5, 1.5, 1),
+    crystalOrbitRadius: readOptionalNumber(value, 'crystalOrbitRadius', 0.75, 2.25, 1.35),
+    crystalOrbitSpeed: readOptionalNumber(value, 'crystalOrbitSpeed', 0.25, 3, 1),
     radius: readInteger(value, 'radius', 2, limits.maxRadius),
     bodyLength: readInteger(value, 'bodyLength', 4, limits.maxBodyLength),
     silhouetteVariation: readNumber(value, 'silhouetteVariation', 0, 1),
@@ -206,6 +243,23 @@ export function readEnum<Value extends string>(
   return value as Value
 }
 
+/** Reads an optional bounded number while preserving valid legacy snapshots. */
+export function readOptionalNumber(record: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum: number, fallback: number): number {
+  if (record[key] === undefined) return fallback
+  return readNumber(record, key, minimum, maximum)
+}
+
+/** Reads an optional enum field while preserving valid legacy project snapshots. */
+export function readOptionalEnum<Value extends string>(
+  record: Readonly<Record<string, unknown>>,
+  key: string,
+  allowed: readonly Value[],
+  fallback: Value,
+): Value {
+  if (record[key] === undefined) return fallback
+  return readEnum(record, key, allowed)
+}
+
 /** Reads one required boolean field. */
 export function readBoolean(record: Readonly<Record<string, unknown>>, key: string): boolean {
   const value = record[key]
@@ -215,4 +269,4 @@ export function readBoolean(record: Readonly<Record<string, unknown>>, key: stri
   return value
 }
 
-export type { ProjectileKind, ArrowMaterial, TrailMode }
+export type { ProjectileKind, ArrowMaterial, CrystalForm, TrailMode }

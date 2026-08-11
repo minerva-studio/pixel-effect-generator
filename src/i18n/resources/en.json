@@ -1037,6 +1037,22 @@
         "label": "Silhouette variation",
         "description": "Deterministic lumpiness of the fireball or arrow outline."
       },
+      "fireRearExtension": { "label": "Rear flame reach", "description": "Extends only the fireball rear toward its comet root." },
+      "fireRearTurbulence": { "label": "Rear turbulence", "description": "Strength of the animated low-frequency rear contour." },
+      "fireFlowSpeed": { "label": "Heat flow speed", "description": "Speed of the fireball's internal color circulation." },
+      "fireMottleAmount": { "label": "Surface mottling", "description": "Sparse color-band variation drifting through the fireball middle and rear." },
+      "solidHeadLength": { "label": "Arrowhead length", "description": "Portion of the solid arrow reserved for its pointed head." },
+      "solidShaftWidth": { "label": "Shaft width", "description": "Thickness of the solid arrow's central shaft." },
+      "solidFletchingSpread": { "label": "Fletching spread", "description": "Width of the solid arrow's rear feathers." },
+      "energyCoreLength": { "label": "Energy core length", "description": "Length of the bright inner spear core." },
+      "energyShellWidth": { "label": "Energy shell width", "description": "Extra width of the dark outer energy shell." },
+      "energyTipSharpness": { "label": "Energy tip sharpness", "description": "Moves the diamond's widest point toward a sharper or broader tip." },
+      "crystalSpearTaper": { "label": "Crystal taper", "description": "Sharpness of the spear's faceted ends." },
+      "crystalSpearThickness": { "label": "Crystal thickness", "description": "Cross-section thickness of the crystal spear." },
+      "crystalRefractionStrength": { "label": "Refraction strength", "description": "Contrast between the crystal's lit and shaded planes." },
+      "crystalCoreScale": { "label": "Core scale", "description": "Size of the central crystal nucleus." },
+      "crystalOrbitRadius": { "label": "Orbit radius", "description": "Distance of satellite shards from the crystal core." },
+      "crystalOrbitSpeed": { "label": "Orbit speed", "description": "Satellite rotation speed within the seamless loop." },
       "rotation": {
         "label": "Baked rotation",
         "description": "Rotates body, trail, sparks, and afterimages together."
@@ -1126,6 +1142,14 @@
       "energyArrow": {
         "label": "Energy arrow",
         "description": "A pure energy silhouette with a bright edge."
+      },
+      "crystalSpear": {
+        "label": "Crystal spear",
+        "description": "A self-contained faceted crystal projectile."
+      },
+      "crystalCore": {
+        "label": "Crystal core",
+        "description": "A floating crystal nucleus with orbiting facets."
       }
     },
     "options": {
@@ -1168,6 +1192,14 @@
       "energyArrow": {
         "name": "Energy Arrow",
         "description": "A pure energy arrow with a crisp edge glow and wide spark spread."
+      },
+      "crystalSpear": {
+        "name": "Crystal Spear",
+        "description": "A faceted crystal spear with drifting shards and a short refracted wake."
+      },
+      "crystalCore": {
+        "name": "Crystal Core",
+        "description": "A floating crystal nucleus orbited by stable faceted shards."
       }
     },
     "seed": {
