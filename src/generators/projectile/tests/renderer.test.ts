@@ -114,6 +114,29 @@ describe('renderProjectileFrames', () => {
     expect(alphaMask(renderProjectileFrame(parameters, 0))).not.toEqual(alphaMask(renderProjectileFrame(parameters, 0.25)))
   })
 
+  it('adds a glint without changing the crystal alpha silhouette', () => {
+    const base = {
+      ...DEFAULT_PROJECTILE_PARAMETERS,
+      kind: 'crystal' as const,
+      crystalForm: 'spear' as const,
+      trailMode: 'off' as const,
+      sparksEnabled: false,
+      afterimagesEnabled: false,
+      pulseAmount: 0,
+      wobbleAmount: 0,
+    }
+    const staticCrystal = renderProjectileFrame({ ...base, crystalGlintStrength: 0 }, 0.25)
+    const glint = renderProjectileFrame({ ...base, crystalGlintStrength: 1 }, 0.25)
+    expect(alphaMask(staticCrystal)).toEqual(alphaMask(glint))
+    expect(frameBytes([staticCrystal])).not.toEqual(frameBytes([glint]))
+    expect(frameBytes([renderProjectileFrame({ ...base, crystalGlintStrength: 1 }, 0)])).toEqual(
+      frameBytes([renderProjectileFrame({ ...base, crystalGlintStrength: 1 }, 1)]),
+    )
+    expect(frameBytes([renderProjectileFrame({ ...base, crystalGlintStrength: 1, crystalGlintSpeed: 0.25 }, 0.25)])).not.toEqual(
+      frameBytes([renderProjectileFrame({ ...base, crystalGlintStrength: 1, crystalGlintSpeed: 3 }, 0.25)]),
+    )
+  })
+
   it('keeps energy arrows and crystal spears self-contained when the common trail is disabled', () => {
     const quiet = {
       ...DEFAULT_PROJECTILE_PARAMETERS,
@@ -124,7 +147,7 @@ describe('renderProjectileFrames', () => {
       wobbleAmount: 0,
     }
     const energyArrow = { ...quiet, kind: 'arrow' as const, arrowMaterial: 'energy' as const }
-    const crystalSpear = { ...quiet, kind: 'crystal' as const, crystalForm: 'spear' as const }
+    const crystalSpear = { ...quiet, kind: 'crystal' as const, crystalForm: 'spear' as const, crystalGlintStrength: 0 }
     expect(frameBytes([renderProjectileFrame(energyArrow, 0)])).toEqual(frameBytes([renderProjectileFrame(energyArrow, 0.25)]))
     expect(frameBytes([renderProjectileFrame(crystalSpear, 0)])).toEqual(frameBytes([renderProjectileFrame(crystalSpear, 0.25)]))
   })

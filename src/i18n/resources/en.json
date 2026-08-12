@@ -1050,6 +1050,8 @@
       "crystalSpearTaper": { "label": "Crystal taper", "description": "Sharpness of the spear's faceted ends." },
       "crystalSpearThickness": { "label": "Crystal thickness", "description": "Cross-section thickness of the crystal spear." },
       "crystalRefractionStrength": { "label": "Refraction strength", "description": "Contrast between the crystal's lit and shaded planes." },
+      "crystalGlintStrength": { "label": "Glint strength", "description": "Brightness and coverage of the crystal's moving surface glint." },
+      "crystalGlintSpeed": { "label": "Glint speed", "description": "Speed of the surface glint along the crystal axis." },
       "crystalCoreScale": { "label": "Core scale", "description": "Size of the central crystal nucleus." },
       "crystalOrbitRadius": { "label": "Orbit radius", "description": "Distance of satellite shards from the crystal core." },
       "crystalOrbitSpeed": { "label": "Orbit speed", "description": "Satellite rotation speed within the seamless loop." },

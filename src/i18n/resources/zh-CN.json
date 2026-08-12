@@ -1050,6 +1050,8 @@
       "crystalSpearTaper": { "label": "晶体尖锐度", "description": "晶体矛多面端点的尖锐程度。" },
       "crystalSpearThickness": { "label": "晶体厚度", "description": "晶体矛横截面的厚度。" },
       "crystalRefractionStrength": { "label": "折射层强度", "description": "晶体明暗切面之间的对比度。" },
+      "crystalGlintStrength": { "label": "扫光强度", "description": "晶体表面移动扫光的亮度与覆盖程度。" },
+      "crystalGlintSpeed": { "label": "扫光速度", "description": "表面扫光沿晶体轴线移动的速度。" },
       "crystalCoreScale": { "label": "核心尺寸", "description": "中央晶体核心的大小。" },
       "crystalOrbitRadius": { "label": "卫星轨道半径", "description": "卫星碎晶与晶核之间的距离。" },
       "crystalOrbitSpeed": { "label": "卫星转速", "description": "卫星碎晶在无缝循环内的旋转速度。" },

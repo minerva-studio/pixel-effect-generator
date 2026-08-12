@@ -499,10 +499,14 @@ function drawCrystalSpear(
   sine: number,
   radius: number,
   bodyLength: number,
-  _phase: number,
+  phase: number,
 ): void {
   const palette = parameters.energyPalette
-  drawFacetedCrystal(pixels, width, height, centerX, centerY, cosine, sine, radius * parameters.crystalSpearThickness, bodyLength, parameters.crystalSpearTaper, parameters.crystalRefractionStrength, palette)
+  drawFacetedCrystal(
+    pixels, width, height, centerX, centerY, cosine, sine,
+    radius * parameters.crystalSpearThickness, bodyLength, parameters.crystalSpearTaper,
+    parameters.crystalRefractionStrength, parameters.crystalGlintStrength, parameters.crystalGlintSpeed, phase, palette,
+  )
 }
 
 /** Draws a crystal nucleus with orbiting facets that visibly progress through the loop. */
@@ -520,7 +524,11 @@ function drawCrystalCore(
 ): void {
   const palette = parameters.energyPalette
   const coreRadius = radius * parameters.crystalCoreScale
-  drawFacetedCrystal(pixels, width, height, centerX, centerY, cosine, sine, coreRadius, Math.max(8, coreRadius * 1.45), 0.5, parameters.crystalRefractionStrength, palette)
+  drawFacetedCrystal(
+    pixels, width, height, centerX, centerY, cosine, sine,
+    coreRadius, Math.max(8, coreRadius * 1.45), 0.5,
+    parameters.crystalRefractionStrength, parameters.crystalGlintStrength, parameters.crystalGlintSpeed, phase, palette,
+  )
   const orbitRadius = coreRadius * parameters.crystalOrbitRadius
   for (let index = 0; index < 3; index += 1) {
     const angle = phase * parameters.crystalOrbitSpeed + index * Math.PI * 2 / 3
@@ -535,13 +543,13 @@ function drawCrystalCore(
       Math.cos(angle) * orbitRadius,
       Math.sin(angle) * orbitRadius * 0.72,
       Math.max(1, Math.round(radius * 0.26)),
-      palette[1] ?? palette[0],
-      lastColor(palette),
+      palette,
+      parameters.crystalRefractionStrength,
     )
   }
 }
 
-/** Draws a two-tone faceted diamond with a brighter leading plane. */
+/** Draws a bordered, multi-plane pixel crystal with an optional axial surface glint. */
 function drawFacetedCrystal(
   pixels: Uint8ClampedArray,
   width: number,
@@ -554,21 +562,50 @@ function drawFacetedCrystal(
   bodyLength: number,
   taper: number,
   refractionStrength: number,
+  glintStrength: number,
+  glintSpeed: number,
+  phase: number,
   palette: readonly RgbColor[],
 ): void {
   const halfLength = bodyLength / 2
+  const dark = lastColor(palette)
+  const bright = palette[0]
   for (let localX = Math.floor(-halfLength); localX <= Math.ceil(halfLength); localX += 1) {
     const profile = Math.max(0, 1 - Math.abs(localX) / Math.max(1, halfLength))
     const halfWidth = Math.max(0, Math.round(radius * profile ** (0.6 + taper)))
     for (let localY = -halfWidth; localY <= halfWidth; localY += 1) {
+      const edgeDistance = halfWidth - Math.abs(localY)
+      const isOutline = edgeDistance === 0 || Math.abs(localX) >= Math.ceil(halfLength) - 1
+      if (isOutline) {
+        const upperLitEdge = localY < 0 && localX > -halfLength * 0.72 && localX < halfLength * 0.45
+        writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localX, localY, upperLitEdge && refractionStrength > 0.12 ? bright : dark)
+        continue
+      }
       const leading = clamp01((localX + halfLength) / Math.max(1, bodyLength))
-      const plane = localY < 0 ? 0.2 - refractionStrength * 0.12 : 0.55 + refractionStrength * 0.18
-      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localX, localY, paletteColor(palette, clamp01(plane + (1 - leading) * 0.32)))
+      const cross = localY / Math.max(1, halfWidth)
+      const ridge = 1 - Math.abs(cross)
+      const planeDepth = clamp01(
+        0.18
+        + leading * 0.28
+        + (cross > 0 ? 0.34 : 0.08) * refractionStrength
+        + (1 - ridge) * 0.16,
+      )
+      const glintWidth = Math.max(1, bodyLength * (0.06 + glintStrength * 0.04))
+      const glintCenter = -halfLength + fract(phase * glintSpeed / (Math.PI * 2)) * (bodyLength + glintWidth * 2) - glintWidth
+      const glintDistance = Math.abs(localX - glintCenter)
+      const glint = glintStrength > 0 && glintDistance <= glintWidth && ridge > 0.18
+      const glintEdge = glintStrength > 0 && glintDistance <= glintWidth + 1 && ridge > 0.18
+      const color = glint
+        ? bright
+        : glintEdge
+          ? palette[1] ?? bright
+          : paletteColor(palette, planeDepth)
+      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localX, localY, color)
     }
   }
 }
 
-/** Draws a small diamond satellite in local projectile space. */
+/** Draws a compact bordered satellite with one bright crystal plane. */
 function drawCrystalShard(
   pixels: Uint8ClampedArray,
   width: number,
@@ -580,13 +617,21 @@ function drawCrystalShard(
   localCenterX: number,
   localCenterY: number,
   radius: number,
-  bright: RgbColor,
-  dark: RgbColor,
+  palette: readonly RgbColor[],
+  refractionStrength: number,
 ): void {
+  const dark = lastColor(palette)
+  const bright = palette[0]
   for (let localX = -radius; localX <= radius; localX += 1) {
     const halfWidth = Math.max(0, radius - Math.abs(localX))
     for (let localY = -halfWidth; localY <= halfWidth; localY += 1) {
-      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localCenterX + localX, localCenterY + localY, localY <= 0 ? bright : dark)
+      const isOutline = halfWidth - Math.abs(localY) === 0 || Math.abs(localX) === radius
+      const color = isOutline
+        ? (localY < 0 && refractionStrength > 0.12 ? bright : dark)
+        : localY < 0
+          ? palette[1] ?? bright
+          : paletteColor(palette, 0.55 + refractionStrength * 0.2)
+      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localCenterX + localX, localCenterY + localY, color)
     }
   }
 }

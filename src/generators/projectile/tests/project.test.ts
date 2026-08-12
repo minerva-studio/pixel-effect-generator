@@ -50,7 +50,7 @@ describe('projectile project codec', () => {
       'crystalForm', 'fireRearExtension', 'fireRearTurbulence', 'fireFlowSpeed', 'fireMottleAmount',
       'solidHeadLength', 'solidShaftWidth', 'solidFletchingSpread',
       'energyCoreLength', 'energyShellWidth', 'energyTipSharpness',
-      'crystalSpearTaper', 'crystalSpearThickness', 'crystalRefractionStrength',
+      'crystalSpearTaper', 'crystalSpearThickness', 'crystalRefractionStrength', 'crystalGlintStrength', 'crystalGlintSpeed',
       'crystalCoreScale', 'crystalOrbitRadius', 'crystalOrbitSpeed',
     ])
     for (const key of Object.keys(json).filter((key) => !optionalLegacyFields.has(key))) {

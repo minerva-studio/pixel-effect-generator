@@ -63,8 +63,10 @@ describe('projectile controls', () => {
     expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'solid' })).toContain('Arrowhead length')
     expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'energy' })).toContain('Energy core length')
     expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'spear' })).toContain('Crystal taper')
+    expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'spear' })).toContain('Glint strength')
     const core = renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'core' })
     expect(core).toContain('Orbit radius')
+    expect(core).toContain('Glint speed')
     expect(core).not.toContain('Crystal taper')
   })
 

@@ -43,6 +43,8 @@ export interface ProjectileParameters {
   readonly crystalSpearTaper: number
   readonly crystalSpearThickness: number
   readonly crystalRefractionStrength: number
+  readonly crystalGlintStrength: number
+  readonly crystalGlintSpeed: number
   readonly crystalCoreScale: number
   readonly crystalOrbitRadius: number
   readonly crystalOrbitSpeed: number
@@ -167,6 +169,8 @@ export const DEFAULT_PROJECTILE_PARAMETERS: ProjectileParameters = {
   crystalSpearTaper: 0.5,
   crystalSpearThickness: 1,
   crystalRefractionStrength: 0.55,
+  crystalGlintStrength: 0.55,
+  crystalGlintSpeed: 1,
   crystalCoreScale: 1,
   crystalOrbitRadius: 1.35,
   crystalOrbitSpeed: 1,
@@ -232,6 +236,8 @@ export function assertValidProjectileParameters(parameters: ProjectileParameters
   assertInRange(parameters.crystalSpearTaper, 0.2, 0.8, 'crystalSpearTaper')
   assertInRange(parameters.crystalSpearThickness, 0.5, 1.5, 'crystalSpearThickness')
   assertInRange(parameters.crystalRefractionStrength, 0, 1, 'crystalRefractionStrength')
+  assertInRange(parameters.crystalGlintStrength, 0, 1, 'crystalGlintStrength')
+  assertInRange(parameters.crystalGlintSpeed, 0.25, 3, 'crystalGlintSpeed')
   assertInRange(parameters.crystalCoreScale, 0.5, 1.5, 'crystalCoreScale')
   assertInRange(parameters.crystalOrbitRadius, 0.75, 2.25, 'crystalOrbitRadius')
   assertInRange(parameters.crystalOrbitSpeed, 0.25, 3, 'crystalOrbitSpeed')
