@@ -7,13 +7,18 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:tauri": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "test": "vitest run",
     "desktop:start": "electron-forge start",
     "desktop:package": "electron-forge package",
-    "desktop:make": "electron-forge make && node scripts/desktop-finalize.mjs"
+    "desktop:make": "electron-forge make && node scripts/desktop-finalize.mjs",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
     "fflate": "^0.8.3",
     "gifenc": "^1.0.3",
     "react": "19.2.8",
@@ -26,6 +31,7 @@
     "@electron-forge/plugin-fuses": "^7.11.2",
     "@electron-forge/plugin-vite": "^7.11.2",
     "@electron/fuses": "^1.8.0",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^26.1.2",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",

@@ -233,7 +233,7 @@ export function DesktopTitleBar({
           <span className="titlebar-dirty" role="status" aria-label={t('desktop.titleBar.unsaved')}>●</span>
         ) : null}
       </div>
-      <div className="titlebar-drag" onDoubleClick={() => void api.window.toggleMaximize()} />
+      <div className="titlebar-drag" data-tauri-drag-region onDoubleClick={() => void api.window.toggleMaximize()} />
       <div className="titlebar-tools">
         <button
           className="titlebar-button"

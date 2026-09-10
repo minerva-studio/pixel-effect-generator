@@ -2,8 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  base: '/pixel-effect-generator/',
+  base: process.env.TAURI_ENV_PLATFORM ? './' : '/pixel-effect-generator/',
   plugins: [react()],
+  server: {
+    watch: {
+      ignored: ['**/src-tauri/**'],
+    },
+  },
   build: {
     rolldownOptions: {
       output: {

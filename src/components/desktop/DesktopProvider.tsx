@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
-import type { DesktopAppApi } from '../../electron/desktopApi'
+import type { DesktopAppApi } from '../../desktop/desktopApi'
+import { createTauriDesktopApi } from '../../tauri/desktopApi'
 
 const DesktopContext = createContext<DesktopAppApi | null>(null)
 
@@ -8,7 +9,7 @@ function readDesktopApi(): DesktopAppApi | null {
   if (typeof window === 'undefined') {
     return null
   }
-  return window.pixelEffectDesktop ?? null
+  return window.pixelEffectDesktop ?? (window.__TAURI_INTERNALS__ !== undefined ? createTauriDesktopApi() : null)
 }
 
 /** Provides the desktop bridge to the tree; null in the web build. */

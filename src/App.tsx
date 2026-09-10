@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { DesktopAppApi } from './electron/desktopApi'
+import type { DesktopAppApi } from './desktop/desktopApi'
 import type { RegisteredGeneratorAction, RegisteredGeneratorSession } from './generators/contract'
 import { useI18n } from './i18n/I18nProvider'
 import {

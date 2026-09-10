@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { DesktopAppApi, RecentProject, UnsavedDialogLabels } from '../../electron/desktopApi'
+import type { DesktopAppApi, RecentProject, UnsavedDialogLabels } from '../../desktop/desktopApi'
 import type {
   RegisteredGenerator,
   RegisteredGeneratorAction,

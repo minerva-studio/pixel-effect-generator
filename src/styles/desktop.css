@@ -10,7 +10,6 @@
   padding-left: 12px;
   border-bottom: 1px solid var(--border);
   background: linear-gradient(150deg, rgba(24, 28, 40, 0.98), rgba(12, 15, 23, 0.98));
-  -webkit-app-region: drag;
   user-select: none;
 }
 .titlebar-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -36,7 +35,7 @@
   transform: translateX(-50%);
 }
 .titlebar-dirty { color: #ffd28a; font-size: 0.6rem; }
-.titlebar-drag { flex: 1 1 auto; align-self: stretch; }
+.titlebar-drag { flex: 1 1 auto; align-self: stretch; app-region: drag; }
 .titlebar-tools { display: flex; align-items: center; height: 100%; -webkit-app-region: no-drag; }
 .titlebar-language {
   min-width: 96px;

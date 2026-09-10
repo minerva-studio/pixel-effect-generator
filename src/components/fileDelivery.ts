@@ -1,4 +1,4 @@
-import type { DesktopAppApi, DesktopSaveKind } from '../electron/desktopApi'
+import type { DesktopAppApi, DesktopSaveKind } from '../desktop/desktopApi'
 import { downloadBytes, downloadText } from './export'
 
 /** User-facing result of one save operation. */
