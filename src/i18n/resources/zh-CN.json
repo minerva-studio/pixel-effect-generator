@@ -1,4 +1,141 @@
 {
+  "flame": {
+    "name": "火焰",
+    "description": "烛火、火把与篝火的连续燃烧动画。",
+    "previewTitle": "持续燃烧",
+    "categories": {
+      "shape": {
+        "label": "形态",
+        "description": "调节火焰形态。"
+      },
+      "motion": {
+        "label": "动态",
+        "description": "调节火焰动态。"
+      },
+      "details": {
+        "label": "细节",
+        "description": "调节火焰细节。"
+      },
+      "palette": {
+        "label": "颜色",
+        "description": "调节火焰颜色。"
+      }
+    },
+    "controls": {
+      "width": {
+        "label": "宽度",
+        "description": "火焰主体的像素宽度。"
+      },
+      "height": {
+        "label": "高度",
+        "description": "火焰相对固定根部的高度。"
+      },
+      "baseWidth": {
+        "label": "底部宽度",
+        "description": "稳定燃烧的底部宽度。"
+      },
+      "fork": {
+        "label": "尖端分叉",
+        "description": "流动的上部轮廓形成分叉的强度；配合湍流调节更明显。"
+      },
+      "roughness": {
+        "label": "轮廓粗糙度",
+        "description": "轮廓边缘的小幅不规则变化，保持主体连接。"
+      },
+      "loopCycles": {
+        "label": "循环次数",
+        "description": "每段导出动画中的燃烧循环次数。"
+      },
+      "sway": {
+        "label": "摆动强度",
+        "description": "越靠近尖端，左右摆动越明显。"
+      },
+      "flicker": {
+        "label": "闪动强度",
+        "description": "火焰宽高的周期变化。"
+      },
+      "flowSpeed": {
+        "label": "上升流速",
+        "description": "以整数周期控制向上流动，保证首尾衔接。"
+      },
+      "turbulence": {
+        "label": "湍流",
+        "description": "整团火焰与内部色层的形变强度：低值轻柔流动，高值明显翻卷并改变尖峰。"
+      },
+      "coreSize": {
+        "label": "热核比例",
+        "description": "最亮内部色层的覆盖比例。"
+      },
+      "bandWarp": {
+        "label": "色层扰动",
+        "description": "内部色层向上流动时的扭曲程度。"
+      },
+      "edgeBreakup": {
+        "label": "边缘破碎",
+        "description": "外缘的块状缺口与脱离主体的火焰碎片；0 关闭，调高增加缺口深度与碎片数量。"
+      },
+      "sparkCount": {
+        "label": "火星数量",
+        "description": "周期上升的火星数量。"
+      },
+      "sparkSpread": {
+        "label": "火星扩散",
+        "description": "火星上升时的水平扩散程度。"
+      },
+      "sparkRise": {
+        "label": "火星上升距离",
+        "description": "火星离开发射区域后的像素上升距离。"
+      },
+      "shape": {
+        "label": "火焰形态",
+        "description": "选择火焰轮廓；保留当前尺寸、颜色及动态参数。"
+      },
+      "sparksEnabled": {
+        "label": "启用火星",
+        "description": "添加向上飘散的离体火星。"
+      },
+      "seed": {
+        "label": "随机种子",
+        "description": "相同参数与种子产生相同像素。"
+      }
+    },
+    "options": {
+      "candle": "烛火",
+      "torch": "火把",
+      "campfire": "篝火"
+    },
+    "shapeDescriptions": {
+      "candle": "窄火苗、长尖端与轻微摆动。",
+      "torch": "向上流动，尖峰不断变化和卷曲。",
+      "campfire": "宽底火焰，色层翻卷、尖峰交错变化。"
+    },
+    "presets": {
+      "candle": {
+        "name": "烛火",
+        "description": "窄火苗、长尖端与轻微摆动。"
+      },
+      "torch": {
+        "name": "火把",
+        "description": "向上流动，尖峰不断变化和卷曲。"
+      },
+      "campfire": {
+        "name": "篝火",
+        "description": "宽底火焰，色层翻卷、尖峰交错变化。"
+      }
+    },
+    "palette": {
+      "hotCore": "热核",
+      "outerEdge": "外缘",
+      "band": "色带 {index}",
+      "removeBand": "删除色带 {index}",
+      "remove": "删除",
+      "alpha": "透明度",
+      "addColorBand": "添加色带"
+    },
+    "seed": {
+      "randomize": "随机化"
+    }
+  },
   "app": {
     "eyebrow": "像素特效工具集",
     "title": "像素特效生成器",

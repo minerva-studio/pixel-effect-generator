@@ -3,6 +3,7 @@ import { slashGenerator } from './slash/module'
 import { explosionGenerator } from './explosion/module'
 import { bloomGenerator } from './energy-bloom/module'
 import { projectileGenerator } from './projectile/module'
+import { flameGenerator } from './flame/module'
 import type {
   GeneratorDefinition,
   GeneratorModule,
@@ -164,6 +165,7 @@ export const GENERATOR_REGISTRY = createGeneratorRegistry([
   explosionGenerator,
   bloomGenerator,
   projectileGenerator,
+  flameGenerator,
 ] as const)
 
 export type GeneratorId = (typeof GENERATOR_REGISTRY)['registrations'][number]['id']

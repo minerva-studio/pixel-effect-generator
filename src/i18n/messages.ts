@@ -30,6 +30,8 @@ export const zhCN: MessageTree = zhCNResource
 
 /** Explicit named-parameter contracts for the few dynamic templates. */
 export interface MessageParams {
+  'flame.palette.band': { index: number }
+  'flame.palette.removeBand': { index: number }
   'app.status': { width: number; height: number }
   'workspace.generatorSectionLabel': { index: string; name: string }
   'workspace.parametersTitle': { name: string }
@@ -145,6 +147,7 @@ export interface PresetDisplayKeys {
 }
 
 const GENERATOR_DISPLAY_KEYS: Readonly<Record<string, GeneratorDisplayKeys>> = {
+  flame: { name: 'flame.name', description: 'flame.description', previewTitle: 'flame.previewTitle' },
   slash: {
     name: 'slash.name',
     description: 'slash.description',
@@ -168,6 +171,12 @@ const GENERATOR_DISPLAY_KEYS: Readonly<Record<string, GeneratorDisplayKeys>> = {
 }
 
 const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, CategoryDisplayKeys>>>> = {
+  flame: {
+    shape: { label: 'flame.categories.shape.label', description: 'flame.categories.shape.description' },
+    motion: { label: 'flame.categories.motion.label', description: 'flame.categories.motion.description' },
+    details: { label: 'flame.categories.details.label', description: 'flame.categories.details.description' },
+    palette: { label: 'flame.categories.palette.label', description: 'flame.categories.palette.description' },
+  },
   slash: {
     shape: { label: 'slash.categories.shape.label', description: 'slash.categories.shape.description' },
     palette: { label: 'slash.categories.palette.label', description: 'slash.categories.palette.description' },
@@ -199,6 +208,11 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
 }
 
 const PRESET_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, PresetDisplayKeys>>>> = {
+  flame: {
+    candle: { name: 'flame.presets.candle.name', description: 'flame.presets.candle.description' },
+    torch: { name: 'flame.presets.torch.name', description: 'flame.presets.torch.description' },
+    campfire: { name: 'flame.presets.campfire.name', description: 'flame.presets.campfire.description' },
+  },
   slash: {
     cleanArc: { name: 'slash.presets.cleanArc.name', description: 'slash.presets.cleanArc.description' },
     pointedStrike: { name: 'slash.presets.pointedStrike.name', description: 'slash.presets.pointedStrike.description' },

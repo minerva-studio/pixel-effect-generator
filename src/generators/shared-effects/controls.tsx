@@ -378,17 +378,21 @@ export function ShapeCardGrid<Parameters>({
   )
 }
 
-/** Renders the ordered hot-core-to-edge palette editor for one family. */
+/** Ordered hot-core-to-edge colors; opaque families can hide alpha and require more bands. */
 export function FamilyPaletteEditor({
   family,
   t,
   palette,
   onChange,
+  minimumColors = 2,
+  opaque = false,
 }: {
   readonly family: string
   readonly t: FamilyTranslate
   readonly palette: readonly RgbColor[]
   readonly onChange: (palette: readonly RgbColor[]) => void
+  readonly minimumColors?: number
+  readonly opaque?: boolean
 }) {
   const updateColor = (index: number, value: string) => onChange(
     palette.map((color, colorIndex) => (colorIndex === index ? { ...hexToRgb(value), a: color.a } : color)),
@@ -426,7 +430,7 @@ export function FamilyPaletteEditor({
               value={rgbaToHex(color).slice(0, 7)}
               onChange={(event) => updateColor(index, event.target.value)}
             />
-            <label className="palette-alpha">
+            {!opaque && <label className="palette-alpha">
               <span>{t(`${family}.palette.alpha`)}</span>
               <input
                 aria-label={t(`${family}.palette.alpha`)}
@@ -437,12 +441,12 @@ export function FamilyPaletteEditor({
                 onChange={(event) => updateAlpha(index, Number(event.target.value))}
               />
               <code>{color.a}</code>
-            </label>
+            </label>}
             <code>{rgbaToHex(color).toUpperCase()}</code>
             <button
               className="remove-button"
               type="button"
-              disabled={palette.length <= 2}
+              disabled={palette.length <= minimumColors}
               aria-label={t(`${family}.palette.removeBand`, { index: index + 1 })}
               onClick={() => removeColor(index)}
             >

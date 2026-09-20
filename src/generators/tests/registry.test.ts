@@ -24,7 +24,7 @@ describe('generator registry', () => {
   })
 
   it('registers unique ids and indexes while preserving order', () => {
-    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'energyBloom', 'projectile'])
+    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'energyBloom', 'projectile', 'flame'])
     expect(dualRegistry.registrations.map((registration) => registration.id)).toEqual(['blip', 'slash'])
     expect(dualRegistry.definitions.map((definition) => definition.id)).toEqual(['blip', 'slash'])
     expect(() => createGeneratorRegistry([GENERATOR_REGISTRY.get('slash'), blipGenerator] as const)).not.toThrow()

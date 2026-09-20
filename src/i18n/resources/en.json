@@ -1,4 +1,141 @@
 {
+  "flame": {
+    "name": "Flame",
+    "description": "Seamless candle, torch, and campfire loops.",
+    "previewTitle": "Continuous flame",
+    "categories": {
+      "shape": {
+        "label": "Shape",
+        "description": "Adjust flame shape."
+      },
+      "motion": {
+        "label": "Motion",
+        "description": "Adjust flame motion."
+      },
+      "details": {
+        "label": "Details",
+        "description": "Adjust flame details."
+      },
+      "palette": {
+        "label": "Palette",
+        "description": "Adjust flame palette."
+      }
+    },
+    "controls": {
+      "width": {
+        "label": "Width",
+        "description": "Maximum flame body width in pixels."
+      },
+      "height": {
+        "label": "Height",
+        "description": "Flame height above its fixed root."
+      },
+      "baseWidth": {
+        "label": "Base width",
+        "description": "Width of the stable burning base."
+      },
+      "fork": {
+        "label": "Tip branching",
+        "description": "Strength of emerging splits in the flowing upper contour; most visible with turbulence."
+      },
+      "roughness": {
+        "label": "Contour roughness",
+        "description": "Small connected irregularities along the outline."
+      },
+      "loopCycles": {
+        "label": "Loop cycles",
+        "description": "Burning cycles per exported animation."
+      },
+      "sway": {
+        "label": "Sway",
+        "description": "Sideways movement grows toward the tips."
+      },
+      "flicker": {
+        "label": "Flicker",
+        "description": "Periodic variation in flame height and breadth."
+      },
+      "flowSpeed": {
+        "label": "Rising flow",
+        "description": "Integer flow cycles keep the animation seamless."
+      },
+      "turbulence": {
+        "label": "Turbulence",
+        "description": "Deforms the whole flame and its color layers: low for gentle flow, high for strong curling and changing peaks."
+      },
+      "coreSize": {
+        "label": "Hot core",
+        "description": "Coverage of the hottest inner colors."
+      },
+      "bandWarp": {
+        "label": "Band movement",
+        "description": "Upward rippling of the internal color layers."
+      },
+      "edgeBreakup": {
+        "label": "Edge breakup",
+        "description": "Blocky edge cuts and detached flame chips. Zero disables breakup; higher values deepen cuts and allow more chips."
+      },
+      "sparkCount": {
+        "label": "Spark count",
+        "description": "Number of periodic rising sparks."
+      },
+      "sparkSpread": {
+        "label": "Spark spread",
+        "description": "Horizontal spread as sparks rise."
+      },
+      "sparkRise": {
+        "label": "Spark rise",
+        "description": "Travel distance above the spawn region in pixels."
+      },
+      "shape": {
+        "label": "Flame shape",
+        "description": "Choose silhouette rules while preserving current size, colors, and motion."
+      },
+      "sparksEnabled": {
+        "label": "Enable sparks",
+        "description": "Add detached sparks that drift upward."
+      },
+      "seed": {
+        "label": "Random seed",
+        "description": "The same parameters and seed reproduce identical pixels."
+      }
+    },
+    "options": {
+      "candle": "Candle",
+      "torch": "Torch",
+      "campfire": "Campfire"
+    },
+    "shapeDescriptions": {
+      "candle": "A narrow flame with a long tip and gentle motion.",
+      "torch": "A rising flame with shifting, curling peaks.",
+      "campfire": "A broad fire with rolling color layers and changing peaks."
+    },
+    "presets": {
+      "candle": {
+        "name": "Candle Flame",
+        "description": "A narrow flame with a long tip and gentle motion."
+      },
+      "torch": {
+        "name": "Torch Flame",
+        "description": "A rising flame with shifting, curling peaks."
+      },
+      "campfire": {
+        "name": "Campfire Flame",
+        "description": "A broad fire with rolling color layers and changing peaks."
+      }
+    },
+    "palette": {
+      "hotCore": "Hot core",
+      "outerEdge": "Outer edge",
+      "band": "Band {index}",
+      "removeBand": "Remove band {index}",
+      "remove": "Remove",
+      "alpha": "Opacity",
+      "addColorBand": "Add color band"
+    },
+    "seed": {
+      "randomize": "Randomize"
+    }
+  },
   "app": {
     "eyebrow": "PIXEL EFFECT TOOLKIT",
     "title": "Pixel Effect Generator",

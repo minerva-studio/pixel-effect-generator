@@ -24,6 +24,9 @@ Released under the MIT License by Minerva Game Studio.
   - Collapsible sprite-sheet preview that uses the exact same packing as the
     export.
 - English and Simplified Chinese UI.
+- Flame generator with candle, torch, and campfire silhouettes, connected
+  layered pixel flames, optional rising sparks, seamless loops, presets,
+  and Project JSON save/load. Its 3–6 palette colors are always opaque.
 
 ## Project vs Export
 
