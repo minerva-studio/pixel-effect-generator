@@ -9,7 +9,7 @@
   }
 
   .web-footer {
-    padding: 0 16px;
+    padding: 0 16px 8px;
   }
 
   .document-toolbar {
@@ -28,6 +28,11 @@
     flex-direction: column;
     padding: 0 12px 12px;
     gap: 12px;
+  }
+
+  .web-app-shell .workspace {
+    flex: none;
+    min-height: 0;
   }
 
   .workspace-divider {

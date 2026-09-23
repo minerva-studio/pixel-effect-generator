@@ -39,7 +39,8 @@
 }
 
 .web-app-shell {
-    min-height: 960px;
+    height: auto;
+    min-height: 100dvh;
 }
 
 .language-select,
@@ -59,23 +60,26 @@
 
 .web-footer {
     display: flex;
-    flex: 0 0 40px;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 0 24px;
-    border-top: 1px solid var(--border);
+    padding: 0 24px 8px;
     color: var(--muted);
-    background: var(--panel);
-    font-size: .72rem;
+    font-size: .75rem;
 }
 
 .web-footer a {
-    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    color: inherit;
     text-decoration: none;
 }
 
-.web-footer a:hover {
+.web-footer a:hover,
+.web-footer a:focus-visible {
+    color: var(--text);
     text-decoration: underline;
 }
 
@@ -173,6 +177,25 @@
     grid-template-rows: minmax(0, 1fr);
     grid-template-areas: "parameters divider preview";
     padding: 0 16px 16px;
+}
+
+.web-app-shell .workspace {
+    flex: 1 1 0;
+    min-height: min-content;
+    grid-template-rows: minmax(min-content, 1fr);
+    padding-bottom: 8px;
+}
+
+.web-app-shell .controls-panel {
+    contain: size;
+}
+
+.web-app-shell .preview-panel {
+    min-height: min-content;
+}
+
+.web-app-shell .preview-stage {
+    min-height: 16rem;
 }
 
 .controls-panel {
