@@ -9,6 +9,11 @@ function baseline(generatorId: string, text: string): ProjectBaseline {
 }
 
 describe('serializeProjectSnapshot', () => {
+  it('tracks unsaved edits for generators without a project codec', () => {
+    const first = serializeProjectSnapshot(undefined, { radius: 10 }, 12, DEFAULT_UNITY_EXPORT_SETTINGS)
+    const changed = serializeProjectSnapshot(undefined, { radius: 20 }, 12, DEFAULT_UNITY_EXPORT_SETTINGS)
+    expect(isProjectDirty(baseline('energyBloom', first), 'energyBloom', changed)).toBe(true)
+  })
   it('serializes persistent fields deterministically', () => {
     const first = serializeProjectSnapshot(slashProjectCodec, DEFAULT_SLASH_PARAMETERS, 12, DEFAULT_UNITY_EXPORT_SETTINGS)
     expect(serializeProjectSnapshot(slashProjectCodec, DEFAULT_SLASH_PARAMETERS, 12, DEFAULT_UNITY_EXPORT_SETTINGS)).toBe(first)

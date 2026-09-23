@@ -37,8 +37,6 @@ export function registerGenerator<Id extends string, Parameters, Category extend
     sessionType: GeneratorSession<Parameters, Category>,
   ) => ComponentType<{
     readonly session: RegisteredGeneratorSession<string>
-    readonly selectedGeneratorId: string
-    readonly onSelectGenerator: (id: string) => void
     readonly onSessionAction: (action: RegisteredGeneratorAction<string>) => void
     readonly onReset: () => void
     readonly unitySettings: UnityExportSettingsState

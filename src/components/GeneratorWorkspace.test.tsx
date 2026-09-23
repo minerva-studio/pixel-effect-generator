@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-// GeneratorWorkspace must load before the slash module so the registry
-// evaluates with the app's registry-first import order.
+// Load the registry before individual modules to respect their registration cycle.
+import '../generators/registry'
 import { createGeneratorWorkspace, createProjectImportHandler } from './GeneratorWorkspace'
 import { I18nProvider } from '../i18n/I18nProvider'
 import { slashGenerator } from '../generators/slash/module'
@@ -20,8 +20,6 @@ function workspaceMarkup(generatorId: 'slash' | 'blip', locale: 'en' | 'zh-CN' =
     <I18nProvider>
       <Workspace
         session={session}
-        selectedGeneratorId={generatorId}
-        onSelectGenerator={() => undefined}
         onSessionAction={() => undefined}
         onReset={() => undefined}
         unitySettings={DEFAULT_UNITY_EXPORT_SETTINGS}
@@ -100,20 +98,13 @@ describe('createProjectImportHandler', () => {
 })
 
 describe('GeneratorWorkspace integration', () => {
-  it('places the Project menu in the Controls header, not the Export panel', () => {
+  it('provides an accessible split workspace and a closed export dialog', () => {
     const markup = workspaceMarkup('slash')
-    const controlsHeading = markup.indexOf('controls-heading"')
-    const exportPanel = markup.indexOf('class="panel export-panel"')
-    const menu = markup.indexOf('class="project-menu-button"')
-    const reset = markup.indexOf('>Reset<')
-
-    expect(controlsHeading).toBeGreaterThan(-1)
-    expect(menu).toBeGreaterThan(controlsHeading)
-    expect(reset).toBeGreaterThan(menu)
-    expect(menu).toBeLessThan(exportPanel)
-    expect(markup.slice(exportPanel)).not.toContain('project-menu')
-    expect(markup.slice(exportPanel)).not.toContain('>Project<')
-    expect(markup).toContain('>Project</span>')
+    expect(markup).toContain('role="separator"')
+    expect(markup).toContain('aria-label="Resize parameters and canvas"')
+    expect(markup).toContain('aria-valuenow="40"')
+    expect(markup).toContain('class="desktop-export-backdrop" hidden=""')
+    expect(markup).toContain('aria-label="Canvas background"')
   })
 
   it('renders preset header controls for generators with preset capability', () => {
@@ -125,9 +116,10 @@ describe('GeneratorWorkspace integration', () => {
     expect(markup).not.toContain('preset-dialog')
   })
 
-  it('renders the Project menu in Simplified Chinese', () => {
+  it('renders workspace controls in Simplified Chinese', () => {
     const markup = workspaceMarkup('slash', 'zh-CN')
-    expect(markup).toContain('>项目</span>')
+    expect(markup).toContain('aria-label="调整参数与画布宽度"')
+    expect(markup).toContain('画布与随机种子')
   })
 
   it('hides the Project menu for generators without a project codec', () => {
@@ -154,8 +146,6 @@ describe('GeneratorWorkspace integration', () => {
       <I18nProvider>
         <Workspace
           session={session}
-          selectedGeneratorId="blip"
-          onSelectGenerator={() => undefined}
           onSessionAction={() => undefined}
           onReset={() => undefined}
           unitySettings={DEFAULT_UNITY_EXPORT_SETTINGS}

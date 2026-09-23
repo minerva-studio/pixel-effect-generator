@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ComponentType, type ReactNode } from 'react'
 import type {
   GeneratorModule,
   GeneratorSession,
@@ -7,13 +7,11 @@ import type {
   RegisteredGeneratorSession,
 } from '../generators/contract'
 import { createImportedProjectAction, createRenderedParametersAction } from '../generators/contract'
-import { GENERATOR_CATALOG } from '../generators/registry'
 import {
   categoryDisplayKeys,
   generatorDisplayKeys,
 } from '../i18n/messages'
 import { useI18n } from '../i18n/I18nProvider'
-import { useDesktopApp } from './desktop/DesktopProvider'
 import { DesktopExportDialog } from './desktop/DesktopExportDialog'
 import { buildProjectDocument } from '../shared/project/document'
 import type { GeneratorProjectCodec, ProjectExportSettings } from '../shared/project/types'
@@ -22,7 +20,6 @@ import { ExportPanel } from './ExportPanel'
 import type { FileOperationController } from './fileOperations'
 import { Preview } from './Preview'
 import { PresetBar } from './PresetBar'
-import { ProjectMenu } from './ProjectMenu'
 import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
 import type { UnityExportSettingsState } from './unitySettings'
 
@@ -59,8 +56,6 @@ export function createProjectImportHandler<Id extends string, Parameters, Catego
 
 interface RegisteredWorkspaceProps {
   readonly session: RegisteredGeneratorSession<string>
-  readonly selectedGeneratorId: string
-  readonly onSelectGenerator: (id: string) => void
   readonly onSessionAction: (action: RegisteredGeneratorAction<string>) => void
   readonly onReset: () => void
   readonly unitySettings: UnityExportSettingsState
@@ -83,8 +78,6 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
 
   const BoundWorkspace = ({
     session,
-    selectedGeneratorId,
-    onSelectGenerator,
     onSessionAction,
     onReset,
     unitySettings,
@@ -94,8 +87,20 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
     onCloseDesktopExport,
   }: RegisteredWorkspaceProps) => {
     const { t, locale } = useI18n()
-    const isDesktop = useDesktopApp() !== null
     const [previewZoom, setPreviewZoom] = useState<PreviewZoom>('fit')
+    const [split, setSplit] = useState(40)
+    const workspaceRef = useRef<HTMLElement>(null)
+    const workspaceBounds = () => {
+      const element = workspaceRef.current!
+      const bounds = element.getBoundingClientRect()
+      const style = getComputedStyle(element)
+      const leftPadding = parseFloat(style.paddingLeft)
+      return { left: bounds.left + leftPadding, width: bounds.width - leftPadding - parseFloat(style.paddingRight) - 10 }
+    }
+    const resizeSplit = (pixels: number) => {
+      const { width } = workspaceBounds()
+      setSplit(Math.max(320, Math.min(width - 420, pixels)) / width * 100)
+    }
     const dispatch = (action: GeneratorSessionAction<Parameters, Category>) => {
       onSessionAction({
         generatorId: module.definition.id,
@@ -118,8 +123,8 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
     const resizeHandler = module.resize
     const onResize = resizeHandler
       ? (nextSize: { readonly width: number; readonly height: number }, scaleEffect: boolean) => {
-          dispatchParameters(resizeHandler(typedSession.parameters, nextSize, scaleEffect))
-        }
+        dispatchParameters(resizeHandler(typedSession.parameters, nextSize, scaleEffect))
+      }
       : undefined
     const displayKeys = generatorDisplayKeys(module.definition.id)
     const generatorName = displayKeys ? t(displayKeys.name) : module.definition.name
@@ -142,20 +147,6 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
       ),
       importProject,
     } : undefined
-    const projectFileName = projectBridge ? t('project.fileName', {
-      name: module.definition.id,
-      width: frameWidth,
-      height: frameHeight,
-      frameCount,
-    }) : undefined
-    const projectMenu = projectBridge && projectFileName && !isDesktop ? (
-      <ProjectMenu
-        bridge={projectBridge}
-        fileName={projectFileName}
-        unitySettings={unitySettings}
-        fileOperations={fileOperations}
-      />
-    ) : undefined
     const presetBar = module.presetCapability ? (
       <PresetBar
         capability={module.presetCapability}
@@ -175,19 +166,30 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
     }, [frameCount, typedSession.frameIndex])
 
     return (
-      <section className="workspace">
-        <GeneratorNav selectedGeneratorId={selectedGeneratorId} onSelectGenerator={onSelectGenerator} />
+      <section className="workspace" ref={workspaceRef} style={{ '--parameter-width': `calc((100% - 10px) * ${split / 100})` } as CSSProperties}>
         <ControlsPanel
           module={module}
           session={typedSession}
           generatorName={generatorName}
           category={activeCategory}
-          projectMenu={projectMenu}
           presetBar={presetBar}
           onReset={onReset}
           onParameters={dispatchParameters}
           onCategory={(nextCategory) => dispatch({ type: 'category', category: nextCategory })}
         />
+        <div className="workspace-divider" role="separator" tabIndex={0} aria-label={t('workbench.resize')}
+          aria-orientation="vertical" aria-valuenow={Math.round(split)} aria-valuemin={0} aria-valuemax={100}
+          onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault() }}
+          onPointerMove={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) resizeSplit(event.clientX - workspaceBounds().left)
+          }}
+          onPointerUp={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId) }}
+          onKeyDown={(event) => {
+            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+            event.preventDefault()
+            const { width } = workspaceBounds()
+            resizeSplit(width * split / 100 + (event.key === 'ArrowLeft' ? -24 : 24))
+          }}><span /></div>
         <Preview
           frameSet={typedSession.frames}
           previewTitle={previewTitle}
@@ -211,20 +213,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
             <PreviewTools parameters={typedSession.parameters} onChange={dispatchParameters} onResize={onResize} />
           ) : undefined}
         />
-        {isDesktop ? (
-          <DesktopExportDialog open={desktopExportOpen} onClose={onCloseDesktopExport ?? (() => undefined)}>
-            <ExportPanel
-              frameSet={typedSession.frames}
-              previewFps={typedSession.previewFps}
-              generatorId={module.definition.id}
-              generatorName={generatorName}
-              unitySettings={unitySettings}
-              onUnitySettingsChange={onUnitySettingsChange}
-              fileOperations={fileOperations}
-              buildProjectDocument={projectBridge?.buildDocument}
-            />
-          </DesktopExportDialog>
-        ) : (
+        <DesktopExportDialog open={desktopExportOpen} onClose={onCloseDesktopExport ?? (() => undefined)}>
           <ExportPanel
             frameSet={typedSession.frames}
             previewFps={typedSession.previewFps}
@@ -235,7 +224,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
             fileOperations={fileOperations}
             buildProjectDocument={projectBridge?.buildDocument}
           />
-        )}
+        </DesktopExportDialog>
       </section>
     )
   }
@@ -247,54 +236,12 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-/** Navigation sidebar listing every registered generator. */
-function GeneratorNav({
-  selectedGeneratorId,
-  onSelectGenerator,
-}: {
-  readonly selectedGeneratorId: string
-  readonly onSelectGenerator: (id: string) => void
-}) {
-  const { t } = useI18n()
-  return (
-    <nav className="panel generator-panel" aria-label={t('workspace.navLabel')}>
-      <div className="navigation-heading">
-        <p className="section-label">{t('workspace.generatorsLabel')}</p>
-        <span>{GENERATOR_CATALOG.length.toString().padStart(2, '0')}</span>
-      </div>
-      <div className="generator-list">
-        {GENERATOR_CATALOG.map((generator) => {
-          const displayKeys = generatorDisplayKeys(generator.id)
-          const name = displayKeys ? t(displayKeys.name) : generator.name
-          const description = displayKeys ? t(displayKeys.description) : generator.description
-          return (
-            <button
-              className={`generator-item ${selectedGeneratorId === generator.id ? 'active' : ''}`}
-              type="button"
-              key={generator.id}
-              aria-current={selectedGeneratorId === generator.id ? 'page' : undefined}
-              onClick={() => onSelectGenerator(generator.id)}
-            >
-              <span className="generator-index">{String(generator.index).padStart(2, '0')}</span>
-              <span>
-                <strong>{name}</strong>
-                <small>{description}</small>
-              </span>
-            </button>
-          )
-        })}
-      </div>
-    </nav>
-  )
-}
-
 /** Parameter panel with category tabs, reset, and the module's controls. */
 function ControlsPanel<Parameters, Category extends string>({
   module,
   session,
   generatorName,
   category,
-  projectMenu,
   presetBar,
   onReset,
   onParameters,
@@ -304,7 +251,6 @@ function ControlsPanel<Parameters, Category extends string>({
   readonly session: GeneratorSession<Parameters, Category>
   readonly generatorName: string
   readonly category: { readonly id: Category; readonly label: string; readonly description: string }
-  readonly projectMenu?: ReactNode
   readonly presetBar?: ReactNode
   readonly onReset: () => void
   readonly onParameters: (parameters: Parameters) => void
@@ -322,7 +268,6 @@ function ControlsPanel<Parameters, Category extends string>({
         </div>
         <div className="controls-heading-actions">
           {presetBar}
-          {projectMenu}
           <button className="text-button" type="button" onClick={onReset}>{t('workspace.reset')}</button>
         </div>
       </div>

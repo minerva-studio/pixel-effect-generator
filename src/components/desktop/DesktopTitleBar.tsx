@@ -129,7 +129,7 @@ export function DesktopTitleBar({
   return (
     <header className="desktop-titlebar">
       <div className="titlebar-brand">
-        <SlashMark />
+        <img className="titlebar-mark" src={`${import.meta.env.BASE_URL}effect-mark.svg`} alt="" />
         <span className="titlebar-app-name">{t('app.title')}</span>
       </div>
       <div className="titlebar-menu-side">
@@ -185,11 +185,11 @@ export function DesktopTitleBar({
                   </button>
                 ) : null}
               </div>
-              <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.saveProject() }}>
+              <button type="button" role="menuitem" disabled={busy || !workflow.canSave} title={!workflow.canSave ? t('workbench.noProjectSave') : undefined} onClick={() => { setFileOpen(false); workflow.saveProject() }}>
                 <span>{t('desktop.titleBar.save')}</span>
                 <kbd>Ctrl+S</kbd>
               </button>
-              <button type="button" role="menuitem" disabled={busy} onClick={() => { setFileOpen(false); workflow.saveProjectAs() }}>
+              <button type="button" role="menuitem" disabled={busy || !workflow.canSave} title={!workflow.canSave ? t('workbench.noProjectSave') : undefined} onClick={() => { setFileOpen(false); workflow.saveProjectAs() }}>
                 <span>{t('desktop.titleBar.saveAs')}</span>
                 <kbd>Ctrl+Shift+S</kbd>
               </button>
@@ -270,26 +270,4 @@ function enabledMenuButtons(panel: HTMLDivElement | null): HTMLButtonElement[] {
     return []
   }
   return Array.from(panel.querySelectorAll<HTMLButtonElement>('button')).filter((button) => !button.disabled)
-}
-
-/** Small inline pixel-slash mark used while no branded asset is needed. */
-function SlashMark() {
-  return (
-    <svg className="titlebar-mark" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-      <path
-        d="M 3 14 A 8 8 0 0 1 14 3"
-        fill="none"
-        stroke="#9db8ff"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M 3 14 A 8 8 0 0 1 14 3"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
 }

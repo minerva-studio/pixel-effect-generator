@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, type ReactNode } from 'react'
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react'
 import type { RenderedFrameSet } from '../generators/contract'
 import { useI18n } from '../i18n/I18nProvider'
 import { drawFrame } from './export'
@@ -51,6 +51,7 @@ export function Preview({
   tools,
 }: PreviewProps) {
   const { t } = useI18n()
+  const [background, setBackground] = useState('checker')
   const previewCanvas = useRef<HTMLCanvasElement>(null)
   const advancePlayback = useEffectEvent(() => {
     onFrameIndex(nextFrameIndex(frameIndex, frameCount))
@@ -82,6 +83,13 @@ export function Preview({
           <h2>{previewTitle}</h2>
         </div>
         <div className="preview-heading-tools">
+          <div className="canvas-backgrounds" role="group" aria-label={t('workbench.background')}>
+            {(['checker', 'light', 'dark'] as const).map((value) => <button type="button" key={value}
+              className={`canvas-background-swatch swatch-${value}`} aria-pressed={background === value}
+              aria-label={t(value === 'checker' ? 'workbench.checker' : value === 'light' ? 'workbench.lightBackground' : 'workbench.darkBackground')}
+              title={t(value === 'checker' ? 'workbench.checker' : value === 'light' ? 'workbench.lightBackground' : 'workbench.darkBackground')}
+              onClick={() => setBackground(value)} />)}
+          </div>
           <label className="preview-zoom">
             <span>{t('preview.zoom')}</span>
             <select
@@ -100,14 +108,13 @@ export function Preview({
         </div>
       </div>
 
-      <div className={zoom === 'fit' ? 'preview-stage' : 'preview-stage zoomed'}>
+      <div data-background={background} className={zoom === 'fit' ? 'preview-stage' : 'preview-stage zoomed'}>
         <div
           className={zoom === 'fit' ? 'canvas-wrap' : 'canvas-wrap zoomed'}
           style={zoom === 'fit'
             ? {
                 aspectRatio: `${frameWidth} / ${frameHeight}`,
-                width: frameWidth >= frameHeight ? 'min(512px, calc(100% - 36px))' : 'auto',
-                height: frameWidth < frameHeight ? 'min(470px, calc(100vh - 260px))' : 'auto',
+                width: `min(512px, calc(100cqw - 48px), calc((100cqh - 48px) * ${frameWidth / frameHeight}))`,
               }
             : { width: frameWidth * zoom, height: frameHeight * zoom }}
         >
@@ -166,7 +173,7 @@ export function Preview({
           </label>
           <strong>{t('preview.fpsPreview', { fps: previewFps })}</strong>
         </div>
-        {tools ? <div className="preview-tools" aria-label={t('preview.generatorTools')}>{tools}</div> : null}
+        {tools ? <details className="canvas-settings"><summary>{t('workbench.canvasSettings')}</summary><div className="preview-tools" aria-label={t('preview.generatorTools')}>{tools}</div></details> : null}
       </div>
     </section>
   )

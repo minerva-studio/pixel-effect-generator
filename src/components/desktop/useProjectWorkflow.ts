@@ -1,23 +1,25 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DesktopAppApi, RecentProject, UnsavedDialogLabels } from '../../desktop/desktopApi'
 import type {
   RegisteredGenerator,
-  RegisteredGeneratorAction,
   RegisteredGeneratorSession,
 } from '../../generators/contract'
 import type { TranslateFunction } from '../../i18n/messages'
 import { buildProjectDocument, serializeJsonValue } from '../../shared/project/document'
 import type { GeneratorProjectCodec, ProjectExportSettings } from '../../shared/project/types'
 import type { FileOperationController } from '../fileOperations'
-import { importProjectFromText } from '../ProjectMenu'
+import { documentGenerator, prepareNewDocument, prepareOpenedDocument, type PreparedDocument } from '../documentSession'
 import type { ToastApi } from '../toast/ToastProvider'
-import { DEFAULT_UNITY_EXPORT_SETTINGS, type UnityExportSettingsState } from '../unitySettings'
+import type { UnityExportSettingsState } from '../unitySettings'
 
 export interface ProjectWorkflow {
   readonly currentFileName: string | null
   readonly dirty: boolean
+  readonly canSave: boolean
   readonly recents: readonly RecentProject[]
   readonly newProject: () => void
+  /** Creates the selected document only after unsaved changes have been resolved. */
+  readonly createProject: (id: string) => Promise<boolean>
   readonly openProject: () => void
   readonly openRecent: (id: string) => void
   readonly saveProject: () => void
@@ -26,14 +28,13 @@ export interface ProjectWorkflow {
   readonly clearRecent: () => void
 }
 
-/** Dirty baseline keyed by generator so switching generators never compares
- * one generator's project against another. */
+/** Dirty baseline belongs to the current document and its generator. */
 export interface ProjectBaseline {
   readonly generatorId: string
   readonly text: string
 }
 
-/** Stable serialization of the persistent project fields only. */
+/** Stable dirty snapshot; codec-less generators use a snapshot that must never be saved as a project. */
 export function serializeProjectSnapshot(
   codec: GeneratorProjectCodec<unknown> | undefined,
   parameters: unknown,
@@ -41,7 +42,9 @@ export function serializeProjectSnapshot(
   unitySettings: UnityExportSettingsState,
 ): string {
   if (codec === undefined) {
-    return ''
+    // A generator without a file codec still needs unsaved-change protection.
+    // This fallback is a dirty snapshot only; save operations require a codec.
+    return JSON.stringify({ parameters, fps, unitySettings })
   }
   try {
     const trimmed = unitySettings.stableGuid.trim()
@@ -69,9 +72,8 @@ interface ProjectWorkflowDeps {
   readonly generator: RegisteredGenerator<string>
   readonly session: RegisteredGeneratorSession<string>
   readonly unitySettings: UnityExportSettingsState
-  readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
-  readonly onSessionAction: (action: RegisteredGeneratorAction<string>) => void
-  readonly onReset: () => void
+  readonly onRequestNew: () => void
+  readonly onReplaceDocument: (document: PreparedDocument) => void
   readonly fileOperations: FileOperationController
   readonly toast: ToastApi
   readonly t: TranslateFunction
@@ -87,9 +89,8 @@ export function useProjectWorkflow({
   generator,
   session,
   unitySettings,
-  onUnitySettingsChange,
-  onSessionAction,
-  onReset,
+  onRequestNew,
+  onReplaceDocument,
   fileOperations,
   toast,
   t,
@@ -106,18 +107,8 @@ export function useProjectWorkflow({
     return serializeProjectSnapshot(codec, session.parameters, session.previewFps, unitySettings)
   }, [codec, session.parameters, session.previewFps, unitySettings.pixelsPerUnit, unitySettings.stableGuid])
 
-  const snapshotRef = useRef(serializeCurrent)
-  snapshotRef.current = serializeCurrent
-
   const serialized = serializeCurrent()
   const dirty = isProjectDirty(baseline, generator.id, serialized)
-
-  // Switching generators re-establishes the baseline for the new generator's
-  // current (default) parameters instead of comparing against the old one.
-  useEffect(() => {
-    setBaseline({ generatorId: generator.id, text: snapshotRef.current() })
-    setCurrentFileName(null)
-  }, [generator.id])
 
   const unsavedLabels = useMemo<UnsavedDialogLabels>(() => ({
     title: t('desktop.confirm.title'),
@@ -139,17 +130,6 @@ export function useProjectWorkflow({
     refreshRecents()
   }, [api, refreshRecents])
 
-  const baselineFor = useCallback((parameters: unknown, fps: number, settings: ProjectExportSettings): string => {
-    if (codec === undefined) {
-      return ''
-    }
-    try {
-      return serializeJsonValue(buildProjectDocument(codec, parameters, fps, settings))
-    } catch {
-      return ''
-    }
-  }, [codec])
-
   const saveProject = useCallback(async (): Promise<boolean> => {
     if (codec === undefined || !fileOperations.tryStart('projectSave')) {
       return false
@@ -162,12 +142,15 @@ export function useProjectWorkflow({
       }
       const pendingId = toast.show('pending', t('export.toasts.savingProject'))
       const bytes = new TextEncoder().encode(text).buffer
-      const result = await api.project.save(bytes)
+      const result = currentFileName === null
+        ? await api.project.saveAs(projectSuggestedName(generator, session, t), bytes)
+        : await api.project.save(bytes)
       toast.dismiss(pendingId)
       if (result.status === 'saved') {
         setBaseline({ generatorId: generator.id, text })
         setCurrentFileName(result.name)
         toast.show('success', t('desktop.toasts.savedProject'))
+        refreshRecents()
         return true
       }
       if (result.status === 'failed') {
@@ -177,7 +160,7 @@ export function useProjectWorkflow({
     } finally {
       fileOperations.finish('projectSave')
     }
-  }, [api, codec, fileOperations, serializeCurrent, toast, t])
+  }, [api, codec, fileOperations, serializeCurrent, currentFileName, generator, session, toast, t, refreshRecents])
 
   const saveProjectAs = useCallback(async (): Promise<boolean> => {
     if (codec === undefined || !fileOperations.tryStart('projectSave')) {
@@ -223,52 +206,41 @@ export function useProjectWorkflow({
     return saveProject()
   }, [api, dirty, unsavedLabels, saveProject])
 
-  const applyOpenedProject = useCallback(async (result: { readonly id: string; readonly name: string; readonly text: string }): Promise<void> => {
-    if (codec === undefined) {
-      return
-    }
-    const imported = importProjectFromText(result.text, codec, ({ parameters, fps, exportSettings }) => {
-      try {
-        onSessionAction(generator.createImportedAction(parameters, fps))
-        onUnitySettingsChange({
-          pixelsPerUnit: exportSettings.pixelsPerUnit,
-          stableGuid: exportSettings.guid ?? '',
-        })
-        return { ok: true }
-      } catch (error) {
-        return { ok: false, error: { code: 'RENDER_FAILED', detail: describeError(error) } }
-      }
-    })
-    if (!imported.ok) {
-      toast.show('error', t('desktop.toasts.openFailed'))
-      return
-    }
-    await api.project.confirmOpen(result.id)
-    setBaseline({ generatorId: generator.id, text: baselineFor(imported.parameters, imported.fps, imported.exportSettings) })
-    setCurrentFileName(result.name)
-    refreshRecents()
-  }, [api, baselineFor, codec, generator, onSessionAction, onUnitySettingsChange, refreshRecents, toast, t])
+  const acceptDocument = useCallback((document: PreparedDocument, name: string | null) => {
+    const owner = documentGenerator(document.session.generatorId)
+    const text = serializeProjectSnapshot(owner.projectCodec, document.session.parameters, document.session.previewFps, document.unitySettings)
+    onReplaceDocument(document)
+    setBaseline({ generatorId: owner.id, text })
+    setCurrentFileName(name)
+  }, [onReplaceDocument])
 
-  const newProject = useCallback(async (): Promise<void> => {
-    if (fileOperations.activeTask !== null) {
-      return
+  const applyOpenedProject = useCallback(async (result: { readonly id: string; readonly name: string; readonly text: string }): Promise<void> => {
+    try {
+      const document = prepareOpenedDocument(result.text)
+      await api.project.confirmOpen(result.id)
+      acceptDocument(document, result.name)
+      refreshRecents()
+    } catch {
+      toast.show('error', t('workbench.openFailed'))
     }
-    if (!(await confirmBeforeProceeding())) {
-      return
+  }, [api, acceptDocument, refreshRecents, toast, t])
+
+  const createProject = useCallback(async (id: string): Promise<boolean> => {
+    if (fileOperations.activeTask !== null || !(await confirmBeforeProceeding())) return false
+    try {
+      const document = prepareNewDocument(id)
+      acceptDocument(document, null)
+      toast.show('success', t('desktop.toasts.newProject'))
+      return true
+    } catch {
+      toast.show('error', t('workbench.newFailed'))
+      return false
     }
-    onReset()
-    onUnitySettingsChange(DEFAULT_UNITY_EXPORT_SETTINGS)
-    const defaults = generator.createSession(12)
-    setBaseline({
-      generatorId: generator.id,
-      text: baselineFor(defaults.parameters, defaults.previewFps, {
-        pixelsPerUnit: DEFAULT_UNITY_EXPORT_SETTINGS.pixelsPerUnit,
-        guid: null,
-      }),
-    })
-    setCurrentFileName(null)
-    toast.show('success', t('desktop.toasts.newProject'))
-  }, [baselineFor, confirmBeforeProceeding, fileOperations.activeTask, generator, onReset, onUnitySettingsChange, toast, t])
+  }, [acceptDocument, confirmBeforeProceeding, fileOperations, toast, t])
+
+  const newProject = useCallback(() => {
+    if (fileOperations.activeTask === null) onRequestNew()
+  }, [fileOperations.activeTask, onRequestNew])
 
   const openProject = useCallback(async (): Promise<void> => {
     if (fileOperations.activeTask !== null) {
@@ -277,13 +249,14 @@ export function useProjectWorkflow({
     if (!(await confirmBeforeProceeding())) {
       return
     }
-    const result = await api.project.open()
-    if (result.status === 'opened') {
-      await applyOpenedProject(result)
-    } else if (result.status === 'failed') {
-      toast.show('error', t('desktop.toasts.openFailed'))
-    }
-  }, [api, applyOpenedProject, confirmBeforeProceeding, fileOperations.activeTask, toast, t])
+    if (!fileOperations.tryStart('projectLoad')) return
+    try {
+      const result = await api.project.open()
+      if (result.status === 'opened') await applyOpenedProject(result)
+      else if (result.status === 'failed') toast.show('error', t('desktop.toasts.openFailed'))
+    } catch { toast.show('error', t('desktop.toasts.openFailed')) }
+    finally { fileOperations.finish('projectLoad') }
+  }, [api, applyOpenedProject, confirmBeforeProceeding, fileOperations, toast, t])
 
   const openRecent = useCallback(async (id: string): Promise<void> => {
     if (fileOperations.activeTask !== null) {
@@ -292,14 +265,17 @@ export function useProjectWorkflow({
     if (!(await confirmBeforeProceeding())) {
       return
     }
-    const result = await api.project.openRecent(id)
-    if (result.status === 'opened') {
-      await applyOpenedProject(result)
-    } else if (result.status === 'failed') {
-      toast.show('error', t('desktop.toasts.recentFailed'))
-      refreshRecents()
-    }
-  }, [api, applyOpenedProject, confirmBeforeProceeding, fileOperations.activeTask, refreshRecents, toast, t])
+    if (!fileOperations.tryStart('projectLoad')) return
+    try {
+      const result = await api.project.openRecent(id)
+      if (result.status === 'opened') await applyOpenedProject(result)
+      else if (result.status === 'failed') {
+        toast.show('error', t('desktop.toasts.recentFailed'))
+        refreshRecents()
+      }
+    } catch { toast.show('error', t('desktop.toasts.recentFailed')) }
+    finally { fileOperations.finish('projectLoad') }
+  }, [api, applyOpenedProject, confirmBeforeProceeding, fileOperations, refreshRecents, toast, t])
 
   const exitProject = useCallback(() => {
     void api.window.requestClose()
@@ -347,8 +323,10 @@ export function useProjectWorkflow({
   return {
     currentFileName,
     dirty,
+    canSave: codec !== undefined,
     recents,
-    newProject: () => void newProject(),
+    newProject,
+    createProject,
     openProject: () => void openProject(),
     openRecent: (id) => void openRecent(id),
     saveProject: () => void saveProject(),
@@ -356,10 +334,6 @@ export function useProjectWorkflow({
     exitProject,
     clearRecent,
   }
-}
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 /** Builds the suggested Project JSON file name from the current effect. */

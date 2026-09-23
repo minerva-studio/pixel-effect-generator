@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <title>Pixel Effect Generator</title>
+  <rect width="32" height="32" rx="7" fill="#252525"/>
+  <path fill="#62829a" d="M5 24h6v-3h5v-4h4v-5h3V6h4v8h-3v5h-4v4h-5v4H5z"/>
+  <path fill="#dfeaf1" d="M5 23h5v-3h5v-4h4v-5h3V6h4v6h-3v5h-4v4h-5v4H5z"/>
+  <rect x="25" y="4" width="2" height="2" fill="#dfeaf1"/>
+</svg>

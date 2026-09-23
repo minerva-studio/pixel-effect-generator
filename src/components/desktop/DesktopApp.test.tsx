@@ -51,6 +51,7 @@ describe('desktop vs web shell', () => {
       </I18nProvider>,
     )
     expect(markup).toContain('class="desktop-titlebar"')
+    expect(markup).toContain('effect-mark.svg')
     expect(markup).toContain('>File<')
     expect(markup).toContain('id="desktop-export-button"')
     expect(markup).toContain('>Export<')
@@ -62,6 +63,8 @@ describe('desktop vs web shell', () => {
     expect(markup).not.toContain('class="hero"')
     expect(markup).not.toContain('class="status-chip"')
     expect(markup).not.toContain('class="desktop-header"')
+    expect(markup).not.toContain('class="web-footer"')
+    expect(markup).not.toContain('Minerva Game Studio')
     const appName = markup.indexOf('titlebar-app-name')
     const file = markup.indexOf('>File<')
     const exportButton = markup.indexOf('id="desktop-export-button"')
@@ -76,7 +79,7 @@ describe('desktop vs web shell', () => {
     expect(minimize).toBeGreaterThan(project)
   })
 
-  it('keeps the web hero and hides desktop chrome without the bridge', () => {
+  it('renders the web document toolbar without a desktop bridge', () => {
     const markup = renderToStaticMarkup(
       <I18nProvider>
         <DesktopProvider>
@@ -84,10 +87,11 @@ describe('desktop vs web shell', () => {
         </DesktopProvider>
       </I18nProvider>,
     )
-    expect(markup).toContain('class="hero"')
+    expect(markup).toContain('class="workbench-header"')
+    expect(markup).toContain('id="web-export-button"')
     expect(markup).not.toContain('desktop-titlebar')
     expect(markup).not.toContain('>File<')
-    expect(markup).toContain('128 × 128 RGBA')
+    expect(markup).toContain('128 × 128')
   })
 })
 

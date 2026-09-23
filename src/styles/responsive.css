@@ -1,65 +1,170 @@
-
-@media (max-width: 1180px) {
-  .workspace {
-    grid-template-columns: 390px minmax(430px, 1fr);
-    grid-template-areas:
-      "generators generators"
-      "parameters preview"
-      "export export";
+@media (max-width: 800px) {
+  .app-shell {
+    height: auto;
+    min-height: 100dvh;
   }
-  .generator-panel { min-height: auto; padding: 14px 16px; }
-  .generator-list { display: flex; }
-  .generator-item { width: min(300px, 100%); }
-  .navigation-heading { padding-bottom: 10px; }
-}
 
-@media (max-width: 900px) {
-  .workspace {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "generators"
-      "parameters"
-      "preview"
-      "export";
+  .workbench-header {
+    padding: 10px 16px;
   }
-  .controls-panel, .preview-panel { min-height: auto; }
-}
 
-@media (max-width: 790px) {
-  .app-shell { width: min(100% - 20px, 1500px); padding-top: 24px; }
-  .category-tabs { display: flex; }
-  .category-tabs button { min-width: 88px; flex: 1; }
-  .preview-stage { min-height: 420px; }
-  .canvas-wrap { width: min(440px, calc(100% - 28px)); }
+  .web-footer {
+    padding: 0 16px;
+  }
+
+  .document-toolbar {
+    padding: 10px 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .document-actions+.document-identity {
+    border: 0;
+    padding-left: 0;
+  }
+
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    padding: 0 12px 12px;
+    gap: 12px;
+  }
+
+  .workspace-divider {
+    display: none;
+  }
+
+  .controls-panel {
+    max-height: 60dvh;
+    min-height: 300px;
+  }
+
+  .preview-panel {
+    height: 680px;
+    min-height: 560px;
+  }
+
+  .category-tabs {
+    display: flex;
+  }
+
+  .category-tabs button {
+    min-width: 80px;
+    flex: 1;
+  }
+
+  .desktop-app-shell {
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .desktop-app-shell .workspace {
+    flex: none;
+  }
+
+  .document-type-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 520px) {
-  .hero { align-items: flex-start; gap: 20px; }
-  .status-chip { display: none; }
-  .project-menu-button, .project-menu-item { min-height: 44px; }
-  .controls-heading-actions .project-menu-button { min-height: 44px; }
-  .preset-dialog-backdrop { padding: 0; }
-  .preset-dialog { width: 100%; height: 100%; max-height: 100vh; border-radius: 0; }
-  .controls-heading, .category-content { padding-left: 17px; padding-right: 17px; }
-  .parameter-field { grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
-  .field-inputs { grid-template-columns: 1fr 70px; gap: 9px; }
-  .palette-row { grid-template-columns: 24px 36px 1fr auto; }
-  .palette-row .palette-alpha { grid-column: 1 / -1; }
-  .palette-row .remove-button { grid-column: 3 / -1; justify-self: end; }
-  .preview-settings { flex-wrap: wrap; justify-content: flex-start; }
-  .preview-settings strong { margin-left: auto; }
-  .preview-seed-control { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
-  .preview-seed-control > .field-title { min-width: 0; }
-  .preview-seed-control .seed-inputs { grid-template-columns: minmax(0, 1fr) auto; }
-  .canvas-size-heading { align-items: flex-start; }
-  .canvas-preset-row { grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
-  .canvas-custom-row { padding-left: 110px; }
-  .preview-stage { min-height: 340px; }
-}
+  .workbench-brand h1 {
+    max-width: 120px;
+    font-size: .8rem;
+  }
 
-@media (max-width: 400px) {
-  .canvas-size-heading { display: grid; }
-  .canvas-preset-row { grid-template-columns: 1fr; }
-  .canvas-custom-row { grid-template-columns: 1fr; padding-left: 0; }
-  .canvas-custom-row .secondary-button { justify-self: stretch; }
+  .workbench-brand,
+  .header-preferences {
+    gap: 8px;
+  }
+
+  .theme-select {
+    min-width: 0;
+    max-width: 100px;
+  }
+
+  .language-select {
+    max-width: 94px;
+  }
+
+  .document-toolbar {
+    gap: 8px;
+  }
+
+  .document-actions {
+    flex: 1;
+  }
+
+  .document-identity {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .document-toolbar .toolbar-export {
+    margin-left: auto;
+  }
+
+  .controls-heading,
+  .category-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .controls-heading-actions {
+    flex-wrap: wrap;
+  }
+
+  .preview-heading-tools {
+    flex-wrap: wrap;
+  }
+
+  .preview-heading .frame-counter {
+    display: none;
+  }
+
+  .preview-settings {
+    justify-content: flex-start;
+  }
+
+  .preview-seed-control {
+    display: grid;
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .preview-seed-control>.field-title {
+    min-width: 0;
+  }
+
+  .canvas-size-heading {
+    display: grid;
+  }
+
+  .canvas-preset-row {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .canvas-custom-row {
+    padding-left: 0;
+  }
+
+  .new-document-dialog {
+    padding: 18px;
+    width: calc(100vw - 20px);
+  }
+
+  .document-type-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .preset-dialog-backdrop {
+    padding: 0;
+  }
+
+  .preset-dialog {
+    width: 100%;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
 }
