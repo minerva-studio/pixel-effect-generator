@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
 
-# Generated web, Electron, and test output
+# Generated web, desktop, and test output
 dist/
 .vite/
 out/

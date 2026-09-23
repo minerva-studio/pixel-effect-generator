@@ -22,8 +22,9 @@ import { normalizeGuid, randomGuid } from '../shared/unity/guid'
 import { UNITY_MAX_ATLAS_SIZE } from '../shared/unity/textureSize'
 import { buildFrameZip, buildUnityZip, type FrameZipInput, type UnityZipInput } from '../shared/zip/zip'
 import { drawFrame, exportHorizontalSpriteSheet } from './export'
-import { createFileDelivery, getDesktopFileApi, type FileDelivery, type FileSaveResult } from './fileDelivery'
+import { createFileDelivery, type FileDelivery, type FileSaveResult } from './fileDelivery'
 import type { FileOperationController, WorkspaceFileTask } from './fileOperations'
+import { useDesktopApp } from './desktop/DesktopProvider'
 import { useToast } from './toast/ToastProvider'
 import type { UnityExportSettingsState } from './unitySettings'
 
@@ -127,7 +128,7 @@ const EXPORT_DEPENDENCIES: ExportDependencies = {
   buildFrameZip,
   buildUnityZip,
   randomGuid,
-  fileDelivery: createFileDelivery(getDesktopFileApi()),
+  fileDelivery: createFileDelivery(undefined),
   packSpriteSheet,
 }
 
@@ -656,10 +657,17 @@ export function ExportPanel({
   onUnitySettingsChange,
   fileOperations,
   buildProjectDocument: buildDocument,
-  dependencies = EXPORT_DEPENDENCIES,
+  dependencies: providedDependencies,
 }: ExportPanelProps) {
   const { t } = useI18n()
   const toast = useToast()
+  const desktopApi = useDesktopApp()
+  const dependencies = useMemo(() => {
+    if (providedDependencies !== undefined) return providedDependencies
+    return desktopApi === null
+      ? EXPORT_DEPENDENCIES
+      : { ...EXPORT_DEPENDENCIES, fileDelivery: createFileDelivery(desktopApi) }
+  }, [desktopApi, providedDependencies])
   const [state, dispatch] = useReducer(exportPanelReducer, undefined, createInitialExportPanelState)
   const atlasCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const atlasPreviewId = useId()

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { DesktopAppApi } from '../electron/desktopApi'
+import type { DesktopAppApi } from '../desktop/desktopApi'
 import { createFileDelivery } from './fileDelivery'
 
 function desktopApi(overrides: Partial<DesktopAppApi> = {}): DesktopAppApi {

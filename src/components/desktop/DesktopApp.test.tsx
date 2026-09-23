@@ -2,9 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import App from '../../App'
 import { I18nProvider } from '../../i18n/I18nProvider'
-import type { DesktopAppApi } from '../../electron/desktopApi'
+import type { DesktopAppApi } from '../../desktop/desktopApi'
 import { DesktopProvider } from './DesktopProvider'
 import { nextMenuIndex } from './DesktopTitleBar'
+
+const tauriApiStub = vi.hoisted(() => ({ current: undefined as unknown }))
+vi.mock('../../tauri/desktopApi', () => ({ createTauriDesktopApi: () => tauriApiStub.current }))
 
 function fakeDesktopApi(): DesktopAppApi {
   return {
@@ -37,12 +40,14 @@ function fakeDesktopApi(): DesktopAppApi {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  tauriApiStub.current = undefined
 })
 
 describe('desktop vs web shell', () => {
-  it('renders the desktop title bar and File menu only when the bridge exists', () => {
+  it('renders the desktop title bar and File menu in the Tauri runtime', () => {
     vi.stubGlobal('navigator', undefined)
-    vi.stubGlobal('window', { pixelEffectDesktop: fakeDesktopApi() })
+    tauriApiStub.current = fakeDesktopApi()
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} })
     const markup = renderToStaticMarkup(
       <I18nProvider>
         <DesktopProvider>

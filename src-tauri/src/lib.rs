@@ -402,6 +402,60 @@ fn file_name(path: &Path) -> String {
     path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_else(|| "project.json".into())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn save_spec_supports_desktop_export_kinds() {
+        assert_eq!(save_spec("project-json").unwrap().0, ".json");
+        assert_eq!(save_spec("spritesheet-png").unwrap().0, ".png");
+        assert_eq!(save_spec("gif").unwrap().0, ".gif");
+        assert_eq!(save_spec("apng").unwrap().0, ".png");
+        assert_eq!(save_spec("frame-zip").unwrap().0, ".zip");
+        assert_eq!(save_spec("unity-zip").unwrap().0, ".zip");
+        assert!(save_spec("unknown").is_none());
+    }
+
+    #[test]
+    fn suggested_names_are_sanitized_and_get_the_expected_extension() {
+        assert_eq!(sanitize_suggested_name(r"C:\exports\slash?.PNG", ".png"), "slash_.PNG");
+        assert_eq!(sanitize_suggested_name("../project", ".json"), "project.json");
+        assert_eq!(sanitize_suggested_name("  ", ".gif"), "pixel-effect.gif");
+    }
+
+    #[test]
+    fn chosen_paths_get_the_extension_once_case_insensitively() {
+        assert_eq!(enforce_extension(PathBuf::from("effect.PNG"), ".png"), PathBuf::from("effect.PNG"));
+        assert_eq!(enforce_extension(PathBuf::from("effect"), ".png"), PathBuf::from("effect.png"));
+    }
+
+    #[test]
+    fn recent_projects_deduplicate_move_to_front_and_stay_bounded() {
+        let mut entries = (0..MAX_RECENT_PROJECTS)
+            .map(|index| RecentEntry {
+                id: format!("id-{index}"),
+                name: format!("project-{index}.json"),
+                path: PathBuf::from(format!("C:/projects/project-{index}.json")),
+            })
+            .collect::<Vec<_>>();
+        let existing = PathBuf::from("C:/projects/project-4.json");
+
+        mark_recent(&mut entries, existing.clone());
+
+        assert_eq!(entries.len(), MAX_RECENT_PROJECTS);
+        assert_eq!(entries[0].path, existing);
+        assert_eq!(entries.iter().filter(|entry| entry.path == existing).count(), 1);
+    }
+
+    #[test]
+    fn public_recent_project_shape_does_not_expose_file_paths() {
+        let recent = RecentProject { id: "id".into(), name: "project.json".into() };
+        let value = serde_json::to_value(recent).unwrap();
+        assert_eq!(value, serde_json::json!({ "id": "id", "name": "project.json" }));
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())

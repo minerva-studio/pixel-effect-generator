@@ -1,4 +1,4 @@
-import { useEffect, useId, useReducer, useRef, type RefObject } from 'react'
+import { useEffect, useId, useMemo, useReducer, useRef, type RefObject } from 'react'
 import { useI18n } from '../i18n/I18nProvider'
 import type { MessageKey, TranslateFunction } from '../i18n/messages'
 import { parseProjectDocument, serializeJsonValue } from '../shared/project/document'
@@ -10,8 +10,9 @@ import type {
   ProjectExportSettings,
 } from '../shared/project/types'
 import { normalizeGuid } from '../shared/unity/guid'
-import { createFileDelivery, getDesktopFileApi, type FileDelivery } from './fileDelivery'
+import { createFileDelivery, type FileDelivery } from './fileDelivery'
 import type { FileOperationController } from './fileOperations'
+import { useDesktopApp } from './desktop/DesktopProvider'
 import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
 import { useToast } from './toast/ToastProvider'
 import type { UnityExportSettingsState } from './unitySettings'
@@ -59,7 +60,7 @@ export interface ProjectMenuDependencies {
 }
 
 const PROJECT_MENU_DEPENDENCIES: ProjectMenuDependencies = {
-  fileDelivery: createFileDelivery(getDesktopFileApi()),
+  fileDelivery: createFileDelivery(undefined),
   serializeJson: serializeJsonValue,
 }
 
@@ -246,10 +247,17 @@ export function ProjectMenu({
   fileName,
   unitySettings,
   fileOperations,
-  dependencies = PROJECT_MENU_DEPENDENCIES,
+  dependencies: providedDependencies,
 }: ProjectMenuProps) {
   const { t } = useI18n()
   const toast = useToast()
+  const desktopApi = useDesktopApp()
+  const dependencies = useMemo(() => {
+    if (providedDependencies !== undefined) return providedDependencies
+    return desktopApi === null
+      ? PROJECT_MENU_DEPENDENCIES
+      : { ...PROJECT_MENU_DEPENDENCIES, fileDelivery: createFileDelivery(desktopApi) }
+  }, [desktopApi, providedDependencies])
   const [state, dispatch] = useReducer(projectMenuReducer, undefined, createInitialProjectMenuState)
   const menuId = useId()
   const buttonRef = useRef<HTMLButtonElement | null>(null)

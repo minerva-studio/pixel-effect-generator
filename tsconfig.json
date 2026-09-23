@@ -16,6 +16,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "vite.config.mts"],
-  "exclude": ["src/electron"]
+  "include": ["src", "vite.config.mts"]
 }

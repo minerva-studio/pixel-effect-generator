@@ -46,7 +46,7 @@ export interface UnsavedDialogLabels {
   readonly cancel: string
 }
 
-/** Narrow desktop bridge shared by Electron and Tauri implementations. */
+/** Narrow native desktop bridge implemented by the Tauri host. */
 export interface DesktopAppApi {
   readonly isDesktop: true
   /** Generic asset save with a fixed per-kind filter and extension. */
@@ -81,7 +81,6 @@ export interface DesktopAppApi {
 
 declare global {
   interface Window {
-    readonly pixelEffectDesktop?: DesktopAppApi
     readonly __TAURI_INTERNALS__?: unknown
   }
 }

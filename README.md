@@ -46,37 +46,34 @@ not the preset library, and Reset never deletes custom presets.
 ## Commands
 
 - `npm run dev` starts the local Vite development server.
-- `npm run desktop:start` starts the Electron development environment.
+- `npm run tauri:dev` starts the Tauri desktop development environment.
 - `npm run test` runs renderer, preset, storage, and export tests.
 - `npm run typecheck` validates TypeScript.
 - `npm run build` creates the production web build.
-- `npm run desktop:package` creates an unpacked desktop build for local checks.
-- `npm run desktop:make` creates the Windows x64 portable ZIP plus SHA-256.
+- `npm run tauri:build` creates the Windows x64 NSIS installer.
 
-## Desktop app (Electron)
+## Desktop app (Tauri)
 
-The desktop build wraps the same React/Vite renderer in Electron Forge. The
-main process owns the window lifecycle and native file dialogs; a sandboxed
-preload exposes only a minimal `window.pixelEffectDesktop` bridge. The renderer
-keeps no Node.js, filesystem, or generic IPC access.
+The Tauri desktop app uses the same React/Vite renderer as the web build.
+Project open/save, recent projects, unsaved-change confirmation, and asset
+exports use native Windows dialogs through the shared `DesktopProvider` API.
+The web app continues to use browser file inputs and downloads.
 
-Portable usage:
+Installation:
 
-1. Run `npm run desktop:make` (or download the release ZIP) and extract
-   `PixelEffectGenerator-<version>-win32-x64.zip` anywhere.
-2. Launch `PixelEffectGenerator.exe`. No installation, registry writes, or
-   administrator rights are required.
+1. Run `npm run tauri:build` or download the NSIS installer from a GitHub
+   Release.
+2. Run the installer. It installs for the current user and does not require
+   administrator rights.
 
 Notes:
 
-- The first release is **not code-signed**, so Windows SmartScreen may show a
-  warning; this is expected until signing is added.
-- The portable ZIP does not mean the configuration is fully portable: UI
-  preferences and custom presets live in the Electron user-data directory.
-  Project JSON files are the portable project format and can be moved freely.
-- In the desktop app every export and Project open uses the native Windows
-  file dialog; in the browser the existing download links and hidden file
-  inputs are used unchanged.
+- The installer uses Tauri's `downloadBootstrapper` WebView2 mode. Windows
+  already includes WebView2 on supported versions; if the runtime is missing,
+  setup downloads it. An internet connection is needed only for that case.
+- UI preferences and custom presets remain in browser storage for each app
+  origin/profile. Project JSON files are the portable project format and can
+  be moved freely.
 - Desktop shortcuts: `Ctrl+N` new project, `Ctrl+O` open, `Ctrl+S` save,
   `Ctrl+Shift+S` save as, `Space` play/pause (when not focused in a control),
   `F11` full screen, `Escape` closes menus or exits full screen, and the File
@@ -84,12 +81,14 @@ Notes:
 
 Publishing:
 
+- The web app remains on GitHub Pages: pushes to `main` run the
+  `deploy-pages` workflow, and `workflow_dispatch` can publish it manually.
 - Pushing a `v*` tag runs the `desktop-release` workflow: it verifies the tag
-  equals `v${package.json.version}`, runs tests, typecheck, and the web build,
-  then builds the Windows x64 ZIP, uploads it as a CI artifact, and creates a
-  GitHub Release with the ZIP and SHA-256. A `workflow_dispatch` run only
-  uploads the artifact and never creates a Release. Releasing an existing tag
-  fails instead of overwriting it.
+  equals `v${package.json.version}`, runs tests and typecheck, then builds the
+  Windows x64 Tauri NSIS installer and records its size. The installer and its
+  SHA-256 are uploaded as a CI artifact and attached to a GitHub Release. A
+  `workflow_dispatch` run only uploads the artifact and never creates a
+  Release. Releasing an existing tag fails instead of overwriting it.
 
 ## Architecture
 

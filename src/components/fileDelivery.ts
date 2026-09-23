@@ -11,8 +11,8 @@ export type FileOpenResult =
 
 /**
  * Environment-agnostic file delivery: browsers keep the existing download
- * links and hidden file inputs, while the Electron renderer routes every save
- * and Project open through native system dialogs.
+ * links and hidden file inputs, while Tauri routes desktop saves and Project
+ * opens through native system dialogs.
  */
 export interface FileDelivery {
   readonly isDesktop: boolean
@@ -76,12 +76,4 @@ function mapSaveResult(result: {
     return 'saved'
   }
   return result.status === 'failed' ? 'failed' : 'cancelled'
-}
-
-/** Reads the desktop bridge safely; undefined in browsers and tests. */
-export function getDesktopFileApi(): DesktopAppApi | undefined {
-  if (typeof window === 'undefined') {
-    return undefined
-  }
-  return window.pixelEffectDesktop
 }

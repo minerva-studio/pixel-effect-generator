@@ -4,12 +4,12 @@ import { createTauriDesktopApi } from '../../tauri/desktopApi'
 
 const DesktopContext = createContext<DesktopAppApi | null>(null)
 
-/** Reads the desktop bridge once; browsers and tests render without it. */
+/** Reads the Tauri bridge once; browsers and tests render without it. */
 function readDesktopApi(): DesktopAppApi | null {
   if (typeof window === 'undefined') {
     return null
   }
-  return window.pixelEffectDesktop ?? (window.__TAURI_INTERNALS__ !== undefined ? createTauriDesktopApi() : null)
+  return window.__TAURI_INTERNALS__ !== undefined ? createTauriDesktopApi() : null
 }
 
 /** Provides the desktop bridge to the tree; null in the web build. */
