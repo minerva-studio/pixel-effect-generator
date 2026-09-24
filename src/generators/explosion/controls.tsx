@@ -16,14 +16,17 @@ import {
 import type { ExplosionCategory } from './module'
 import {
   DEFAULT_EXPLOSION_PARAMETERS,
+  LEGACY_EXPLOSION_PARAMETERS,
   MAX_CANVAS_SIZE,
   MIN_CANVAS_SIZE,
   MODERN_EXPLOSION_PARAMETERS,
+  PUFF_EXPLOSION_PARAMETERS,
   SMOKE_EXPLOSION_PALETTE,
   createExplosionSurface,
   explosionFrameLimits,
   explosionShapeCount,
   explosionVolumeProfiles,
+  isFieldExplosionShape,
   normalizeExplosionVolume,
   type ExplosionParameters,
   type ExplosionShape,
@@ -82,6 +85,22 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
             onSelect={selectShape}
           />
           <NumberControl label={familyT('explosion.controls.radius.label')} description={familyT('explosion.controls.radius.description')} value={parameters.body.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(radius) => updateBody({ radius })} />
+          {parameters.body.shape === 'billowBurst' ? (
+            <>
+              <NumberControl label={familyT('explosion.controls.impulse.label')} description={familyT('explosion.controls.impulse.description')} value={parameters.body.impulse} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(impulse) => updateBody({ impulse })} />
+              <NumberControl label={familyT('explosion.controls.billow.label')} description={familyT('explosion.controls.billow.description')} value={parameters.body.billow} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(billow) => updateBody({ billow })} />
+              <NumberControl label={familyT('explosion.controls.midRoll.label')} description={familyT('explosion.controls.midRoll.description')} value={parameters.body.churnAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(churnAmount) => updateBody({ churnAmount })} />
+              <NumberControl label={familyT('explosion.controls.debrisCount.label')} description={familyT('explosion.controls.debrisCount.description')} value={parameters.body.debrisCount} minimum={0} maximum={24} onChange={(debrisCount) => updateBody({ debrisCount })} />
+            </>
+          ) : null}
+          {parameters.body.shape === 'puffCluster' ? (
+            <>
+              <NumberControl label={familyT('explosion.controls.massCount.label')} description={familyT('explosion.controls.massCount.description')} value={parameters.body.massCount} minimum={4} maximum={14} onChange={(massCount) => updateBody({ massCount })} />
+              <NumberControl label={familyT('explosion.controls.throwDistance.label')} description={familyT('explosion.controls.throwDistance.description')} value={parameters.body.throwDistance} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(throwDistance) => updateBody({ throwDistance })} />
+              <NumberControl label={familyT('explosion.controls.buoyancy.label')} description={familyT('explosion.controls.buoyancy.description')} value={parameters.body.buoyancy} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(buoyancy) => updateBody({ buoyancy })} />
+              <NumberControl label={familyT('explosion.controls.billow.label')} description={familyT('explosion.controls.billow.description')} value={parameters.body.billow} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(billow) => updateBody({ billow })} />
+            </>
+          ) : null}
           {parameters.body.shape === 'rollingFireball' ? (
             <>
               <NumberControl label={familyT('explosion.controls.lobeCount.label')} description={familyT('explosion.controls.lobeCount.description')} value={parameters.body.lobeCount} minimum={3} maximum={9} onChange={(lobeCount) => updateBody({ lobeCount })} />
@@ -103,7 +122,7 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
               <NumberControl label={familyT('explosion.controls.smokeRise.label')} description={familyT('explosion.controls.smokeRise.description')} value={parameters.body.smokeRise} minimum={-0.6} maximum={0.6} step={0.01} scale={100} unit="%" onChange={(smokeRise) => updateBody({ smokeRise })} />
             </>
           ) : null}
-          <NumberControl label={familyT('explosion.controls.shapeIrregularity.label')} description={familyT('explosion.controls.shapeIrregularity.description')} value={parameters.body.shapeIrregularity} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(shapeIrregularity) => updateBody({ shapeIrregularity })} />
+          {isFieldExplosionShape(parameters.body.shape) ? null : <NumberControl label={familyT('explosion.controls.shapeIrregularity.label')} description={familyT('explosion.controls.shapeIrregularity.description')} value={parameters.body.shapeIrregularity} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(shapeIrregularity) => updateBody({ shapeIrregularity })} />}
           <NumberControl label={familyT('explosion.controls.rotation.label')} description={familyT('explosion.controls.rotation.description')} value={parameters.body.rotation} minimum={0} maximum={359} unit="°" onChange={(rotation) => updateBody({ rotation })} />
         </div>
       )
@@ -114,6 +133,7 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
             { value: 'explosion', label: familyT('explosion.options.explosion') },
             { value: 'implosion', label: familyT('explosion.options.implosion') },
           ]} onChange={(mode) => updateMotion({ mode })} />
+          {isFieldExplosionShape(parameters.body.shape) ? null : <>
           <SelectControl label={familyT('explosion.controls.motionCurve.label')} description={familyT('explosion.controls.motionCurve.description')} value={parameters.motion.motionCurve} options={[
             { value: 'crisp', label: familyT('explosion.options.crisp') },
             { value: 'balanced', label: familyT('explosion.options.balanced') },
@@ -121,9 +141,18 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
           ]} onChange={(motionCurve) => updateMotion({ motionCurve })} />
           <NumberControl label={familyT('explosion.controls.formationDuration.label')} description={familyT('explosion.controls.formationDuration.description')} value={parameters.motion.formationDuration} minimum={0.1} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(formationDuration) => updateMotion({ formationDuration })} />
           <NumberControl label={familyT('explosion.controls.holdDuration.label')} description={familyT('explosion.controls.holdDuration.description')} value={parameters.motion.holdDuration} minimum={0} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(holdDuration) => updateMotion({ holdDuration })} />
+          </>}
         </div>
       )
     case 'material': {
+      if (isFieldExplosionShape(parameters.body.shape)) {
+        return (
+          <div className="control-list">
+            <p className="material-mode-note">{familyT('explosion.controls.fieldMaterial')}</p>
+            <ExplosionSurfaceAdvancedControls parameters={parameters} onChange={onChange} familyT={familyT} />
+          </div>
+        )
+      }
       const modernShape = parameters.body.shape !== 'legacyRadial'
       const profiles = explosionVolumeProfiles(parameters.body.shape)
       if (modernShape && parameters.volume.enabled) {
@@ -242,6 +271,8 @@ export function ExplosionPreviewTools({ parameters, onChange, onResize }: {
 const THUMBNAIL_SEED = 1337
 const THUMBNAIL_FRAGMENTS = { ...MODERN_EXPLOSION_PARAMETERS.fragments, enabled: false }
 const SHAPE_THUMBNAILS: Readonly<Record<ExplosionShape, ExplosionParameters>> = {
+  billowBurst: { ...DEFAULT_EXPLOSION_PARAMETERS, seed: THUMBNAIL_SEED },
+  puffCluster: { ...PUFF_EXPLOSION_PARAMETERS, seed: THUMBNAIL_SEED },
   rollingFireball: { ...MODERN_EXPLOSION_PARAMETERS, seed: THUMBNAIL_SEED, fragments: THUMBNAIL_FRAGMENTS },
   shockBlast: {
     ...MODERN_EXPLOSION_PARAMETERS,
@@ -260,12 +291,14 @@ const SHAPE_THUMBNAILS: Readonly<Record<ExplosionShape, ExplosionParameters>> = 
     fragments: THUMBNAIL_FRAGMENTS,
   },
   legacyRadial: {
-    ...DEFAULT_EXPLOSION_PARAMETERS,
+    ...LEGACY_EXPLOSION_PARAMETERS,
     seed: THUMBNAIL_SEED,
   },
 }
 
 const SHAPE_CARD_OPTIONS: readonly ShapeCardOption<ExplosionParameters>[] = [
+  { value: 'billowBurst', labelKey: 'explosion.options.billowBurst', descriptionKey: 'explosion.shapeDescriptions.billowBurst', buildParameters: () => SHAPE_THUMBNAILS.billowBurst },
+  { value: 'puffCluster', labelKey: 'explosion.options.puffCluster', descriptionKey: 'explosion.shapeDescriptions.puffCluster', buildParameters: () => SHAPE_THUMBNAILS.puffCluster },
   { value: 'legacyRadial', labelKey: 'explosion.options.legacyRadial', descriptionKey: 'explosion.shapeDescriptions.legacyRadial', buildParameters: () => SHAPE_THUMBNAILS.legacyRadial },
   { value: 'rollingFireball', labelKey: 'explosion.options.rollingFireball', descriptionKey: 'explosion.shapeDescriptions.rollingFireball', buildParameters: () => SHAPE_THUMBNAILS.rollingFireball },
   { value: 'smokeBurst', labelKey: 'explosion.options.smokeBurst', descriptionKey: 'explosion.shapeDescriptions.smokeBurst', buildParameters: () => SHAPE_THUMBNAILS.smokeBurst },

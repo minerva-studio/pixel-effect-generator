@@ -9,7 +9,7 @@ import {
 } from '../shared/preset/storage'
 import { parseLegacyExplosionPayload, type LegacyExplosionFields } from './explosion/legacy'
 import { captureExplosionPreset, clampExplosionPresetParameters } from './explosion/presets'
-import type { ExplosionParameters } from './explosion/model'
+import { FIELD_BODY_DEFAULTS, type ExplosionParameters } from './explosion/model'
 import { captureBloomPreset, clampBloomPresetParameters } from './energy-bloom/presets'
 import type { BloomParameters } from './energy-bloom/model'
 import type { SharedShockwaveParameters } from './shared-effects/types'
@@ -70,6 +70,7 @@ function toExplosionParameters(legacy: LegacyExplosionFields): ExplosionParamete
       smokeRise: 0.18,
       smokeCount: 5,
       smokeMotion: 'billowing',
+      ...FIELD_BODY_DEFAULTS,
     },
     volume: { enabled: false, profile: 'hardShell' },
     surface,

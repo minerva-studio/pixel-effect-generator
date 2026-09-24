@@ -5,13 +5,13 @@ import { en, messagesForLocale, translate, type MessageKey } from '../../../i18n
 import { ShapeCardGrid, ShockwaveControls, type DissolvePatch, type FamilyTranslate } from '../../shared-effects/controls'
 import type { SharedShockwaveParameters } from '../../shared-effects/types'
 import { ExplosionControls, ExplosionPreviewTools } from '../controls'
-import { DEFAULT_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
+import { LEGACY_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
 import type { ExplosionCategory } from '../module'
 
 afterEach(() => vi.unstubAllGlobals())
 
 /** Renders one localized category for static markup assertions. */
-function renderControls(category: ExplosionCategory, locale: 'en' | 'zh-CN' = 'en', parameters: ExplosionParameters = DEFAULT_EXPLOSION_PARAMETERS) {
+function renderControls(category: ExplosionCategory, locale: 'en' | 'zh-CN' = 'en', parameters: ExplosionParameters = LEGACY_EXPLOSION_PARAMETERS) {
   vi.stubGlobal('navigator', locale === 'zh-CN' ? { language: 'zh-CN' } : { language: 'en-US' })
   return renderToStaticMarkup(<I18nProvider><ExplosionControls category={category} parameters={parameters} onChange={() => undefined} /></I18nProvider>)
 }
@@ -81,7 +81,7 @@ describe('combustion explosion controls', () => {
     expect(palette).toContain('type="range"')
     expect(palette).toContain('min="0"')
     expect(palette).toContain('max="255"')
-    expect(palette).toContain('#FFFAE0FF')
+    expect(palette).toContain('#FFFBC3FF')
     expect(renderControls('palette', 'zh-CN')).toContain('透明度')
   })
 
@@ -154,7 +154,7 @@ describe('combustion explosion controls', () => {
     expect(body).toContain('主体形状')
     expect(renderControls('effects', 'zh-CN')).toContain('火焰喷流')
     vi.stubGlobal('navigator', { language: 'en-US' })
-    const tools = renderToStaticMarkup(<I18nProvider><ExplosionPreviewTools parameters={DEFAULT_EXPLOSION_PARAMETERS} onChange={() => undefined} /></I18nProvider>)
+    const tools = renderToStaticMarkup(<I18nProvider><ExplosionPreviewTools parameters={LEGACY_EXPLOSION_PARAMETERS} onChange={() => undefined} /></I18nProvider>)
     expect(tools).toContain('Canvas size')
     expect(tools).toContain('Random seed')
   })

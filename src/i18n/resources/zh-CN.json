@@ -536,6 +536,35 @@
       "fixedVolumeProfile": "内部结构：烟火混合（由烟尘爆开固定）。",
       "flatCompatibility": "此预设正在使用旧版平面渲染；下方参数仍会保持原样生效。",
       "convertToVolume": "转换为体积表现",
+      "impulse": {
+        "label": "前缘冲力",
+        "description": "前缘在阻力减速前向外猛冲的力度。"
+      },
+      "billow": {
+        "label": "轮廓翻卷",
+        "description": "轮廓上圆润带缺口的翻卷凸起；粒子火团还会在表面生成翻滚的小火团。"
+      },
+      "midRoll": {
+        "label": "中段翻卷",
+        "description": "燃烧中段在火体内部翻卷的块状较冷区域。"
+      },
+      "debrisCount": {
+        "label": "碎屑数量",
+        "description": "抛射到前缘之外的火星与碎块数量。"
+      },
+      "massCount": {
+        "label": "抛射火团数",
+        "description": "从点燃中心抛出的火团数量。"
+      },
+      "throwDistance": {
+        "label": "抛射距离",
+        "description": "火团被阻力停住前飞出的距离。"
+      },
+      "buoyancy": {
+        "label": "上浮",
+        "description": "动画后段冷却物质向上漂浮的幅度。"
+      },
+      "fieldMaterial": "此形状的轮廓与色带来自同一个场；在此调节色带流动与后段破碎。",
       "churnAmount": {
         "label": "火团膨胀",
         "description": "控制各火团错时成形后继续翻滚并向外膨胀的幅度。"
@@ -770,6 +799,8 @@
       }
     },
     "options": {
+      "billowBurst": "翻卷火团",
+      "puffCluster": "粒子火团",
       "explosion": "爆炸",
       "implosion": "内聚",
       "crisp": "利落",
@@ -799,6 +830,8 @@
       "particulate": "颗粒消散"
     },
     "shapeDescriptions": {
+      "billowBurst": "前缘猛冲、轮廓翻卷，中段翻滚、由内向外燃尽，并抛出火星。",
+      "puffCluster": "火团被抛出后减速、翻滚、上浮并冷却，碎成独立的块。",
       "rollingFireball": "多个火团作为一个连通爆炸体持续向外翻滚膨胀。",
       "shockBlast": "亮核推动带角向缺口的短宽外壳裂片向外释放。",
       "smokeBurst": "低矮宽阔的烟团包围热余烬。",
@@ -818,6 +851,18 @@
       "addColorBand": "添加色带"
     },
     "presets": {
+      "billowBurst": {
+        "name": "翻卷火团",
+        "description": "前缘猛冲、轮廓翻卷，中段翻滚并抛出火星。"
+      },
+      "fireMasses": {
+        "name": "粒子火团",
+        "description": "火团被抛出后减速、翻滚、上浮并冷却，碎成独立的块。"
+      },
+      "smokyFireMasses": {
+        "name": "烟雾粒子火团",
+        "description": "火团冷却后化为飘散的炭灰烟雾。"
+      },
       "rollingFireball": {
         "name": "翻滚火团",
         "description": "多个火团错时膨胀、翻滚并逐步冷却。"

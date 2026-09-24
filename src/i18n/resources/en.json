@@ -536,6 +536,35 @@
       "fixedVolumeProfile": "Internal structure: Smoke and fire (fixed by Smoke Burst).",
       "flatCompatibility": "This preset uses the legacy flat renderer. Its surface controls remain available below.",
       "convertToVolume": "Convert to volume rendering",
+      "impulse": {
+        "label": "Front surge",
+        "description": "How hard the front surges out before drag slows it."
+      },
+      "billow": {
+        "label": "Billows",
+        "description": "Rounded, notched bumps along the outline; fire masses also grow rolling surface billows."
+      },
+      "midRoll": {
+        "label": "Mid-life turnover",
+        "description": "Block-like cooler regions that roll over inside the burning mass mid-way through."
+      },
+      "debrisCount": {
+        "label": "Sparks and debris",
+        "description": "Number of sparks and chunks thrown ahead of the front."
+      },
+      "massCount": {
+        "label": "Mass count",
+        "description": "Number of fire masses thrown from the ignition point."
+      },
+      "throwDistance": {
+        "label": "Throw distance",
+        "description": "How far the masses travel before drag stops them."
+      },
+      "buoyancy": {
+        "label": "Rise",
+        "description": "Upward drift of cooled material late in the animation."
+      },
+      "fieldMaterial": "This shape builds its outline and color bands from one field; tune band flow and late breakup here.",
       "churnAmount": {
         "label": "Fire-mass expansion",
         "description": "Controls how strongly individual fire masses keep rolling outward after their staggered formation."
@@ -770,6 +799,8 @@
       }
     },
     "options": {
+      "billowBurst": "Billow burst",
+      "puffCluster": "Fire masses",
       "explosion": "Explosion",
       "implosion": "Implosion",
       "crisp": "Crisp",
@@ -799,6 +830,8 @@
       "particulate": "Particle dissolve"
     },
     "shapeDescriptions": {
+      "billowBurst": "A surging front with billowed edges that rolls over, burns out from the middle, and throws sparks.",
+      "puffCluster": "Thrown fire masses slow, roll, rise, and cool into separate chunks.",
       "rollingFireball": "Overlapping fire masses roll outward as one connected explosion.",
       "shockBlast": "A bright core drives separated short shell plates through angular gaps.",
       "smokeBurst": "A low broad smoke mass expands around hot embers.",
@@ -818,6 +851,18 @@
       "addColorBand": "Add color band"
     },
     "presets": {
+      "billowBurst": {
+        "name": "Billow Burst",
+        "description": "A surging front with billowed edges, rolling mid-life turnover, and thrown sparks."
+      },
+      "fireMasses": {
+        "name": "Fire Masses",
+        "description": "Thrown fire masses slow, roll, rise, and cool into separate chunks."
+      },
+      "smokyFireMasses": {
+        "name": "Smoky Fire Masses",
+        "description": "Fire masses that cool into drifting charcoal smoke."
+      },
       "rollingFireball": {
         "name": "Rolling Fireball",
         "description": "Overlapping fire masses expand and cool on staggered schedules."

@@ -1,6 +1,6 @@
 import { isPlainRecord } from '../../shared/project/document'
 import type { GeneratorProjectCodec, JsonValue } from '../../shared/project/types'
-import { assertValidExplosionParameters, type ExplosionParameters } from './model'
+import { assertValidExplosionParameters, FIELD_BODY_DEFAULTS, type ExplosionParameters } from './model'
 
 const REQUIRED_ROOT_KEYS = [
   'palette', 'canvasWidth', 'canvasHeight', 'frameCount', 'seed',
@@ -40,6 +40,11 @@ export function parseExplosionParameters(value: unknown): ExplosionParameters {
   requirePalette(value.palette)
 
   const parameters = JSON.parse(JSON.stringify(value)) as ExplosionParameters
+  // Projects saved before the billow and fire-mass shapes lack their body fields.
+  for (const [key, fallback] of Object.entries(FIELD_BODY_DEFAULTS)) {
+    const body = parameters.body as unknown as Record<string, unknown>
+    if (body[key] === undefined) body[key] = fallback
+  }
   requireBoolean(parameters.volume.enabled, 'volume.enabled')
   requireBoolean(parameters.core.enabled, 'core.enabled')
   requireBoolean(parameters.tongues.enabled, 'tongues.enabled')

@@ -10,9 +10,11 @@ import { dissolveAmount, formationGrowth, legacyRadialProgress, lifecycleAt } fr
 import { renderTongues } from '../shared-effects/tongues'
 import type { FragmentDescriptor } from '../shared-effects/fragments'
 import type { DissolveStyle, LobeView, SurfaceSample } from '../shared-effects/types'
+import { renderBillowBurstBody, renderPuffClusterBody } from './fieldBodies'
 import {
   assertValidExplosionParameters,
   explosionShapeCount,
+  isFieldExplosionShape,
   type ExplosionParameters,
   type ExplosionSurfaceParameters,
 } from './model'
@@ -88,7 +90,7 @@ interface PrimitiveHit {
 export function renderExplosionFrames(parameters: ExplosionParameters): PixelFrame[] {
   assertValidExplosionParameters(parameters)
   const fragments = generateFragments(parameters.palette, parameters.seed, parameters.fragments)
-  const blobs = parameters.body.shape === 'legacyRadial' ? [] : generateBlobs(parameters)
+  const blobs = parameters.body.shape === 'legacyRadial' || isFieldExplosionShape(parameters.body.shape) ? [] : generateBlobs(parameters)
   return Array.from({ length: parameters.frameCount }, (_, frameIndex) => (
     renderExplosionFrame(parameters, fragments, blobs, frameIndex)
   ))
@@ -108,7 +110,9 @@ function renderExplosionFrame(
   const time = frameIndex / (parameters.frameCount - 1)
   const lifecycle = lifecycleAt(parameters.motion.mode, time)
   const legacyBody = parameters.body.shape === 'legacyRadial' && parameters.surface.style === 'retroPixel'
-  if (legacyBody) renderLegacyPixelNoiseBody(pixels, width, height, parameters, time)
+  if (parameters.body.shape === 'billowBurst') renderBillowBurstBody(pixels, width, height, parameters, lifecycle)
+  else if (parameters.body.shape === 'puffCluster') renderPuffClusterBody(pixels, width, height, parameters, lifecycle)
+  else if (legacyBody) renderLegacyPixelNoiseBody(pixels, width, height, parameters, time)
   else renderModernBody(pixels, width, height, parameters, blobs, time)
   const views = shapeViews(parameters, blobs, time)
   renderShockwave(
@@ -259,6 +263,8 @@ function buildBodyPrimitives(
     case 'rollingFireball': return buildRollingFireballPrimitives(parameters, blobs, lifecycle)
     case 'shockBlast': return buildShockBlastPrimitives(parameters, blobs, time, lifecycle)
     case 'smokeBurst': return buildSmokeBurstPrimitives(parameters, blobs, time, lifecycle)
+    case 'billowBurst':
+    case 'puffCluster':
     case 'legacyRadial': return []
   }
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { payloadsEqual, resolveAppliedPresetBaseline } from '../../../components/PresetBar'
 import { en, presetDisplayKeys, translate } from '../../../i18n/messages'
 import type { JsonValue } from '../../../shared/project/types'
-import { DEFAULT_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
+import { LEGACY_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
 import { renderExplosionFrames } from '../renderer'
 import {
   EXPLOSION_BUILTIN_PRESETS,
@@ -17,19 +17,22 @@ import {
 } from '../presets'
 
 describe('combustion explosion built-in presets', () => {
-  it('exposes six unique valid V7 payloads', () => {
-    expect(EXPLOSION_BUILTIN_PRESETS.map(({ id }) => id)).toEqual(['rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
+  it('exposes nine unique valid V7 payloads', () => {
+    expect(EXPLOSION_BUILTIN_PRESETS.map(({ id }) => id)).toEqual(['billowBurst', 'fireMasses', 'smokyFireMasses', 'rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
     for (const preset of EXPLOSION_BUILTIN_PRESETS) {
       const payload = preset.payload as Record<string, unknown>
       expect(payload.schemaVersion).toBe(EXPLOSION_PRESET_SCHEMA_VERSION)
       expect(payload.family).toBe(EXPLOSION_PRESET_FAMILY)
       expect(validateExplosionPreset(preset.payload).ok).toBe(true)
-      expect(() => renderExplosionFrames(applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, preset.payload))).not.toThrow()
+      expect(() => renderExplosionFrames(applyExplosionPreset(LEGACY_EXPLOSION_PARAMETERS, preset.payload))).not.toThrow()
     }
-    expect((EXPLOSION_BUILTIN_PRESETS[0].payload as Record<string, unknown>).body).toMatchObject({ shape: 'rollingFireball' })
-    expect((EXPLOSION_BUILTIN_PRESETS[2].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'billowing' })
-    expect((EXPLOSION_BUILTIN_PRESETS[3].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'particulate' })
-    expect((EXPLOSION_BUILTIN_PRESETS[4].payload as Record<string, unknown>).body).toMatchObject({ shape: 'shockBlast', pressureWidth: 24, pressureCount: 5 })
+    expect((EXPLOSION_BUILTIN_PRESETS[0].payload as Record<string, unknown>).body).toMatchObject({ shape: 'billowBurst' })
+    expect((EXPLOSION_BUILTIN_PRESETS[1].payload as Record<string, unknown>).body).toMatchObject({ shape: 'puffCluster' })
+    expect((EXPLOSION_BUILTIN_PRESETS[2].payload as Record<string, unknown>).body).toMatchObject({ shape: 'puffCluster' })
+    expect((EXPLOSION_BUILTIN_PRESETS[3].payload as Record<string, unknown>).body).toMatchObject({ shape: 'rollingFireball' })
+    expect((EXPLOSION_BUILTIN_PRESETS[5].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'billowing' })
+    expect((EXPLOSION_BUILTIN_PRESETS[6].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'particulate' })
+    expect((EXPLOSION_BUILTIN_PRESETS[7].payload as Record<string, unknown>).body).toMatchObject({ shape: 'shockBlast', pressureWidth: 24, pressureCount: 5 })
     expect((EXPLOSION_BUILTIN_PRESETS.at(-1)!.payload as Record<string, unknown>).body).toMatchObject({ shape: 'legacyRadial' })
   })
 
@@ -62,7 +65,7 @@ describe('combustion explosion built-in presets', () => {
 
   it('preserves canvas size and frame count when applying presets', () => {
     const applied = applyExplosionPreset(
-      { ...DEFAULT_EXPLOSION_PARAMETERS, canvasWidth: 256, canvasHeight: 128, frameCount: 16 },
+      { ...LEGACY_EXPLOSION_PARAMETERS, canvasWidth: 256, canvasHeight: 128, frameCount: 16 },
       EXPLOSION_BUILTIN_PRESETS[1].payload,
     )
     expect(applied).toMatchObject({ canvasWidth: 256, canvasHeight: 128, frameCount: 16 })
@@ -70,14 +73,14 @@ describe('combustion explosion built-in presets', () => {
 
   it('clamps nested pixel fields to a small non-square canvas', () => {
     const parameters: ExplosionParameters = {
-      ...DEFAULT_EXPLOSION_PARAMETERS,
+      ...LEGACY_EXPLOSION_PARAMETERS,
       canvasWidth: 64,
       canvasHeight: 32,
-      body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, radius: 200, pressureWidth: 60, pressureCount: 20 },
-      core: { ...DEFAULT_EXPLOSION_PARAMETERS.core, radius: 100 },
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, thickness: 60 },
-      tongues: { ...DEFAULT_EXPLOSION_PARAMETERS.tongues, length: 200, width: 60 },
-      fragments: { ...DEFAULT_EXPLOSION_PARAMETERS.fragments, travelDistance: 99, tangentialDrift: 99 },
+      body: { ...LEGACY_EXPLOSION_PARAMETERS.body, radius: 200, pressureWidth: 60, pressureCount: 20 },
+      core: { ...LEGACY_EXPLOSION_PARAMETERS.core, radius: 100 },
+      shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, thickness: 60 },
+      tongues: { ...LEGACY_EXPLOSION_PARAMETERS.tongues, length: 200, width: 60 },
+      fragments: { ...LEGACY_EXPLOSION_PARAMETERS.fragments, travelDistance: 99, tangentialDrift: 99 },
     }
     const clamped = clampExplosionPresetParameters(parameters)
     expect(clamped.body.radius).toBe(16)
@@ -91,7 +94,7 @@ describe('combustion explosion built-in presets', () => {
   })
 
   it('rejects invalid or incomplete V4 payloads', () => {
-    const payload = captureExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const payload = captureExplosionPreset(LEGACY_EXPLOSION_PARAMETERS) as Record<string, unknown>
     expect(validateExplosionPreset({ ...payload, body: { ...(payload.body as object), shape: 'cloud' } }).ok).toBe(false)
     expect(validateExplosionPreset({ ...payload, surface: { ...(payload.surface as object), style: 'smooth' } }).ok).toBe(false)
     expect(validateExplosionPreset({ ...payload, family: 'energyBloom' }).ok).toBe(false)
@@ -102,15 +105,15 @@ describe('combustion explosion built-in presets', () => {
 
   it('capture/apply round-trips V7 to pixel-identical frames', () => {
     const source: ExplosionParameters = {
-      ...DEFAULT_EXPLOSION_PARAMETERS,
+      ...LEGACY_EXPLOSION_PARAMETERS,
       canvasWidth: 256,
       canvasHeight: 128,
       frameCount: 12,
       seed: 424242,
-      body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, shape: 'shockBlast', radius: 60, rotation: 35, pressureWidth: 8, pressureSharpness: 0.7 },
+      body: { ...LEGACY_EXPLOSION_PARAMETERS.body, shape: 'shockBlast', radius: 60, rotation: 35, pressureWidth: 8, pressureSharpness: 0.7 },
       volume: { enabled: true, profile: 'hardShell' },
       surface: { style: 'rollingSoot', coverage: 0.9, sootAmount: 0.4, sootScale: 14 },
-      tongues: { ...DEFAULT_EXPLOSION_PARAMETERS.tongues, length: 44, width: 6 },
+      tongues: { ...LEGACY_EXPLOSION_PARAMETERS.tongues, length: 44, width: 6 },
     }
     const restored = applyExplosionPreset(source, captureExplosionPreset(source))
     expect(renderExplosionFrames(restored).map(({ pixels }) => Array.from(pixels))).toEqual(renderExplosionFrames(source).map(({ pixels }) => Array.from(pixels)))
@@ -134,23 +137,23 @@ describe('combustion explosion built-in presets', () => {
   })
 
   it('defaults missing palette alpha and round-trips custom alpha', () => {
-    const captured = captureExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const captured = captureExplosionPreset(LEGACY_EXPLOSION_PARAMETERS) as Record<string, unknown>
     const legacy = {
       ...captured,
       palette: (captured.palette as { readonly r: number; readonly g: number; readonly b: number }[]).map(({ r, g, b }) => ({ r, g, b })),
     }
-    expect(applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, legacy as JsonValue).palette.every((color) => color.a === 255)).toBe(true)
+    expect(applyExplosionPreset(LEGACY_EXPLOSION_PARAMETERS, legacy as JsonValue).palette.every((color) => color.a === 255)).toBe(true)
 
     const custom = {
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      palette: DEFAULT_EXPLOSION_PARAMETERS.palette.map((color, index) => ({ ...color, a: 220 - index * 30 })),
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      palette: LEGACY_EXPLOSION_PARAMETERS.palette.map((color, index) => ({ ...color, a: 220 - index * 30 })),
     }
     expect(applyExplosionPreset(custom, captureExplosionPreset(custom)).palette).toEqual(custom.palette)
   })
 
   it('round-trips shockwave fields through capture and apply', () => {
     const source: ExplosionParameters = {
-      ...DEFAULT_EXPLOSION_PARAMETERS,
+      ...LEGACY_EXPLOSION_PARAMETERS,
       shockwave: {
         mode: 'multiRing',
         colorMode: 'gradient',
@@ -178,7 +181,7 @@ describe('combustion explosion built-in presets', () => {
   })
 
   it('normalizes legacy lobe-arc V4 payloads and falls back missing fields', () => {
-    const payload = captureExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const payload = captureExplosionPreset(LEGACY_EXPLOSION_PARAMETERS) as Record<string, unknown>
     const result = validateExplosionPreset({
       ...payload,
       shockwave: {
@@ -203,7 +206,7 @@ describe('combustion explosion built-in presets', () => {
   })
 
   it('falls back to pixel-noise dissolve for legacy retro-pixel surfaces', () => {
-    const payload = captureExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const payload = captureExplosionPreset(LEGACY_EXPLOSION_PARAMETERS) as Record<string, unknown>
     const result = validateExplosionPreset({ ...payload, surface: { style: 'retroPixel', coverage: 0.9 } })
     expect(result.ok).toBe(true)
     if (result.ok) {
@@ -219,7 +222,7 @@ describe('combustion explosion built-in presets', () => {
       expect(translate(en, keys.description)).not.toBe('')
     }
     const rolling = EXPLOSION_BUILTIN_PRESETS[0]
-    const { parameters: applied, baseline } = resolveAppliedPresetBaseline(explosionPresetCapability, DEFAULT_EXPLOSION_PARAMETERS, rolling.payload)
+    const { parameters: applied, baseline } = resolveAppliedPresetBaseline(explosionPresetCapability, LEGACY_EXPLOSION_PARAMETERS, rolling.payload)
     expect(payloadsEqual(captureExplosionPreset(applied), baseline)).toBe(true)
   })
 })

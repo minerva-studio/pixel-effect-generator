@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  DEFAULT_EXPLOSION_PARAMETERS,
+  LEGACY_EXPLOSION_PARAMETERS,
   MODERN_EXPLOSION_PARAMETERS,
   assertValidExplosionParameters,
   createExplosionSurface,
@@ -13,9 +13,9 @@ import {
 
 describe('combustion explosion parameter model', () => {
   it('defaults to the classic retro radial look while modern defaults stay billowing', () => {
-    expect(DEFAULT_EXPLOSION_PARAMETERS.body.shape).toBe('legacyRadial')
-    expect(DEFAULT_EXPLOSION_PARAMETERS.surface.style).toBe('retroPixel')
-    expect(DEFAULT_EXPLOSION_PARAMETERS.tongues.enabled).toBe(false)
+    expect(LEGACY_EXPLOSION_PARAMETERS.body.shape).toBe('legacyRadial')
+    expect(LEGACY_EXPLOSION_PARAMETERS.surface.style).toBe('retroPixel')
+    expect(LEGACY_EXPLOSION_PARAMETERS.tongues.enabled).toBe(false)
     expect(MODERN_EXPLOSION_PARAMETERS.body.shape).toBe('rollingFireball')
     expect(MODERN_EXPLOSION_PARAMETERS.body.pressureWidth).toBe(24)
     expect(MODERN_EXPLOSION_PARAMETERS.body.pressureCount).toBe(5)
@@ -25,23 +25,23 @@ describe('combustion explosion parameter model', () => {
   })
 
   it('validates defaults and rejects invalid shapes, surfaces, curves, and timing', () => {
-    expect(() => assertValidExplosionParameters(DEFAULT_EXPLOSION_PARAMETERS)).not.toThrow()
+    expect(() => assertValidExplosionParameters(LEGACY_EXPLOSION_PARAMETERS)).not.toThrow()
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, shape: 'cloud' as never },
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      body: { ...LEGACY_EXPLOSION_PARAMETERS.body, shape: 'cloud' as never },
     })).toThrow(/shape/i)
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
+      ...LEGACY_EXPLOSION_PARAMETERS,
       surface: { style: 'smooth' as never, coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
     })).toThrow(/style/i)
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, motionCurve: 'wave' as never },
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      motion: { ...LEGACY_EXPLOSION_PARAMETERS.motion, motionCurve: 'wave' as never },
     })).toThrow(/motionCurve/i)
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
+      ...LEGACY_EXPLOSION_PARAMETERS,
       motion: {
-        ...DEFAULT_EXPLOSION_PARAMETERS.motion,
+        ...LEGACY_EXPLOSION_PARAMETERS.motion,
         formationDuration: 0.7,
         holdDuration: 0.3,
         dissolveStart: 0.6,
@@ -51,28 +51,28 @@ describe('combustion explosion parameter model', () => {
 
   it('rejects invalid shockwave modes, color modes, and field ranges', () => {
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, mode: 'arcs' as never },
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, mode: 'arcs' as never },
     })).toThrow(/shockwave\.mode/i)
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, colorMode: 'stripes' as never },
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, colorMode: 'stripes' as never },
     })).toThrow(/shockwave\.colorMode/i)
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, ringCount: 5 },
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, ringCount: 5 },
     })).toThrow(/shockwave\.ringCount/i)
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, ringSpacing: 1.5 },
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, ringSpacing: 1.5 },
     })).toThrow(/shockwave\.ringSpacing/i)
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, squash: -0.1 },
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, squash: -0.1 },
     })).toThrow(/shockwave\.squash/i)
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, squashAngle: 360 },
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, squashAngle: 360 },
     })).toThrow(/shockwave\.squashAngle/i)
   })
 
@@ -124,7 +124,7 @@ describe('combustion explosion parameter model', () => {
   })
 
   it('scales pixel-space values from the short canvas edge', () => {
-    const resized = resizeExplosionCanvas(DEFAULT_EXPLOSION_PARAMETERS, { width: 64, height: 32 }, true)
+    const resized = resizeExplosionCanvas(LEGACY_EXPLOSION_PARAMETERS, { width: 64, height: 32 }, true)
     expect(resized.canvasWidth).toBe(64)
     expect(resized.canvasHeight).toBe(32)
     expect(resized.body.radius).toBeLessThanOrEqual(16)
@@ -140,17 +140,17 @@ describe('combustion explosion parameter model', () => {
 
   it('rejects invalid retro-pixel dissolve styles', () => {
     expect(() => assertValidExplosionParameters({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
+      ...LEGACY_EXPLOSION_PARAMETERS,
       surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'sweep' as never, dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
     })).toThrow(/dissolveStyle/i)
   })
 
   it('rejects out-of-range retro-pixel dissolve settings', () => {
     const surface = { style: 'retroPixel' as const, coverage: 0.9, dissolveStyle: 'pixelNoise' as const, dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 }
-    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSize: 9 } })).toThrow(/dissolveSize/i)
-    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveJitter: -0.1 } })).toThrow(/dissolveJitter/i)
-    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveDensity: 1.2 } })).toThrow(/dissolveDensity/i)
-    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSpeed: 2 } })).toThrow(/dissolveSpeed/i)
-    expect(() => assertValidExplosionParameters({ ...DEFAULT_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSize: 6.5 } })).toThrow(/dissolveSize/i)
+    expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSize: 9 } })).toThrow(/dissolveSize/i)
+    expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveJitter: -0.1 } })).toThrow(/dissolveJitter/i)
+    expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveDensity: 1.2 } })).toThrow(/dissolveDensity/i)
+    expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSpeed: 2 } })).toThrow(/dissolveSpeed/i)
+    expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSize: 6.5 } })).toThrow(/dissolveSize/i)
   })
 })

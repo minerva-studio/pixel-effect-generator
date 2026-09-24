@@ -1,16 +1,22 @@
 import { isPlainRecord } from '../../shared/project/document'
 import type { JsonValue } from '../../shared/project/types'
 import type { RgbColor } from '../../shared/pixel/color'
+import { builtinPalette } from '../../shared/palette/library'
 import type { GeneratorPreset, GeneratorPresetCapability } from '../contract'
 import {
   assertValidExplosionParameters,
   clampInteger,
   createExplosionSurface,
   DEFAULT_EXPLOSION_PARAMETERS,
+  EXPLOSION_SHAPES,
+  FIELD_BODY_DEFAULTS,
+  LEGACY_EXPLOSION_PARAMETERS,
   MODERN_EXPLOSION_PARAMETERS,
+  PUFF_EXPLOSION_PARAMETERS,
   SMOKE_EXPLOSION_PALETTE,
   explosionFrameLimits,
   explosionShapeCount,
+  isFieldExplosionShape,
   normalizeExplosionVolume,
   type ExplosionParameters,
   type ExplosionSurfaceParameters,
@@ -85,6 +91,12 @@ export function parseExplosionPresetPayload(value: unknown): ExplosionPresetFiel
       smokeRise: readOptionalNumber(body, 'smokeRise', -0.6, 0.6, 0.18),
       smokeCount: readOptionalInteger(body, 'smokeCount', 3, 9, 5),
       smokeMotion: readOptionalEnum(body, 'smokeMotion', ['billowing', 'particulate'], 'billowing'),
+      impulse: readOptionalNumber(body, 'impulse', 0, 1, FIELD_BODY_DEFAULTS.impulse),
+      billow: readOptionalNumber(body, 'billow', 0, 1, FIELD_BODY_DEFAULTS.billow),
+      debrisCount: readOptionalInteger(body, 'debrisCount', 0, 24, FIELD_BODY_DEFAULTS.debrisCount),
+      massCount: readOptionalInteger(body, 'massCount', 4, 14, FIELD_BODY_DEFAULTS.massCount),
+      throwDistance: readOptionalNumber(body, 'throwDistance', 0, 1, FIELD_BODY_DEFAULTS.throwDistance),
+      buoyancy: readOptionalNumber(body, 'buoyancy', 0, 1, FIELD_BODY_DEFAULTS.buoyancy),
     },
     volume,
     surface: parseV4Surface(surface),
@@ -165,7 +177,7 @@ function readExplosionShape(body: Readonly<Record<string, unknown>>, version: un
   if (version === 5 && value === 'directionalBlast') {
     throw new RangeError('directionalBlast was removed from Explosion; use the Projectile Blast Bolt preset instead.')
   }
-  if (typeof value !== 'string' || !['rollingFireball', 'shockBlast', 'smokeBurst', 'legacyRadial'].includes(value)) {
+  if (typeof value !== 'string' || !(EXPLOSION_SHAPES as readonly string[]).includes(value)) {
     throw new RangeError('body.shape is invalid.')
   }
   return value as ExplosionParameters['body']['shape']
@@ -193,9 +205,11 @@ export function clampExplosionPresetParameters(parameters: ExplosionParameters):
   const maxSize = clampInteger(parameters.fragments.maxSize, 1, 8)
   const formationDuration = Math.min(0.8, Math.max(0.1, parameters.motion.formationDuration))
   const holdDuration = Math.min(0.5, Math.max(0, parameters.motion.holdDuration), Math.max(0, parameters.motion.dissolveStart - formationDuration))
-  const surface = parameters.surface.style === 'rollingSoot'
-    ? { ...parameters.surface, sootScale: clampInteger(parameters.surface.sootScale, 6, 24) }
-    : parameters.surface
+  const surface = isFieldExplosionShape(parameters.body.shape) && parameters.surface.style !== 'burningLayers'
+    ? { style: 'burningLayers' as const, coverage: 1, bandWarp: 0.45, edgeBreakup: 0.3 }
+    : parameters.surface.style === 'rollingSoot'
+      ? { ...parameters.surface, sootScale: clampInteger(parameters.surface.sootScale, 6, 24) }
+      : parameters.surface
   const clamped: ExplosionParameters = {
     ...parameters,
     volume: normalizeExplosionVolume(parameters.body.shape, parameters.volume),
@@ -206,6 +220,8 @@ export function clampExplosionPresetParameters(parameters: ExplosionParameters):
       pressureCount,
       smokeCount,
       pressureWidth: clampInteger(parameters.body.pressureWidth, 1, 48),
+      debrisCount: clampInteger(parameters.body.debrisCount, 0, 24),
+      massCount: clampInteger(parameters.body.massCount, 4, 14),
     },
     surface,
     motion: { ...parameters.motion, formationDuration, holdDuration },
@@ -257,6 +273,28 @@ export function validateExplosionPreset(
 
 /** Read-only built-ins for the combustion explosion family. */
 export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
+  {
+    id: 'billowBurst',
+    name: 'Billow Burst',
+    description: 'A surging front with billowed edges, rolling mid-life turnover, and thrown sparks.',
+    payload: captureExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS),
+  },
+  {
+    id: 'fireMasses',
+    name: 'Fire Masses',
+    description: 'Thrown fire masses slow, roll, rise, and cool into separate chunks.',
+    payload: captureExplosionPreset(PUFF_EXPLOSION_PARAMETERS),
+  },
+  {
+    id: 'smokyFireMasses',
+    name: 'Smoky Fire Masses',
+    description: 'Fire masses that cool into drifting charcoal smoke.',
+    payload: captureExplosionPreset({
+      ...PUFF_EXPLOSION_PARAMETERS,
+      palette: SMOKE_EXPLOSION_PALETTE,
+      body: { ...PUFF_EXPLOSION_PARAMETERS.body, buoyancy: 0.75 },
+    }),
+  },
   {
     id: 'rollingFireball',
     name: 'Rolling Fireball',
@@ -322,13 +360,8 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
     name: 'Retro Burst',
     description: 'The original radial ring with dense per-pixel noise.',
     payload: captureExplosionPreset({
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      palette: [
-        { r: 255, g: 250, b: 224, a: 255 },
-        { r: 255, g: 201, b: 72, a: 255 },
-        { r: 242, g: 95, b: 44, a: 255 },
-        { r: 105, g: 42, b: 52, a: 255 },
-      ],
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      palette: builtinPalette('retroBurst'),
       seed: 20260805,
       body: {
         shape: 'legacyRadial',
@@ -346,6 +379,7 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
         smokeRise: 0.18,
         smokeCount: 5,
         smokeMotion: 'billowing',
+        ...FIELD_BODY_DEFAULTS,
       },
       volume: { enabled: false, profile: 'hardShell' },
       surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },

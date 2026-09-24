@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { PixelFrame } from '../../../shared/pixel/frame'
 import {
   createExplosionSurface,
-  DEFAULT_EXPLOSION_PARAMETERS,
+  LEGACY_EXPLOSION_PARAMETERS,
   MODERN_EXPLOSION_PARAMETERS,
   SMOKE_EXPLOSION_PALETTE,
   resizeExplosionCanvas,
@@ -17,9 +17,9 @@ const FULL_RETRO_BASELINE_HASH = 'ad4d95b'
 
 describe('renderExplosionFrames', () => {
   it('renders deterministic binary-alpha frames with transparent endpoints', () => {
-    const first = renderExplosionFrames(DEFAULT_EXPLOSION_PARAMETERS)
-    const repeated = renderExplosionFrames(DEFAULT_EXPLOSION_PARAMETERS)
-    const changed = renderExplosionFrames({ ...DEFAULT_EXPLOSION_PARAMETERS, seed: DEFAULT_EXPLOSION_PARAMETERS.seed + 1 })
+    const first = renderExplosionFrames(LEGACY_EXPLOSION_PARAMETERS)
+    const repeated = renderExplosionFrames(LEGACY_EXPLOSION_PARAMETERS)
+    const changed = renderExplosionFrames({ ...LEGACY_EXPLOSION_PARAMETERS, seed: LEGACY_EXPLOSION_PARAMETERS.seed + 1 })
     expect(frameBytes(first)).toEqual(frameBytes(repeated))
     expect(frameBytes(first)).not.toEqual(frameBytes(changed))
     expect(countOpaque(first[0])).toBe(0)
@@ -28,8 +28,8 @@ describe('renderExplosionFrames', () => {
   })
 
   it('writes per-band palette alpha into rendered pixels', () => {
-    const palette = DEFAULT_EXPLOSION_PARAMETERS.palette.map((color, index) => ({ ...color, a: 223 - index * 32 }))
-    const frames = renderExplosionFrames({ ...DEFAULT_EXPLOSION_PARAMETERS, palette })
+    const palette = LEGACY_EXPLOSION_PARAMETERS.palette.map((color, index) => ({ ...color, a: 223 - index * 32 }))
+    const frames = renderExplosionFrames({ ...LEGACY_EXPLOSION_PARAMETERS, palette })
     const allowed = new Set(['0,0,0,0', ...palette.map(({ r, g, b, a }) => `${r},${g},${b},${a}`)])
     expect([...new Set(frames.flatMap(colors))].every((color) => allowed.has(color))).toBe(true)
     const alphas = new Set(frames.flatMap(alphaValues))
@@ -38,14 +38,14 @@ describe('renderExplosionFrames', () => {
   })
 
   it('supports resized rectangular canvases', () => {
-    const resized = resizeExplosionCanvas(DEFAULT_EXPLOSION_PARAMETERS, { width: 64, height: 32 }, true)
+    const resized = resizeExplosionCanvas(LEGACY_EXPLOSION_PARAMETERS, { width: 64, height: 32 }, true)
     const frames = renderExplosionFrames({ ...resized, frameCount: 6 })
     expect(frames.every((frame) => frame.width === 64 && frame.height === 32)).toBe(true)
   })
 
   it('uses only transparent pixels and exact palette colors for every surface', () => {
     for (const style of SURFACES) {
-      const parameters = { ...DEFAULT_EXPLOSION_PARAMETERS, surface: createExplosionSurface(style) }
+      const parameters = { ...LEGACY_EXPLOSION_PARAMETERS, surface: createExplosionSurface(style) }
       const allowed = new Set(['0,0,0,0', ...parameters.palette.map(({ r, g, b }) => `${r},${g},${b},255`)])
       expect([...new Set(renderExplosionFrames(parameters).flatMap(colors))].every((color) => allowed.has(color)), style).toBe(true)
     }
@@ -428,7 +428,7 @@ describe('renderExplosionFrames', () => {
   })
 
   it('keeps Retro Burst byte-identical through a full-byte golden hash', () => {
-    const retro = applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, EXPLOSION_BUILTIN_PRESETS.at(-1)!.payload)
+    const retro = applyExplosionPreset(LEGACY_EXPLOSION_PARAMETERS, EXPLOSION_BUILTIN_PRESETS.at(-1)!.payload)
     expect(fullFrameHash(renderExplosionFrames(retro))).toBe(FULL_RETRO_BASELINE_HASH)
     expect(retro.body.shape).toBe('legacyRadial')
     expect(retro.surface.style).toBe('retroPixel')
@@ -436,12 +436,12 @@ describe('renderExplosionFrames', () => {
     expect(retro.tongues.enabled).toBe(false)
   })
 
-  it('defaults the explosion family to the classic retro radial parameters', () => {
-    expect(DEFAULT_EXPLOSION_PARAMETERS.body.shape).toBe('legacyRadial')
-    expect(DEFAULT_EXPLOSION_PARAMETERS.surface.style).toBe('retroPixel')
-    expect(DEFAULT_EXPLOSION_PARAMETERS.shockwave.mode).toBe('ring')
-    expect(DEFAULT_EXPLOSION_PARAMETERS.tongues.enabled).toBe(false)
-    expect(fullFrameHash(renderExplosionFrames(DEFAULT_EXPLOSION_PARAMETERS))).toBe(FULL_RETRO_BASELINE_HASH)
+  it('keeps the classic radial shape with the new warm default colors', () => {
+    expect(LEGACY_EXPLOSION_PARAMETERS.body.shape).toBe('legacyRadial')
+    expect(LEGACY_EXPLOSION_PARAMETERS.surface.style).toBe('retroPixel')
+    expect(LEGACY_EXPLOSION_PARAMETERS.shockwave.mode).toBe('ring')
+    expect(LEGACY_EXPLOSION_PARAMETERS.tongues.enabled).toBe(false)
+    expect(fullFrameHash(renderExplosionFrames(LEGACY_EXPLOSION_PARAMETERS))).toBe('67450be0')
   })
 
   it('draws filled fire jets outside the protected center and keeps extreme lengths bounded', () => {
@@ -459,7 +459,7 @@ describe('renderExplosionFrames', () => {
     const base = quietParameters({
       surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
       shockwave: {
-        ...DEFAULT_EXPLOSION_PARAMETERS.shockwave,
+        ...LEGACY_EXPLOSION_PARAMETERS.shockwave,
         mode: 'multiRing',
         colorMode: 'flat',
         thickness: 2,
@@ -480,7 +480,7 @@ describe('renderExplosionFrames', () => {
     const base = quietParameters({
       surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
       shockwave: {
-        ...DEFAULT_EXPLOSION_PARAMETERS.shockwave,
+        ...LEGACY_EXPLOSION_PARAMETERS.shockwave,
         mode: 'ring',
         colorMode: 'gradient',
         thickness: 6,
@@ -499,7 +499,7 @@ describe('renderExplosionFrames', () => {
     const base = quietParameters({
       surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
       shockwave: {
-        ...DEFAULT_EXPLOSION_PARAMETERS.shockwave,
+        ...LEGACY_EXPLOSION_PARAMETERS.shockwave,
         mode: 'multiRing',
         colorMode: 'flat',
         ringCount: 3,
@@ -519,7 +519,7 @@ describe('renderExplosionFrames', () => {
     const base = quietParameters({
       surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
       shockwave: {
-        ...DEFAULT_EXPLOSION_PARAMETERS.shockwave,
+        ...LEGACY_EXPLOSION_PARAMETERS.shockwave,
         mode: 'ring',
         colorMode: 'flat',
         thickness: 2,
@@ -538,20 +538,20 @@ describe('renderExplosionFrames', () => {
   it('changes shockwave thickness without creating rays or changing angular coverage', () => {
     const base = quietParameters({
       surface: { style: 'burningLayers', coverage: 0, bandWarp: 0, edgeBreakup: 0 },
-      shockwave: { ...DEFAULT_EXPLOSION_PARAMETERS.shockwave, mode: 'ring', colorMode: 'flat', squash: 0, squashAngle: 0 },
+      shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, mode: 'ring', colorMode: 'flat', squash: 0, squashAngle: 0 },
     })
     const thin = renderExplosionFrames({ ...base, shockwave: { ...base.shockwave, thickness: 1 } })[3]
     const thick = renderExplosionFrames({ ...base, shockwave: { ...base.shockwave, thickness: 6 } })[3]
     expect(occupiedAngleBins(thin, 72)).toBeGreaterThanOrEqual(64)
     expect(occupiedAngleBins(thick, 72)).toBeGreaterThanOrEqual(64)
     expect(Math.abs(meanOpaqueRadius(thin) - meanOpaqueRadius(thick))).toBeLessThan(1)
-    expect(maximumRadius(thick)).toBeLessThanOrEqual(DEFAULT_EXPLOSION_PARAMETERS.body.radius * base.shockwave.endRadiusScale + 4)
+    expect(maximumRadius(thick)).toBeLessThanOrEqual(LEGACY_EXPLOSION_PARAMETERS.body.radius * base.shockwave.endRadiusScale + 4)
   })
 
   it('sweeps retro-pixel dissolve from the top-left corner on the legacy path', () => {
     const parameters = quietParameters({
       surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'scanSweep', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
-      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+      motion: { ...LEGACY_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
     })
     const frame = renderExplosionFrames(parameters)[6]
     const diagonal = frame.width + frame.height
@@ -563,7 +563,7 @@ describe('renderExplosionFrames', () => {
     const parameters = quietParameters({
       surface: { style: 'retroPixel', coverage: 0.95, dissolveStyle: 'scanSweep', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
       motion: { ...MODERN_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
-    }, DEFAULT_EXPLOSION_PARAMETERS)
+    }, LEGACY_EXPLOSION_PARAMETERS)
     const frame = renderExplosionFrames(parameters)[6]
     const diagonal = frame.width + frame.height
     expect(countOpaqueRegion(frame, (x, y) => x + y <= diagonal / 2))
@@ -573,10 +573,10 @@ describe('renderExplosionFrames', () => {
   it('fades retro-pixel bodies in whole 2x2 blocks', () => {
     const parameters = quietParameters({
       surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'blockFade', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
-      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+      motion: { ...LEGACY_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
     })
     const frame = renderExplosionFrames(parameters)[7]
-    const innerRadius = DEFAULT_EXPLOSION_PARAMETERS.body.radius * 0.7
+    const innerRadius = LEGACY_EXPLOSION_PARAMETERS.body.radius * 0.7
     for (let by = 0; by < frame.height; by += 2) {
       for (let bx = 0; bx < frame.width; bx += 2) {
         if (Math.hypot(bx + 1.5 - frame.width / 2, by + 1.5 - frame.height / 2) > innerRadius) continue
@@ -592,10 +592,10 @@ describe('renderExplosionFrames', () => {
   it('keeps circle-fade surfaces seamless without fixed grid gaps', () => {
     const parameters = quietParameters({
       surface: { style: 'retroPixel', coverage: 0.95, dissolveStyle: 'circleFade', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
-      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+      motion: { ...LEGACY_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
     })
     const frame = renderExplosionFrames(parameters)[4]
-    const innerRadius = DEFAULT_EXPLOSION_PARAMETERS.body.radius * 0.8
+    const innerRadius = LEGACY_EXPLOSION_PARAMETERS.body.radius * 0.8
     let corner = 0
     let cornerOpaque = 0
     for (let y = 0; y < frame.height; y += 1) {
@@ -628,7 +628,7 @@ describe('renderExplosionFrames', () => {
     })
     const base = quietParameters({
       surface: surfaceFor(),
-      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+      motion: { ...LEGACY_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
     })
     const frames = renderExplosionFrames(base)
     expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(base)))
@@ -643,12 +643,12 @@ describe('renderExplosionFrames', () => {
   it('rolls retro-pixel dissolve inward from the edge', () => {
     const parameters = quietParameters({
       surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'edgeRoll', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
-      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
+      motion: { ...LEGACY_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.5 },
     })
     const frame = renderExplosionFrames(parameters)[7]
-    const center = countOpaqueInside(frame, DEFAULT_EXPLOSION_PARAMETERS.body.radius * 0.4)
+    const center = countOpaqueInside(frame, LEGACY_EXPLOSION_PARAMETERS.body.radius * 0.4)
     const edge = countOpaqueRegion(frame, (x, y) =>
-      Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2) > DEFAULT_EXPLOSION_PARAMETERS.body.radius * 0.75)
+      Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2) > LEGACY_EXPLOSION_PARAMETERS.body.radius * 0.75)
     expect(center).toBeGreaterThan(edge)
   })
 
@@ -674,7 +674,7 @@ describe('renderExplosionFrames', () => {
 /** Disables all optional layers unless a test explicitly overrides one. */
 function quietParameters(
   overrides: Partial<ExplosionParameters> = {},
-  base: ExplosionParameters = DEFAULT_EXPLOSION_PARAMETERS,
+  base: ExplosionParameters = LEGACY_EXPLOSION_PARAMETERS,
 ): ExplosionParameters {
   return {
     ...base,

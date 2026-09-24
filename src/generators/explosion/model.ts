@@ -1,4 +1,5 @@
 import { assertInRange, assertValidColor, type RgbColor } from '../../shared/pixel/color'
+import { builtinPalette } from '../../shared/palette/library'
 import type { FrameSize } from '../../shared/pixel/frame'
 import { MAX_FRAGMENT_SIZE, MAX_SHOCKWAVE_THICKNESS } from '../shared-effects/constants'
 import { MAX_CANVAS_SIZE, MAX_FRAME_COUNT, MIN_CANVAS_SIZE, MIN_FRAME_COUNT, sharedFrameLimits } from '../shared-effects/limits'
@@ -14,7 +15,13 @@ import type {
 
 export { MAX_CANVAS_SIZE, MAX_FRAGMENT_SIZE, MAX_FRAME_COUNT, MAX_SHOCKWAVE_THICKNESS, MIN_CANVAS_SIZE, MIN_FRAME_COUNT }
 
-export type ExplosionShape = 'rollingFireball' | 'shockBlast' | 'smokeBurst' | 'legacyRadial'
+export type ExplosionShape = 'billowBurst' | 'puffCluster' | 'rollingFireball' | 'shockBlast' | 'smokeBurst' | 'legacyRadial'
+export const EXPLOSION_SHAPES = ['billowBurst', 'puffCluster', 'rollingFireball', 'shockBlast', 'smokeBurst', 'legacyRadial'] as const satisfies readonly ExplosionShape[]
+
+/** Field-based shapes own their thermal bands and use only the burning-layers surface. */
+export function isFieldExplosionShape(shape: ExplosionShape): shape is 'billowBurst' | 'puffCluster' {
+  return shape === 'billowBurst' || shape === 'puffCluster'
+}
 export type ExplosionSurfaceStyle = 'burningLayers' | 'rollingSoot' | 'retroPixel'
 export type ExplosionVolumeProfile = 'hardShell' | 'moltenCore' | 'smokeFire'
 export type ExplosionSmokeMotion = 'billowing' | 'particulate'
@@ -56,7 +63,29 @@ export interface ExplosionBodyParameters {
   readonly smokeRise: number
   readonly smokeCount: number
   readonly smokeMotion: ExplosionSmokeMotion
+  /** Billow burst: how hard the front surges out before drag takes over. */
+  readonly impulse: number
+  /** Billow burst outline bumps; fire-mass surface billows. */
+  readonly billow: number
+  /** Billow burst: chunks and sparks thrown ahead of the front. */
+  readonly debrisCount: number
+  /** Fire masses: number of thrown masses. */
+  readonly massCount: number
+  /** Fire masses: how far masses travel before drag stops them. */
+  readonly throwDistance: number
+  /** Fire masses: late upward drift of cooled material. */
+  readonly buoyancy: number
 }
+
+/** Defaults for the field-shape body fields; also fills them in for older projects and presets. */
+export const FIELD_BODY_DEFAULTS = {
+  impulse: 0.65,
+  billow: 0.55,
+  debrisCount: 14,
+  massCount: 9,
+  throwDistance: 0.6,
+  buoyancy: 0.5,
+} as const satisfies Partial<ExplosionBodyParameters>
 
 export interface ExplosionParameters {
   readonly palette: readonly RgbColor[]
@@ -85,6 +114,8 @@ export function explosionFrameLimits(size: FrameSize): ExplosionFrameLimits {
 /** Stable direction count used by balanced effects for each body shape. */
 export function explosionShapeCount(shape: ExplosionShape, lobeCount = 5, pressureCount = 5): number {
   switch (shape) {
+    case 'billowBurst': return 6
+    case 'puffCluster': return 6
     case 'rollingFireball': return lobeCount
     case 'shockBlast': return pressureCount
     case 'smokeBurst': return 6
@@ -101,6 +132,8 @@ export function explosionVolumeProfiles(shape: ExplosionShape): readonly Explosi
       return ['hardShell', 'moltenCore']
     case 'smokeBurst':
       return ['smokeFire']
+    case 'billowBurst':
+    case 'puffCluster':
     case 'legacyRadial':
       return []
   }
@@ -176,12 +209,7 @@ export function resizeExplosionCanvas(
 
 /** Modern combustion defaults used by the game-fireball preset and shape cards. */
 export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
-  palette: [
-    { r: 255, g: 255, b: 255, a: 255 },
-    { r: 255, g: 176, b: 48, a: 255 },
-    { r: 255, g: 92, b: 38, a: 255 },
-    { r: 74, g: 34, b: 26, a: 255 },
-  ],
+  palette: builtinPalette('flameGlow'),
   canvasWidth: 128,
   canvasHeight: 128,
   frameCount: 10,
@@ -202,6 +230,7 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
     smokeRise: 0.18,
     smokeCount: 5,
     smokeMotion: 'billowing',
+    ...FIELD_BODY_DEFAULTS,
   },
   volume: { enabled: true, profile: 'hardShell' },
   surface: createExplosionSurface('burningLayers'),
@@ -231,23 +260,11 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
 }
 
 /** Dedicated smoke-and-ember colors with a warm bed and cool charcoal mass. */
-export const SMOKE_EXPLOSION_PALETTE: readonly RgbColor[] = [
-  { r: 255, g: 232, b: 164, a: 255 },
-  { r: 238, g: 132, b: 62, a: 255 },
-  { r: 166, g: 119, b: 111, a: 255 },
-  { r: 116, g: 96, b: 112, a: 255 },
-  { r: 72, g: 62, b: 82, a: 255 },
-  { r: 42, g: 41, b: 52, a: 255 },
-]
+export const SMOKE_EXPLOSION_PALETTE: readonly RgbColor[] = builtinPalette('smokeEmber')
 
-/** Default explosion parameters now reproduce the classic Retro Burst look. */
-export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
-  palette: [
-    { r: 255, g: 250, b: 224, a: 255 },
-    { r: 255, g: 201, b: 72, a: 255 },
-    { r: 242, g: 95, b: 44, a: 255 },
-    { r: 105, g: 42, b: 52, a: 255 },
-  ],
+/** The classic radial geometry with Flame Glow colors (the default before billow bursts). */
+export const LEGACY_EXPLOSION_PARAMETERS: ExplosionParameters = {
+  palette: builtinPalette('flameGlow'),
   canvasWidth: 128,
   canvasHeight: 128,
   frameCount: 10,
@@ -268,6 +285,7 @@ export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
     smokeRise: 0.18,
     smokeCount: 5,
     smokeMotion: 'billowing',
+    ...FIELD_BODY_DEFAULTS,
   },
   volume: { enabled: false, profile: 'hardShell' },
   surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
@@ -294,6 +312,29 @@ export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
   },
   tongues: { enabled: false, count: 1, length: 0, width: 1, curvature: 0, variation: 0 },
   fragments: { enabled: true, count: 30, minSize: 1, maxSize: 3, travelDistance: 30, tangentialDrift: 9, lifetime: 0.68 },
+}
+
+/** Default: one billowing burst whose outline and thermal bands share a single expanding field. */
+export const DEFAULT_EXPLOSION_PARAMETERS: ExplosionParameters = {
+  palette: builtinPalette('flameGlow'),
+  canvasWidth: 128,
+  canvasHeight: 128,
+  frameCount: 24,
+  seed: 20260923,
+  body: { ...LEGACY_EXPLOSION_PARAMETERS.body, shape: 'billowBurst', churnAmount: 0.5 },
+  volume: { enabled: false, profile: 'hardShell' },
+  surface: { style: 'burningLayers', coverage: 1, bandWarp: 0.45, edgeBreakup: 0.3 },
+  motion: { ...LEGACY_EXPLOSION_PARAMETERS.motion },
+  core: { enabled: false, radius: 16, duration: 0.42 },
+  shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, mode: 'none' },
+  tongues: { enabled: false, count: 1, length: 0, width: 1, curvature: 0, variation: 0 },
+  fragments: { ...LEGACY_EXPLOSION_PARAMETERS.fragments, enabled: false },
+}
+
+/** Fire masses: thrown, dragged, rolling, rising puffs summed into one metaball field. */
+export const PUFF_EXPLOSION_PARAMETERS: ExplosionParameters = {
+  ...DEFAULT_EXPLOSION_PARAMETERS,
+  body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, shape: 'puffCluster', billow: 0.6 },
 }
 
 /** Validates the complete V6 combustion explosion parameter contract. */
@@ -323,8 +364,17 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   assertInRange(parameters.body.smokeRise, -0.6, 0.6, 'body.smokeRise')
   assertInRange(parameters.body.smokeCount, 3, 9, 'body.smokeCount')
   if (parameters.body.smokeMotion !== 'billowing' && parameters.body.smokeMotion !== 'particulate') throw new RangeError('body.smokeMotion is invalid.')
-  if (!['rollingFireball', 'shockBlast', 'smokeBurst', 'legacyRadial'].includes(parameters.body.shape)) {
+  if (!(EXPLOSION_SHAPES as readonly string[]).includes(parameters.body.shape)) {
     throw new RangeError('body.shape is invalid.')
+  }
+  assertInRange(parameters.body.impulse, 0, 1, 'body.impulse')
+  assertInRange(parameters.body.billow, 0, 1, 'body.billow')
+  assertInRange(parameters.body.debrisCount, 0, 24, 'body.debrisCount')
+  assertInRange(parameters.body.massCount, 4, 14, 'body.massCount')
+  assertInRange(parameters.body.throwDistance, 0, 1, 'body.throwDistance')
+  assertInRange(parameters.body.buoyancy, 0, 1, 'body.buoyancy')
+  if (isFieldExplosionShape(parameters.body.shape) && parameters.surface.style !== 'burningLayers') {
+    throw new RangeError('billow and fire-mass shapes require the burningLayers surface.')
   }
   const normalizedVolume = normalizeExplosionVolume(parameters.body.shape, parameters.volume)
   if (normalizedVolume.enabled !== parameters.volume.enabled || normalizedVolume.profile !== parameters.volume.profile) {
@@ -365,6 +415,7 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   const integers = [
     parameters.canvasWidth, parameters.canvasHeight, parameters.frameCount, parameters.seed,
     parameters.body.radius, parameters.body.rotation, parameters.body.pressureWidth, parameters.body.pressureCount, parameters.body.blastAngle, parameters.body.smokeCount,
+    parameters.body.debrisCount, parameters.body.massCount,
     parameters.core.radius, parameters.shockwave.thickness, parameters.shockwave.ringCount, parameters.shockwave.squashAngle,
     parameters.tongues.count, parameters.tongues.length, parameters.tongues.width,
     parameters.fragments.count, parameters.fragments.minSize, parameters.fragments.maxSize,

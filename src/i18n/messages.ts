@@ -222,6 +222,9 @@ const PRESET_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Prese
     fullCircle: { name: 'slash.presets.fullCircle.name', description: 'slash.presets.fullCircle.description' },
   },
   explosion: {
+      billowBurst: { name: 'explosion.presets.billowBurst.name', description: 'explosion.presets.billowBurst.description' },
+      fireMasses: { name: 'explosion.presets.fireMasses.name', description: 'explosion.presets.fireMasses.description' },
+      smokyFireMasses: { name: 'explosion.presets.smokyFireMasses.name', description: 'explosion.presets.smokyFireMasses.description' },
       rollingFireball: { name: 'explosion.presets.rollingFireball.name', description: 'explosion.presets.rollingFireball.description' },
       pressureBurst: { name: 'explosion.presets.pressureBurst.name', description: 'explosion.presets.pressureBurst.description' },
       moltenCoreFireball: { name: 'explosion.presets.moltenCoreFireball.name', description: 'explosion.presets.moltenCoreFireball.description' },

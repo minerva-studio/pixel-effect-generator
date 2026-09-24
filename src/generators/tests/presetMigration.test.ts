@@ -3,7 +3,7 @@ import { presetStorageKey, type PresetStorage } from '../../shared/preset/storag
 import { DEFAULT_BLOOM_PARAMETERS } from '../energy-bloom/model'
 import { applyBloomPreset } from '../energy-bloom/presets'
 import { renderBloomFrames } from '../energy-bloom/renderer'
-import { DEFAULT_EXPLOSION_PARAMETERS } from '../explosion/model'
+import { LEGACY_EXPLOSION_PARAMETERS } from '../explosion/model'
 import { applyExplosionPreset } from '../explosion/presets'
 import { renderExplosionFrames } from '../explosion/renderer'
 import { migrateExplosionFamilyPresets, migrateLegacyPreset } from '../presetMigration'
@@ -75,7 +75,7 @@ describe('explosion preset family migration', () => {
     expect(bloomLibrary.presets[0].id).toBe('lobed-id')
     expect(bloomLibrary.presets[0].payload.body.shape).toBe('softPetals')
 
-    expect(() => renderExplosionFrames(applyExplosionPreset(DEFAULT_EXPLOSION_PARAMETERS, explosionLibrary.presets[0].payload))).not.toThrow()
+    expect(() => renderExplosionFrames(applyExplosionPreset(LEGACY_EXPLOSION_PARAMETERS, explosionLibrary.presets[0].payload))).not.toThrow()
     expect(() => renderBloomFrames(applyBloomPreset(DEFAULT_BLOOM_PARAMETERS, bloomLibrary.presets[0].payload))).not.toThrow()
   })
 

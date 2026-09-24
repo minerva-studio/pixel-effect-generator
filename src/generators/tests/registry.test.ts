@@ -53,13 +53,14 @@ describe('generator registry', () => {
     expect(slashModule.render(slashModule.defaultParameters)).toHaveLength(8)
   })
 
-  it('registers the combustion explosion with five tabs, presets, and project support', () => {
+  it('registers the combustion explosion with five tabs, a billow-burst default, presets, and project support', () => {
     expect(explosionModule.definition.index).toBe(2)
     expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
     expect(explosionModule.projectCodec?.generatorId).toBe('explosion')
     expect(explosionModule.projectCodec?.parse(explosionModule.projectCodec.serialize(explosionModule.defaultParameters))).toEqual(explosionModule.defaultParameters)
-    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
-    expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(10)
+    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['billowBurst', 'fireMasses', 'smokyFireMasses', 'rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
+    expect(explosionModule.defaultParameters.body.shape).toBe('billowBurst')
+    expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(24)
   })
 
   it('registers the energy bloom family with independent defaults and seven presets', () => {
