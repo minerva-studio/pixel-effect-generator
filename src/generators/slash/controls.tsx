@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
 import { GeneratorPreviewTools } from '../../components/PreviewTools'
+import { PaletteLibraryPicker } from '../../components/PaletteLibraryPicker'
 import { useI18n } from '../../i18n/I18nProvider'
 import { hexToRgb, rgbaToHex } from '../../shared/pixel/color'
 import {
@@ -154,6 +155,7 @@ function PaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'categ
 
   return (
     <div className="palette-editor">
+      <PaletteLibraryPicker palette={parameters.palette} onChange={(palette) => onChange({ ...parameters, palette })} minimum={2} maximum={6} />
       <div className="palette-guide">
         <span>{t('slash.palette.innerEdge')}</span>
         <InfoHint label={t('slash.controls.paletteOrder.label')} description={t('slash.controls.paletteOrder.description')} hintId={hintId} />

@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { drawFrame } from '../../components/export'
 import { NumberControl, SelectControl } from '../../components/controls'
+import { PaletteLibraryPicker } from '../../components/PaletteLibraryPicker'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
 import { hexToRgb, rgbaToHex, type RgbColor } from '../../shared/pixel/color'
@@ -413,6 +414,7 @@ export function FamilyPaletteEditor({
   }
   return (
     <div className="palette-editor">
+      <PaletteLibraryPicker palette={palette} onChange={onChange} minimum={minimumColors} maximum={6} opaque={opaque} />
       <div className="palette-guide">
         <span>{t(`${family}.palette.hotCore`)}</span>
         <span>{t(`${family}.palette.outerEdge`)}</span>

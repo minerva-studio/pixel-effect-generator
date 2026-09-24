@@ -280,6 +280,36 @@
       "invalidPreset": "This preset could not be applied."
     }
   },
+  "paletteLibrary": {
+    "title": "Color library",
+    "applyHint": "Choose a palette to replace colors only. Shape and motion stay as they are.",
+    "builtIn": "Built-in palettes",
+    "custom": "My palettes",
+    "noCustom": "No compatible saved palettes yet.",
+    "name": "Palette name",
+    "save": "Save current colors",
+    "update": "Update colors",
+    "rename": "Rename",
+    "delete": "Delete",
+    "confirmDelete": "Confirm delete",
+    "confirm": "Save",
+    "cancel": "Cancel",
+    "nameError": "Palette name must be 1–40 characters.",
+    "limitError": "Maximum 32 custom palettes.",
+    "storageFailed": "Could not save the palette to local storage.",
+    "storageUnavailable": "Local storage is unavailable; built-in palettes still work.",
+    "warning": "Saved palette data was unreadable and was ignored.",
+    "names": {
+      "flameGlow": "Flame Glow",
+      "irisBloom": "Iris Bloom",
+      "smokeEmber": "Smoke & Ember",
+      "aetherCyan": "Aether Cyan",
+      "orchidCrystal": "Orchid Crystal",
+      "duskSteel": "Dusk Steel",
+      "runedSteel": "Runed Steel",
+      "retroBurst": "Retro Burst"
+    }
+  },
   "controls": {
     "about": "About {label}",
     "value": "{label} value"

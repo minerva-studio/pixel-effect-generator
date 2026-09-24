@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
 import { GeneratorPreviewTools } from '../../components/PreviewTools'
+import { PaletteLibraryPicker } from '../../components/PaletteLibraryPicker'
 import { useI18n } from '../../i18n/I18nProvider'
 import { hexToRgb, rgbaToHex, type RgbColor } from '../../shared/pixel/color'
 import type { FrameSize } from '../../shared/pixel/frame'
@@ -348,6 +349,7 @@ function PaletteBandEditor({
   return (
     <div className="palette-editor">
       <p className="panel-note">{title}</p>
+      <PaletteLibraryPicker palette={palette} onChange={onChange} minimum={minimum} maximum={maximum} />
       <div className="palette-list">
         {palette.map((color, index) => (
           // Palette bands are an ordered list that is never reordered, so the

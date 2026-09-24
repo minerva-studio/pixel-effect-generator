@@ -280,6 +280,36 @@
       "invalidPreset": "该预设无法应用。"
     }
   },
+  "paletteLibrary": {
+    "title": "色卡库",
+    "applyHint": "套用色卡只替换颜色，造型与动画保持不变。",
+    "builtIn": "内置色卡",
+    "custom": "我的色卡",
+    "noCustom": "暂无适用的自存色卡。",
+    "name": "色卡名称",
+    "save": "保存当前颜色",
+    "update": "更新颜色",
+    "rename": "重命名",
+    "delete": "删除",
+    "confirmDelete": "确认删除",
+    "confirm": "保存",
+    "cancel": "取消",
+    "nameError": "色卡名称需为 1–40 个字符。",
+    "limitError": "最多保存 32 张自定义色卡。",
+    "storageFailed": "无法将色卡保存到本地存储。",
+    "storageUnavailable": "本地存储不可用；内置色卡仍可使用。",
+    "warning": "本地色卡数据无法读取，已忽略。",
+    "names": {
+      "flameGlow": "火焰暖光 · Flame Glow",
+      "irisBloom": "冷紫绽放 · Iris Bloom",
+      "smokeEmber": "烟烬 · Smoke & Ember",
+      "aetherCyan": "琉璃青 · Aether Cyan",
+      "orchidCrystal": "星晶紫 · Orchid Crystal",
+      "duskSteel": "暮钢 · Dusk Steel",
+      "runedSteel": "符文钢 · Runed Steel",
+      "retroBurst": "复古爆炸 · Retro Burst"
+    }
+  },
   "controls": {
     "about": "关于 {label}",
     "value": "{label} 数值"
