@@ -165,7 +165,7 @@ function useDocumentSession() {
   }, [])
   const setUnitySettings = useCallback((unitySettings: UnityExportSettingsState) => setDocument((current) => ({ ...current, unitySettings })), [])
   const reset = useCallback(() => {
-    const defaults = generator.createSession(12)
+    const defaults = generator.createSession(generator.defaultPreviewFps)
     setDocument((current) => ({ ...current, session: { ...defaults, isPlaying: current.session.isPlaying } as RegisteredGeneratorSession<string> }))
   }, [generator])
   return { ...document, generator, replace, dispatch, reset, setUnitySettings, fileOperations }

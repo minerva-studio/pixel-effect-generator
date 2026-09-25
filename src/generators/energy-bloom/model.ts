@@ -1,4 +1,5 @@
 import { assertInRange, assertValidColor, type RgbColor } from '../../shared/pixel/color'
+import { builtinPalette } from '../../shared/palette/library'
 import type { FrameSize } from '../../shared/pixel/frame'
 import { MAX_FRAGMENT_SIZE, MAX_SHOCKWAVE_THICKNESS } from '../shared-effects/constants'
 import { MAX_CANVAS_SIZE, MAX_FRAME_COUNT, MIN_CANVAS_SIZE, MIN_FRAME_COUNT, sharedFrameLimits } from '../shared-effects/limits'
@@ -136,12 +137,7 @@ export function resizeBloomCanvas(
 }
 
 export const DEFAULT_BLOOM_PARAMETERS: BloomParameters = {
-  palette: [
-    { r: 255, g: 255, b: 255, a: 255 },
-    { r: 140, g: 235, b: 255, a: 255 },
-    { r: 150, g: 120, b: 255, a: 255 },
-    { r: 235, g: 80, b: 190, a: 255 },
-  ],
+  palette: builtinPalette('irisBloom'),
   canvasWidth: 128,
   canvasHeight: 128,
   frameCount: 10,

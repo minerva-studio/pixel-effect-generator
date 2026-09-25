@@ -18,8 +18,9 @@ export function documentGenerator(id: string): RegisteredGenerator<string> {
 
 /** Starts a new document rather than resuming a previous generator session. */
 export function prepareNewDocument(id: string): PreparedDocument {
+  const generator = documentGenerator(id)
   return {
-    session: documentGenerator(id).createSession(12),
+    session: generator.createSession(generator.defaultPreviewFps),
     unitySettings: { ...DEFAULT_UNITY_EXPORT_SETTINGS },
   }
 }

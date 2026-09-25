@@ -167,7 +167,7 @@ describe('parseProjectDocument', () => {
       ok: false,
       error: { code: 'INVALID_FPS' },
     })
-    expect(SUPPORTED_PREVIEW_FPS).toEqual([6, 8, 12, 18, 24])
+    expect(SUPPORTED_PREVIEW_FPS).toEqual([6, 8, 12, 18, 20, 24])
   })
 
   it('rejects invalid PPU values', () => {

@@ -32,7 +32,7 @@ describe('energy bloom controls', () => {
     expect(palette).toContain('type="range"')
     expect(palette).toContain('min="0"')
     expect(palette).toContain('max="255"')
-    expect(palette).toContain('#FFFFFFFF')
+    expect(palette).toContain('#F9F4F8FF')
     expect(renderControls('palette', 'zh-CN')).toContain('透明度')
   })
 

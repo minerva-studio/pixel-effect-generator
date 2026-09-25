@@ -1,5 +1,6 @@
 import { isPlainRecord } from '../../shared/project/document'
 import type { JsonValue } from '../../shared/project/types'
+import { builtinPalette } from '../../shared/palette/library'
 import type { GeneratorPreset, GeneratorPresetCapability } from '../contract'
 import {
   assertValidProjectileParameters,
@@ -237,17 +238,8 @@ export const PROJECTILE_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
       afterimageCount: 3,
       afterimageSpacing: 0.18,
       afterimageDecay: 0.8,
-      bodyPalette: [
-        { r: 245, g: 245, b: 250, a: 255 },
-        { r: 165, g: 150, b: 190, a: 255 },
-        { r: 85, g: 70, b: 115, a: 255 },
-      ],
-      energyPalette: [
-        { r: 255, g: 255, b: 255, a: 255 },
-        { r: 190, g: 180, b: 255, a: 255 },
-        { r: 122, g: 102, b: 232, a: 255 },
-        { r: 44, g: 35, b: 112, a: 255 },
-      ],
+      bodyPalette: builtinPalette('runedSteel'),
+      energyPalette: builtinPalette('orchidCrystal'),
     }),
   },
   {
@@ -278,17 +270,8 @@ export const PROJECTILE_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
       afterimageCount: 4,
       afterimageSpacing: 0.16,
       afterimageDecay: 0.82,
-      bodyPalette: [
-        { r: 240, g: 240, b: 255, a: 255 },
-        { r: 150, g: 150, b: 220, a: 255 },
-        { r: 60, g: 60, b: 120, a: 255 },
-      ],
-      energyPalette: [
-        { r: 255, g: 255, b: 255, a: 255 },
-        { r: 169, g: 255, b: 247, a: 255 },
-        { r: 40, g: 201, b: 232, a: 255 },
-        { r: 20, g: 74, b: 154, a: 255 },
-      ],
+      bodyPalette: builtinPalette('duskSteel'),
+      energyPalette: builtinPalette('aetherCyan'),
     }),
   },
   {
@@ -318,12 +301,7 @@ export const PROJECTILE_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
       sparkCount: 6,
       sparkSpread: 0.32,
       afterimagesEnabled: false,
-      energyPalette: [
-        { r: 243, g: 255, b: 255, a: 255 },
-        { r: 115, g: 232, b: 255, a: 255 },
-        { r: 39, g: 113, b: 215, a: 255 },
-        { r: 24, g: 58, b: 152, a: 255 },
-      ],
+      energyPalette: builtinPalette('aetherCyan'),
     }),
   },
   {
@@ -352,12 +330,7 @@ export const PROJECTILE_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
       trailBreakup: 0.04,
       sparksEnabled: false,
       afterimagesEnabled: false,
-      energyPalette: [
-        { r: 255, g: 243, b: 255, a: 255 },
-        { r: 243, g: 165, b: 255, a: 255 },
-        { r: 184, g: 79, b: 224, a: 255 },
-        { r: 62, g: 26, b: 120, a: 255 },
-      ],
+      energyPalette: builtinPalette('orchidCrystal'),
     }),
   },
 ]

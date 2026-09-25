@@ -90,7 +90,7 @@ function GeneratorThumbnail({ generator }: { readonly generator: RegisteredGener
   const canvas = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     if (!canvas.current) return
-    const frames = generator.createSession(12).frames.read()
+    const frames = generator.createSession(generator.defaultPreviewFps).frames.read()
     drawFrame(canvas.current, frames[Math.floor(frames.length / 3)])
   }, [generator])
   return <div className="document-type-art"><canvas ref={canvas} aria-hidden="true" /></div>

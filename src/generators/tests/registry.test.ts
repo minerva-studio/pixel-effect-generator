@@ -11,7 +11,7 @@ import { blipGenerator, blipModule } from './blipFixture'
 import { slashModule } from '../slash/module'
 import { explosionModule } from '../explosion/module'
 import { bloomModule } from '../energy-bloom/module'
-import { projectileModule } from '../projectile/module'
+import { fireballModule } from '../fireball/module'
 import { slashProjectCodec } from '../slash/project'
 import type { SlashParameters } from '../slash/model'
 import { packHorizontalSheet } from '../../shared/pixel/spritesheet'
@@ -24,7 +24,7 @@ describe('generator registry', () => {
   })
 
   it('registers unique ids and indexes while preserving order', () => {
-    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'energyBloom', 'projectile', 'flame'])
+    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'energyBloom', 'fireball', 'flame', 'arrow', 'crystal'])
     expect(dualRegistry.registrations.map((registration) => registration.id)).toEqual(['blip', 'slash'])
     expect(dualRegistry.definitions.map((definition) => definition.id)).toEqual(['blip', 'slash'])
     expect(() => createGeneratorRegistry([GENERATOR_REGISTRY.get('slash'), blipGenerator] as const)).not.toThrow()
@@ -35,11 +35,11 @@ describe('generator registry', () => {
     const id: GeneratorId = 'slash'
     const secondId: GeneratorId = 'explosion'
     const thirdId: GeneratorId = 'energyBloom'
-    const fourthId: GeneratorId = 'projectile'
+    const fourthId: GeneratorId = 'fireball'
     expect(id).toBe('slash')
     expect(secondId).toBe('explosion')
     expect(thirdId).toBe('energyBloom')
-    expect(fourthId).toBe('projectile')
+    expect(fourthId).toBe('fireball')
     // @ts-expect-error - only registered literal ids are valid
     const invalid: GeneratorId = 'blip'
     expect(typeof invalid).toBe('string')
@@ -81,20 +81,19 @@ describe('generator registry', () => {
     expect(bloomModule.render(bloomModule.defaultParameters)).toHaveLength(10)
   })
 
-  it('registers the projectile generator with five tabs, presets, and a project codec', () => {
-    expect(projectileModule.definition.index).toBe(4)
-    expect(projectileModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'trail', 'effects', 'palette'])
-    expect(projectileModule.projectCodec?.generatorId).toBe('projectile')
-    expect(projectileModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual([
-      'fireball',
-      'blastBolt',
-      'enchantedArrow',
-      'energyArrow',
-      'crystalSpear',
-      'crystalCore',
-    ])
-    expect(projectileModule.defaultParameters.canvasWidth).toBe(128)
-    expect(projectileModule.render(projectileModule.defaultParameters)).toHaveLength(10)
+  it('registers independent fireball, arrow, and crystal generators', () => {
+    expect(fireballModule.definition.index).toBe(4)
+    expect(fireballModule.defaultParameters.form).toBe('wrapped')
+    expect(fireballModule.defaultParameters.wrapped.fireballBall).toBe('hot')
+    expect(fireballModule.defaultPreviewFps).toBe(20)
+    expect(fireballModule.projectCodec?.generatorId).toBe('fireball')
+    expect(fireballModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['wrapped', 'stream', 'puff', 'classic'])
+    expect(fireballModule.render(fireballModule.defaultParameters)).toHaveLength(24)
+    for (const id of ['arrow', 'crystal'] as const) {
+      const registration = GENERATOR_REGISTRY.get(id)
+      expect(registration.projectCodec?.generatorId).toBe(id)
+      expect(registration.createSession(12).generatorId).toBe(id)
+    }
   })
 })
 

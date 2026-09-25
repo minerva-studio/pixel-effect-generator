@@ -1227,6 +1227,26 @@
       "randomize": "Randomize"
     }
   },
+  "fireball": {
+    "name": "Fireball",
+    "description": "Continuous fireball flight loops in four forms.",
+    "previewTitle": "Fireball flight loop",
+    "forms": {
+      "classic": { "label": "Classic", "description": "Traditional fireball with an adjustable trail." },
+      "stream": { "label": "Flame stream", "description": "A continuous flowing fire silhouette." },
+      "wrapped": { "label": "Wrapped solid", "description": "Flames wrap the core and peel away behind it." },
+      "puff": { "label": "Particle mass", "description": "Curling and shedding clusters of fire." }
+    },
+    "categories": {
+      "shape": { "label": "Shape", "description": "Choose the fireball form and facing." },
+      "motion": { "label": "Motion", "description": "Control the continuous flight loop." },
+      "trail": { "label": "Trail", "description": "Tune wrapped bands and shedding fire." },
+      "effects": { "label": "Material", "description": "Choose the core and smoke treatment." },
+      "palette": { "label": "Palette", "description": "Edit fire, smoke, and rock colors." }
+    }
+  },
+  "arrow": { "name": "Arrow", "description": "Solid and energy arrow flight loops.", "previewTitle": "Arrow flight loop" },
+  "crystal": { "name": "Crystal", "description": "Faceted crystal projectile loops.", "previewTitle": "Crystal flight loop" },
   "projectile": {
     "name": "Projectile",
     "description": "Seamless flight loops for fireballs and magic arrows.",

@@ -2,7 +2,8 @@ import type { ComponentType } from 'react'
 import { slashGenerator } from './slash/module'
 import { explosionGenerator } from './explosion/module'
 import { bloomGenerator } from './energy-bloom/module'
-import { projectileGenerator } from './projectile/module'
+import { fireballGenerator } from './fireball/module'
+import { arrowGenerator, crystalGenerator } from './projectile/split'
 import { flameGenerator } from './flame/module'
 import type {
   GeneratorDefinition,
@@ -60,6 +61,7 @@ export function registerGenerator<Id extends string, Parameters, Category extend
     name: module.definition.name,
     description: module.definition.description,
     previewTitle: module.previewTitle,
+    defaultPreviewFps: module.defaultPreviewFps ?? 12,
     projectCodec: module.projectCodec as GeneratorProjectCodec<unknown> | undefined,
     minimumFrameCount: module.minimumFrameCount,
     maximumFrameCount: module.maximumFrameCount,
@@ -162,8 +164,10 @@ export const GENERATOR_REGISTRY = createGeneratorRegistry([
   slashGenerator,
   explosionGenerator,
   bloomGenerator,
-  projectileGenerator,
+  fireballGenerator,
   flameGenerator,
+  arrowGenerator,
+  crystalGenerator,
 ] as const)
 
 export type GeneratorId = (typeof GENERATOR_REGISTRY)['registrations'][number]['id']

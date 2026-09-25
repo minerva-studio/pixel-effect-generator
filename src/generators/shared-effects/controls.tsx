@@ -313,7 +313,11 @@ const ShapeCard = memo(function ShapeCard({ value, labelKey, descriptionKey, sel
 })
 
 /** Cache of rendered thumbnail frame sets; independent of live parameters. */
-const shapeThumbnailCache = new Map<string, readonly PixelFrame[]>()
+const shapeThumbnailCache = new Map<string, {
+  readonly buildParameters: unknown
+  readonly render: unknown
+  readonly frames: readonly PixelFrame[]
+}>()
 
 /** Returns one cached thumbnail frame set per family and shape value. */
 function cachedShapeFrames<Parameters>(
@@ -324,9 +328,9 @@ function cachedShapeFrames<Parameters>(
 ): readonly PixelFrame[] {
   const key = `${familyId}:${value}`
   const cached = shapeThumbnailCache.get(key)
-  if (cached) return cached
+  if (cached?.buildParameters === buildParameters && cached.render === render) return cached.frames
   const frames = render(buildParameters())
-  shapeThumbnailCache.set(key, frames)
+  shapeThumbnailCache.set(key, { buildParameters, render, frames })
   return frames
 }
 

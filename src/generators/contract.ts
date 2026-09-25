@@ -67,6 +67,8 @@ export interface GeneratorModule<Id extends string, Parameters, Category extends
   readonly definition: GeneratorDefinition<Id>
   readonly categories: readonly GeneratorCategory<Category>[]
   readonly defaultParameters: Parameters
+  /** Preview cadence used for new and reset documents. */
+  readonly defaultPreviewFps?: number
   /** Optional project persistence codec; without it the Project tab is hidden. */
   readonly projectCodec?: GeneratorProjectCodec<Parameters>
   /** Optional effect presets; without it the preset toolbar is hidden. */
@@ -145,6 +147,7 @@ export interface RegisteredGenerator<Id extends string> {
   readonly name: string
   readonly description: string
   readonly previewTitle: string
+  readonly defaultPreviewFps: number
   /** Opaque project codec; undefined for generators without project support. */
   readonly projectCodec?: GeneratorProjectCodec<unknown>
   readonly minimumFrameCount: number

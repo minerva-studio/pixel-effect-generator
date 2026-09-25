@@ -14,7 +14,7 @@ export const MANIFEST_SCHEMA = 'minerva.pixel-effect.manifest' as const
 export const MANIFEST_VERSION = 1 as const
 
 /** FPS values supported by the preview timing control and project documents. */
-export const SUPPORTED_PREVIEW_FPS = [6, 8, 12, 18, 24] as const
+export const SUPPORTED_PREVIEW_FPS = [6, 8, 12, 18, 20, 24] as const
 export type SupportedPreviewFps = (typeof SUPPORTED_PREVIEW_FPS)[number]
 
 export const MIN_PIXELS_PER_UNIT = 1

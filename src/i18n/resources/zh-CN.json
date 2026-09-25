@@ -1227,6 +1227,26 @@
       "randomize": "随机化"
     }
   },
+  "fireball": {
+    "name": "火球",
+    "description": "四种造型的持续飞行火球循环。",
+    "previewTitle": "火球飞行循环",
+    "forms": {
+      "classic": { "label": "经典造型", "description": "传统火球与可调尾迹。" },
+      "stream": { "label": "流焰弹", "description": "连续流动的火焰轮廓。" },
+      "wrapped": { "label": "裹焰实心弹", "description": "火焰包裹球核并向后剥离。" },
+      "puff": { "label": "粒子火团", "description": "翻卷、剥落的火焰团块。" }
+    },
+    "categories": {
+      "shape": { "label": "造型", "description": "选择火球造型与方向。" },
+      "motion": { "label": "运动", "description": "调整持续飞行循环。" },
+      "trail": { "label": "尾焰", "description": "调整裹焰火带与剥落火焰。" },
+      "effects": { "label": "材质", "description": "选择弹核与烟雾表现。" },
+      "palette": { "label": "调色板", "description": "编辑火焰、烟雾与岩核颜色。" }
+    }
+  },
+  "arrow": { "name": "箭", "description": "实体与能量箭的飞行循环。", "previewTitle": "箭矢飞行循环" },
+  "crystal": { "name": "水晶", "description": "多面水晶投射物循环。", "previewTitle": "水晶飞行循环" },
   "projectile": {
     "name": "弹射物",
     "description": "火球与魔法箭的无缝飞行循环。",

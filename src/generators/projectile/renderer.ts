@@ -12,8 +12,8 @@ export function renderProjectileFrames(parameters: ProjectileParameters): PixelF
   )
 }
 
-/** Renders one deterministic frame; integral cycle times resolve exactly to the first frame. */
-export function renderProjectileFrame(parameters: ProjectileParameters, cycleTime: number): PixelFrame {
+/** Renders one deterministic frame; forwardOffset moves the body along its facing direction. */
+export function renderProjectileFrame(parameters: ProjectileParameters, cycleTime: number, forwardOffset = 0): PixelFrame {
   assertValidProjectileParameters(parameters)
   const width = parameters.canvasWidth
   const height = parameters.canvasHeight
@@ -27,8 +27,8 @@ export function renderProjectileFrame(parameters: ProjectileParameters, cycleTim
   const bodyRadius = Math.max(1, Math.round(parameters.radius * pulseScale))
   const bodyLength = Math.max(4, Math.round(parameters.bodyLength * (1 + parameters.pulseAmount * 0.05 * Math.sin(phase))))
   const bob = parameters.wobbleAmount * parameters.radius * 0.3 * Math.sin(phase + Math.PI / 2)
-  const centerX = width / 2
-  const centerY = height / 2 + bob
+  const centerX = width / 2 + forwardOffset * cosine
+  const centerY = height / 2 + bob + forwardOffset * sine
   const rearX = -bodyLength / 2
 
   drawAfterimages(pixels, width, height, parameters, centerX, centerY, cosine, sine, wrappedTime, phase)

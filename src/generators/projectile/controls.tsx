@@ -31,10 +31,12 @@ interface ProjectileControlsProps {
   readonly parameters: ProjectileParameters
   readonly onChange: (parameters: ProjectileParameters) => void
   readonly onResize?: (nextSize: FrameSize, scaleEffect: boolean) => void
+  readonly allowedKind?: ProjectileParameters['kind']
+  readonly embeddedClassic?: boolean
 }
 
 /** Renders the active projectile parameter category without owning state. */
-export function ProjectileControls({ category, parameters, onChange }: ProjectileControlsProps) {
+export function ProjectileControls({ category, parameters, onChange, allowedKind, embeddedClassic = false }: ProjectileControlsProps) {
   const { t } = useI18n()
   const limits = projectileFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
   const update = <Key extends keyof ProjectileParameters>(key: Key, value: ProjectileParameters[Key]) => {
@@ -49,15 +51,17 @@ export function ProjectileControls({ category, parameters, onChange }: Projectil
     case 'body':
       return (
         <div className="control-list">
-          <ShapeCardGrid
+          {allowedKind !== 'fireball' && <ShapeCardGrid
             familyId="projectile"
             label={t('projectile.controls.kind.label')}
-            options={BODY_CARD_OPTIONS}
+            options={allowedKind ? BODY_CARD_OPTIONS.filter((option) =>
+              allowedKind === 'arrow' ? option.value === 'solidArrow' || option.value === 'energyArrow'
+                : option.value === 'crystalSpear' || option.value === 'crystalCore') : BODY_CARD_OPTIONS}
             selected={selectedBodyCard(parameters)}
             render={renderProjectileFrames}
             onSelect={(value) => onChange(selectBodyCard(parameters, value as ProjectileBodyCard))}
-          />
-          <NumberControl label={t('projectile.controls.radius.label')} description={t('projectile.controls.radius.description')} value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />
+          />}
+          {!embeddedClassic && <NumberControl label={t('projectile.controls.radius.label')} description={t('projectile.controls.radius.description')} value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />}
           <NumberControl label={t('projectile.controls.bodyLength.label')} description={t('projectile.controls.bodyLength.description')} value={parameters.bodyLength} minimum={4} maximum={limits.maxBodyLength} unit="px" onChange={(value) => update('bodyLength', value)} />
           <NumberControl label={t('projectile.controls.silhouetteVariation.label')} description={t('projectile.controls.silhouetteVariation.description')} value={parameters.silhouetteVariation} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('silhouetteVariation', value)} />
           {parameters.kind === 'fireball' ? <>
@@ -90,13 +94,13 @@ export function ProjectileControls({ category, parameters, onChange }: Projectil
             <NumberControl label={t('projectile.controls.crystalGlintStrength.label')} description={t('projectile.controls.crystalGlintStrength.description')} value={parameters.crystalGlintStrength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalGlintStrength', value)} />
             <NumberControl label={t('projectile.controls.crystalGlintSpeed.label')} description={t('projectile.controls.crystalGlintSpeed.description')} value={parameters.crystalGlintSpeed} minimum={0.25} maximum={3} step={0.05} unit="×" onChange={(value) => update('crystalGlintSpeed', value)} />
           </> : null}
-          <NumberControl label={t('projectile.controls.rotation.label')} description={t('projectile.controls.rotation.description')} value={parameters.rotationDegrees} minimum={0} maximum={359} unit="°" onChange={(value) => update('rotationDegrees', value)} />
+          {!embeddedClassic && <NumberControl label={t('projectile.controls.rotation.label')} description={t('projectile.controls.rotation.description')} value={parameters.rotationDegrees} minimum={0} maximum={359} unit="°" onChange={(value) => update('rotationDegrees', value)} />}
         </div>
       )
     case 'motion':
       return (
         <div className="control-list">
-          <NumberControl label={t('projectile.controls.loopCycles.label')} description={t('projectile.controls.loopCycles.description')} value={parameters.loopCycles} minimum={1} maximum={MAX_LOOP_CYCLES} unit="×" onChange={(value) => update('loopCycles', value)} />
+          {!embeddedClassic && <NumberControl label={t('projectile.controls.loopCycles.label')} description={t('projectile.controls.loopCycles.description')} value={parameters.loopCycles} minimum={1} maximum={MAX_LOOP_CYCLES} unit="×" onChange={(value) => update('loopCycles', value)} />}
           <NumberControl label={t('projectile.controls.pulseAmount.label')} description={t('projectile.controls.pulseAmount.description')} value={parameters.pulseAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('pulseAmount', value)} />
           <NumberControl label={t('projectile.controls.wobbleAmount.label')} description={t('projectile.controls.wobbleAmount.description')} value={parameters.wobbleAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('wobbleAmount', value)} />
         </div>

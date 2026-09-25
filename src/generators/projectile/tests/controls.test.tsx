@@ -99,10 +99,10 @@ describe('projectile controls', () => {
     const palette = renderControls('palette')
     expect(palette).toContain('Arrow body')
     expect(palette).toContain('Energy palette')
-    expect(palette.match(/type="range"/g)).toHaveLength(7)
+    expect(palette.match(/type="range"/g)).toHaveLength(8)
     expect(palette).toContain('min="0"')
     expect(palette).toContain('max="255"')
-    expect(palette).toContain('#FFF4B0FF')
+    expect(palette).toContain('#FFFBC3FF')
     expect(palette).toContain('Alpha')
   })
 

@@ -83,7 +83,7 @@ describe('renderProjectileFrames', () => {
   })
 
   it('gives solid arrows and energy spears different alpha silhouettes even with matching colors', () => {
-    const palette = DEFAULT_PROJECTILE_PARAMETERS.energyPalette
+    const palette = DEFAULT_PROJECTILE_PARAMETERS.bodyPalette
     const base = {
       ...DEFAULT_PROJECTILE_PARAMETERS,
       kind: 'arrow' as const,

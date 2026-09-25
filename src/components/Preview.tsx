@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/I18nProvider'
 import { drawFrame } from './export'
 import { PREVIEW_ZOOM_OPTIONS, type PreviewZoom } from '../shared/preview/zoom'
 
-const PREVIEW_FPS_OPTIONS = [6, 8, 12, 18, 24] as const
+const PREVIEW_FPS_OPTIONS = [6, 8, 12, 18, 20, 24] as const
 
 interface PreviewProps {
   readonly frameSet: RenderedFrameSet

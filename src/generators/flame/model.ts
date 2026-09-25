@@ -1,5 +1,6 @@
 import type { FrameSize } from '../../shared/pixel/frame'
 import { assertValidColor, type RgbColor } from '../../shared/pixel/color'
+import { builtinPalette } from '../../shared/palette/library'
 
 export type FlameShape = 'candle' | 'torch' | 'campfire'
 export const FLAME_SHAPES = ['candle', 'torch', 'campfire'] as const
@@ -61,10 +62,7 @@ export const DEFAULT_FLAME_PARAMETERS: FlameParameters = {
   loopCycles: 1, sway: 0.4, flicker: 0.4, flowSpeed: 1, turbulence: 0.45,
   coreSize: 0.5, bandWarp: 0.4, edgeBreakup: 0.25,
   sparksEnabled: true, sparkCount: 4, sparkSpread: 0.35, sparkRise: 25,
-  palette: [
-    { r: 255, g: 251, b: 195, a: 255 }, { r: 255, g: 215, b: 68, a: 255 },
-    { r: 255, g: 137, b: 34, a: 255 }, { r: 231, g: 61, b: 27, a: 255 }, { r: 141, g: 31, b: 35, a: 255 },
-  ],
+  palette: builtinPalette('flameGlow'),
 }
 
 /** Rejects malformed projects and non-opaque palettes before rendering. */

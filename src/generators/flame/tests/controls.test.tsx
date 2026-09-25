@@ -29,7 +29,7 @@ describe('flame workspace integration', () => {
     const sessions = createDefaultSessionRecord(GENERATOR_REGISTRY, 12)
     const next = updateSessionRecord(GENERATOR_REGISTRY.record, sessions, { generatorId: 'flame', action: createRenderedParametersAction(flameModule, { ...base, height: 70 }) })
     expect(next.flame.parameters).toMatchObject({ height: 70 })
-    expect(next.projectile).toBe(sessions.projectile)
+    expect(next.fireball).toBe(sessions.fireball)
     expect(next.slash).toBe(sessions.slash)
     expect(next.flame.frames.read()).toHaveLength(12)
   })

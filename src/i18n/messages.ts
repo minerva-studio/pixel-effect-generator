@@ -147,6 +147,9 @@ export interface PresetDisplayKeys {
 }
 
 const GENERATOR_DISPLAY_KEYS: Readonly<Record<string, GeneratorDisplayKeys>> = {
+  fireball: { name: 'fireball.name', description: 'fireball.description', previewTitle: 'fireball.previewTitle' },
+  arrow: { name: 'arrow.name', description: 'arrow.description', previewTitle: 'arrow.previewTitle' },
+  crystal: { name: 'crystal.name', description: 'crystal.description', previewTitle: 'crystal.previewTitle' },
   flame: { name: 'flame.name', description: 'flame.description', previewTitle: 'flame.previewTitle' },
   slash: {
     name: 'slash.name',
@@ -171,6 +174,27 @@ const GENERATOR_DISPLAY_KEYS: Readonly<Record<string, GeneratorDisplayKeys>> = {
 }
 
 const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, CategoryDisplayKeys>>>> = {
+  fireball: {
+    shape: { label: 'fireball.categories.shape.label', description: 'fireball.categories.shape.description' },
+    motion: { label: 'fireball.categories.motion.label', description: 'fireball.categories.motion.description' },
+    trail: { label: 'fireball.categories.trail.label', description: 'fireball.categories.trail.description' },
+    effects: { label: 'fireball.categories.effects.label', description: 'fireball.categories.effects.description' },
+    palette: { label: 'fireball.categories.palette.label', description: 'fireball.categories.palette.description' },
+  },
+  arrow: {
+    body: { label: 'projectile.categories.body.label', description: 'projectile.categories.body.description' },
+    motion: { label: 'projectile.categories.motion.label', description: 'projectile.categories.motion.description' },
+    trail: { label: 'projectile.categories.trail.label', description: 'projectile.categories.trail.description' },
+    effects: { label: 'projectile.categories.effects.label', description: 'projectile.categories.effects.description' },
+    palette: { label: 'projectile.categories.palette.label', description: 'projectile.categories.palette.description' },
+  },
+  crystal: {
+    body: { label: 'projectile.categories.body.label', description: 'projectile.categories.body.description' },
+    motion: { label: 'projectile.categories.motion.label', description: 'projectile.categories.motion.description' },
+    trail: { label: 'projectile.categories.trail.label', description: 'projectile.categories.trail.description' },
+    effects: { label: 'projectile.categories.effects.label', description: 'projectile.categories.effects.description' },
+    palette: { label: 'projectile.categories.palette.label', description: 'projectile.categories.palette.description' },
+  },
   flame: {
     shape: { label: 'flame.categories.shape.label', description: 'flame.categories.shape.description' },
     motion: { label: 'flame.categories.motion.label', description: 'flame.categories.motion.description' },

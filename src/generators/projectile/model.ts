@@ -1,4 +1,5 @@
 import { assertInRange, assertValidColor, type RgbColor } from '../../shared/pixel/color'
+import { builtinPalette } from '../../shared/palette/library'
 import type { FrameSize } from '../../shared/pixel/frame'
 
 /** Default canvas edge used by the flight loop and the shared preset scaling. */
@@ -195,17 +196,8 @@ export const DEFAULT_PROJECTILE_PARAMETERS: ProjectileParameters = {
   afterimageCount: 2,
   afterimageSpacing: 0.18,
   afterimageDecay: 0.75,
-  bodyPalette: [
-    { r: 235, g: 235, b: 235, a: 255 },
-    { r: 150, g: 128, b: 116, a: 255 },
-    { r: 74, g: 60, b: 52, a: 255 },
-  ],
-  energyPalette: [
-    { r: 255, g: 244, b: 176, a: 255 },
-    { r: 255, g: 196, b: 77, a: 255 },
-    { r: 240, g: 107, b: 36, a: 255 },
-    { r: 122, g: 30, b: 22, a: 255 },
-  ],
+  bodyPalette: builtinPalette('duskSteel'),
+  energyPalette: builtinPalette('flameGlow'),
 }
 
 /** Validates the complete projectile flight-loop parameter contract. */
