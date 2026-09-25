@@ -2,6 +2,7 @@ import type { PixelFrame } from '../../shared/pixel/frame'
 import type { RgbColor } from '../../shared/pixel/color'
 import { builtinPalette } from '../../shared/palette/library'
 import { clamp01, hashUnit, smoothStep } from '../../shared/pixel/rng'
+import { REFERENCE_VIEW, toReference, toTarget, type FireballView } from './view'
 
 /**
  * Puff studies: fire is modelled as material, not as a shape cut from noise.
@@ -63,14 +64,18 @@ interface Field {
   heat: Float32Array
 }
 
-function accumulate(puffs: readonly Puff[]): Field {
-  const density = new Float32Array(SIZE * SIZE)
-  const heat = new Float32Array(SIZE * SIZE)
+function accumulate(puffs: readonly Puff[], width = SIZE, height = SIZE, view?: FireballView): Field {
+  const density = new Float32Array(width * height)
+  const heat = new Float32Array(width * height)
   for (const p of puffs) {
     if (p.r < 0.5 || p.weight <= 0) continue
     const reach = p.r * (1 + p.lump)
-    for (let y = Math.max(1, Math.floor(p.y - reach)); y <= Math.min(SIZE - 2, Math.ceil(p.y + reach)); y++) {
-      for (let x = Math.max(1, Math.floor(p.x - reach)); x <= Math.min(SIZE - 2, Math.ceil(p.x + reach)); x++) {
+    for (let y = Math.max(1, Math.floor(p.y - reach)); y <= Math.min(height - 2, Math.ceil(p.y + reach)); y++) {
+      for (let x = Math.max(1, Math.floor(p.x - reach)); x <= Math.min(width - 2, Math.ceil(p.x + reach)); x++) {
+        if (view) {
+          const reference = toReference(view, x, y)
+          if (reference.x < 1 || reference.x >= 127 || reference.y < 1 || reference.y >= 127) continue
+        }
         const dx = x - p.x, dy = y - p.y
         let d2 = (dx * dx + dy * dy) / (p.r * p.r)
         if (p.lump > 0 && d2 > 0.04) {
@@ -80,7 +85,7 @@ function accumulate(puffs: readonly Puff[]): Field {
         }
         if (d2 >= 1) continue
         const k = (1 - d2) * (1 - d2) * p.weight
-        const i = y * SIZE + x
+        const i = y * width + x
         density[i] += k
         heat[i] += k * p.temp
       }
@@ -90,10 +95,10 @@ function accumulate(puffs: readonly Puff[]): Field {
 }
 
 /** Colour comes from the same field: mean temperature, brightened toward dense interiors. */
-function resolve(field: Field, threshold: number, smoke: boolean, span = 0.9, palette: PuffPalette = DEFAULT_PUFF_PALETTE): PixelFrame {
+function resolve(field: Field, threshold: number, smoke: boolean, span = 0.9, palette: PuffPalette = DEFAULT_PUFF_PALETTE, width = SIZE, height = SIZE): PixelFrame {
   const fire = palette.warm
   const smokeRamp = palette.smoke
-  const pixels = new Uint8ClampedArray(SIZE * SIZE * 4)
+  const pixels = new Uint8ClampedArray(width * height * 4)
   for (let i = 0; i < field.density.length; i++) {
     const f = field.density[i]
     if (f <= threshold) continue
@@ -109,7 +114,7 @@ function resolve(field: Field, threshold: number, smoke: boolean, span = 0.9, pa
     }
     pixels.set([color.r, color.g, color.b, 255], i * 4)
   }
-  return { width: SIZE, height: SIZE, pixels }
+  return { width, height, pixels }
 }
 
 /** Adds rolling surface billows around a mass; roll direction is per-mass. */
@@ -175,7 +180,7 @@ export function puffExplosion(time: number, seed: number, t: PuffTuning = DEFAUL
 }
 
 /** Seamless loop: a hot head sheds masses that slide around it and stream back, cooling and shrinking. */
-export function puffFireball(time: number, seed: number, t: PuffTuning = DEFAULT_PUFF_TUNING, palette: PuffPalette = DEFAULT_PUFF_PALETTE): PixelFrame {
+export function puffFireball(time: number, seed: number, t: PuffTuning = DEFAULT_PUFF_TUNING, palette: PuffPalette = DEFAULT_PUFF_PALETTE, view: FireballView = REFERENCE_VIEW): PixelFrame {
   const phase = ((time % 1) + 1) % 1
   const hx = 94, hy = 64, headR = 14
   const puffs: Puff[] = []
@@ -214,7 +219,15 @@ export function puffFireball(time: number, seed: number, t: PuffTuning = DEFAULT
     billows(puffs, puff, 2, t.billow * 0.8, side * age * TAU, seed, i + 40)
   }
   // The head stacks several masses, so its bands need a deeper span to stay nested.
-  return resolve(accumulate(puffs), 0.3, t.smoke, 1.9, palette)
+  const angle = Math.atan2(view.sin, view.cos)
+  for (const puff of puffs) {
+    const target = toTarget(view, puff.x, puff.y)
+    puff.x = target.x
+    puff.y = target.y
+    puff.r *= view.scale
+    puff.spin -= angle
+  }
+  return resolve(accumulate(puffs, view.width, view.height, view), 0.3, t.smoke, 1.9, palette, view.width, view.height)
 }
 
 export function renderPuffFrames(body: 'explosion' | 'fireball', seed: number, frameCount: number, tuning: PuffTuning = DEFAULT_PUFF_TUNING, palette: PuffPalette = DEFAULT_PUFF_PALETTE): PixelFrame[] {

@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest'
+import { DEFAULT_FIREBALL_PARAMETERS } from '../model'
+import { renderFireballFrame } from '../renderer'
+
+function hash(pixels: Uint8ClampedArray): string {
+  let value = 0x811c9dc5
+  for (const byte of pixels) value = Math.imul(value ^ byte, 0x01000193) >>> 0
+  return value.toString(16).padStart(8, '0')
+}
+
+describe('fireball default rendering goldens', () => {
+  it('captures every frame for the current baseline', () => {
+    const cases = [20260923, 3107, 8401].flatMap(seed =>
+      (['stream', 'wrapped', 'puff'] as const).map(form => ({
+        name: `${form}-${seed}`,
+        parameters: { ...DEFAULT_FIREBALL_PARAMETERS, form, seed },
+      })))
+    const wrapped = DEFAULT_FIREBALL_PARAMETERS.wrapped
+    const stream = DEFAULT_FIREBALL_PARAMETERS.stream
+    cases.push(
+      { name: 'wrapped-molten', parameters: { ...DEFAULT_FIREBALL_PARAMETERS, form: 'wrapped', wrapped: { ...wrapped, fireballBall: 'molten' } } },
+      { name: 'stream-smoke', parameters: { ...DEFAULT_FIREBALL_PARAMETERS, form: 'stream', stream: { ...stream, fireballTrail: 'smoke' } } },
+      { name: 'stream-flame', parameters: { ...DEFAULT_FIREBALL_PARAMETERS, form: 'stream', stream: { ...stream, fireballTrail: 'flame' } } },
+      { name: 'wrapped-smoke', parameters: { ...DEFAULT_FIREBALL_PARAMETERS, form: 'wrapped', wrapped: { ...wrapped, fireballTrail: 'smoke' } } },
+      { name: 'wrapped-flame', parameters: { ...DEFAULT_FIREBALL_PARAMETERS, form: 'wrapped', wrapped: { ...wrapped, fireballTrail: 'flame' } } },
+      { name: 'puff-smoke', parameters: { ...DEFAULT_FIREBALL_PARAMETERS, form: 'puff', puff: { ...DEFAULT_FIREBALL_PARAMETERS.puff, smoke: true } } },
+      { name: 'wrapped-ribbons-1', parameters: { ...DEFAULT_FIREBALL_PARAMETERS, form: 'wrapped', wrapped: { ...wrapped, fireballRibbons: 1 } } },
+      { name: 'wrapped-ribbons-5', parameters: { ...DEFAULT_FIREBALL_PARAMETERS, form: 'wrapped', wrapped: { ...wrapped, fireballRibbons: 5 } } },
+    )
+    const output = Object.fromEntries(cases.map(({ name, parameters }) => [name,
+      Array.from({ length: 24 }, (_, frame) => hash(renderFireballFrame(parameters, frame / 24).pixels)),
+    ]))
+    expect(output).toEqual({"stream-20260923":["c007c794","b9345713","0f147633","9d133b05","1d7df1ae","46949c31","bab089b9","eff9fa96","808b98b8","792df28e","5a8c614a","d3d3ea70","7631d21a","df5ecfc3","ddb7e9d5","208ae02b","dccdaf96","729fbd1a","413cbfcf","89a12ed0","80088ea9","86e80475","002da370","8c4fac46"],"wrapped-20260923":["9931c397","d43513c8","5d79d5ed","48bcb087","e8d7d512","cfa27582","86ab5743","d614709c","66286dac","7616ffe6","3c77a0ce","2e2824ee","ed8597b3","ea96e6c2","81303cdb","ca1ce139","c3bb5e86","475ebab2","2252b130","a98a6dd4","250f7db1","5c720a85","acc8a0d2","5091dded"],"puff-20260923":["75076a9f","2ae05f99","afd9c40a","3c78dca3","202e612c","c4488263","17a1384c","8bc8c29e","0044c50a","6d1cc89a","34d8c473","1a9e40d8","51a3747e","c8b83aea","bc69a4de","209031ce","5e53d6f7","acda09bc","9683d8e6","f8318711","4595ca76","96c65b5c","f239e8e1","5d46daf6"],"stream-3107":["9d7ddc75","ef4789b5","1d8137d5","2320a58c","d4b5cf2f","b35b99eb","60676239","cf1f1da3","34517230","14529abd","7c225343","e2447b2c","eaf487c2","0a589750","35cd62b0","8289c86f","953f34c5","d55ab74e","22ecb185","df852ab5","e6df4fef","296d1538","bd0adf65","7058dfc8"],"wrapped-3107":["89347276","a84cee0e","fc167ec6","2ae42b3d","9fcfc409","bde1f9cd","a03bc3d2","437f4b6d","f58f5c57","2657f4a3","81e4138c","dd477d1d","56808eb1","01a4918d","d7fc435e","4ebda511","76cc2446","2770fcd1","e0890d99","aabc6e10","ad2df347","f5d1bb55","eb9897ec","c4a52b76"],"puff-3107":["4be251e5","e16739d6","28a66781","91ded1a2","a37b74a5","a8da0705","71db5d9c","e9c75f00","06e504c0","fa38ca7c","7dc5502a","81296518","b9628528","8772554b","01fdeb08","27d118b2","21ddbc2d","9a451bd1","6acf83a5","7de30425","2889fd2c","c8110a83","10d63098","1abeef39"],"stream-8401":["f4b37c11","3e14fe2c","3f38bbbb","7aa59383","ac5ad27a","bb6991ac","539bbd83","c272c1b0","93e5a6f4","65d75740","6be3a99c","64836b08","df6aa823","27912eac","38b5e605","a87ca975","70bed0c0","565f526e","214c0ea9","9b90ccd6","20b07086","00c87eb1","4ed5dbf9","9d9b5514"],"wrapped-8401":["c16d2b4e","c7fc22ab","94a0ebdd","5df9f8da","ec654539","618bef38","4f33f1ea","f74bcefc","a89bda79","9a35be5b","94a8ba3b","cd4a0324","5a63e141","10ce5076","179930f4","0c0dae53","bdcbf92b","2de70cca","d14d7321","57772ea5","e5e70f66","e89af7ec","fd3d8368","df8ea5ae"],"puff-8401":["49642280","d60e85f7","2ea90dc3","4534ddd8","9e771086","696efeca","6ac52fba","020b2370","aa50034b","e09ed8e0","cdf1412b","671b7080","f17abf6f","45e1764e","3618331e","dcf8bb73","b1dc97b0","8d974410","df70af77","6b4eaec8","971c72ad","1f21f952","5ac88e4b","1ab8a98a"],"wrapped-molten":["909e05b3","75d7d25f","d1273d66","2a9edf75","ea304ceb","d377304f","80d5f835","969a82c6","b172f6f2","c36e801e","fd128c35","dfe856de","f28a1738","16614f1a","00c7654f","d1a7fc96","d67d1bb2","8b577659","5ccb0d86","1960c1a9","668df294","33b2a01e","aedb6555","36aa807c"],"stream-smoke":["584f0228","9fd8fb50","7fcaa177","e034c8de","dd0db84b","52e53eb3","18aec678","816435fe","9e1df044","fb5ba3c2","53b67922","8d5de576","561f8c82","11a14479","12ea0974","9fbf4af1","4ed96c5f","229f0ccc","89ea072b","fe482d53","e2f80c5a","391c768f","5766098c","452c4c85"],"stream-flame":["2e1d1c31","baf64757","3ac10b82","06234084","bc006627","c07857a1","093666d0","61601432","e2e73cf4","f4d47fb7","a76b8c7b","b3c380d4","a76e0c37","cb11bc93","b11a58e1","b2e54422","ce6cdadf","7b3c3a37","55eecd3f","5dd29924","74fd0a1c","077ee788","049ba780","50392cc3"],"wrapped-smoke":["db95629b","01cde306","bc175915","5f2f9e7c","6198aa58","45705687","b1537c84","55921df9","026f313b","a96751bb","07297318","1a9dab74","b3b18d1f","0d9221dc","fd12788c","c5dff9bb","af44b819","65fcf144","4c897898","3a2874dd","41503d84","baec4880","21d5ffaa","85cc0726"],"wrapped-flame":["016f07d8","b3520021","371e5dcf","5e5af4ba","7918670b","d6e09533","efc10f0c","e85e92fd","508c469e","8bb20d1e","7bbe5f84","6835946b","43b51f46","eeb48bd6","2e4e8de9","91a4a79d","ad526d2d","7ecf8bd5","5675ddef","ea3b9513","8758b273","7b3bc2dd","0b4359c3","8a7c5f53"],"puff-smoke":["32c86c2f","1b161378","a10b9e1c","a661992d","28c2e1e1","abcd90be","ff47f133","83824348","f20c60ca","b8bf684c","ffae45de","2d728683","5d3de270","d3c601f5","f0fa58b1","db3b2aee","f3176bf3","c4357dd0","95ca8f11","78e87f83","b12eac1f","380d1360","4c82b0c4","77bd8fba"],"wrapped-ribbons-1":["e93cc7b3","51550c22","40e4f696","48638a82","72f97a29","2572c9c2","56e431dd","e746f8e5","75574d89","2108eb84","4a53d840","b255ed7b","80a9b3d4","f9ca4f7d","5fadf370","9a779ee0","29ccb813","999459fc","727fafd2","6a171447","ece168a3","87f60dfc","dd331c5b","63ed49f2"],"wrapped-ribbons-5":["8c279d73","34997ea4","3e9d2f81","778a2364","af256c8a","daac1342","146c202b","f5aaecb6","5fde3347","da1a8d1b","3bc840a3","6e44dd36","97339278","d1528d9b","e480e805","94028190","3f9b9bae","70493c18","73e5135c","e4896fc1","61e2ff7e","fcdcfa53","cfddb4fe","b5d4f971"]})
+  }, 30_000)
+})

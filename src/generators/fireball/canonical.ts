@@ -2,6 +2,7 @@ import type { PixelFrame } from '../../shared/pixel/frame'
 import type { RgbColor } from '../../shared/pixel/color'
 import { builtinPalette } from '../../shared/palette/library'
 import { clamp01, hashUnit, smoothStep } from '../../shared/pixel/rng'
+import { REFERENCE_VIEW, targetBounds, toReference, type FireballView } from './view'
 
 const TAU = Math.PI * 2
 
@@ -25,9 +26,10 @@ export const DEFAULT_FIREBALL_PALETTE: FireballPalette = {
   warm: builtinPalette('flameGlow'),
   smoke: builtinPalette('smokeEmber'),
 }
-function surface(): { frame: PixelFrame; depth: Float32Array; heat: Float32Array } {
-  return { frame: { width: 128, height: 128, pixels: new Uint8ClampedArray(128 * 128 * 4) },
-    depth: new Float32Array(128 * 128), heat: new Float32Array(128 * 128) }
+function surface(view: FireballView): { frame: PixelFrame; depth: Float32Array; heat: Float32Array } {
+  const length = view.width * view.height
+  return { frame: { width: view.width, height: view.height, pixels: new Uint8ClampedArray(length * 4) },
+    depth: new Float32Array(length), heat: new Float32Array(length) }
 }
 function paint(frame: PixelFrame, index: number, color: RgbColor) {
   frame.pixels.set([color.r, color.g, color.b, color.a], index * 4)
@@ -41,9 +43,10 @@ export type FireballForm = 'teardrop' | 'plasmaBall'
  * into short, broad tongues. The molten core sits behind those bands, not on top of the fire.
  * Transport advances toward the rear; integer phase harmonics keep the flight loop periodic.
  */
-function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette: FireballPalette) {
+function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette: FireballPalette, view: FireballView) {
   const { warm, smoke } = palette
-  const s = surface()
+  const s = surface(view)
+  const { width, height, scale } = view
   const { fireballTrail: trail, fireballContour, fireballBandWarp, fireballBreakup, fireballRibbons: count, fireballBall: ball } = tuning
   const flowStrength = tuning.flowStrength ?? 1
   const phase = ((time % 1 + 1) % 1) * TAU
@@ -81,20 +84,24 @@ function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette:
       + middleBend
       + flowStrength * fireballBreakup * 1.2 * smoothStep(clamp01((t - 0.6) / 0.4)) * Math.sin(along * 0.6 - 3 * phase + r.shift)
   }
-  // Centrelines depend only on the column, so each is traced once per frame.
-  const paths = ribbons.map(r => Array.from({ length: 128 }, (_, x) => {
-    const along = cx - x
+  // Centrelines depend only on target columns when rotation does not mix the axes.
+  const paths = view.sin === 0 ? ribbons.map(r => Array.from({ length: width }, (_, x) => {
+    const { x: rx } = toReference(view, x, 0)
+    const along = cx - rx
     return { yc: centreline(r, along), slope: (centreline(r, along + 1) - centreline(r, along - 1)) / 2 }
-  }))
-  const mask = new Uint8Array(128 * 128)
-  const heats = new Float32Array(128 * 128)
-  const tails = new Float32Array(128 * 128)
-  const solid = new Uint8Array(128 * 128)
-  const foreground = new Float32Array(128 * 128)
-  for (let y = 28; y < 100; y++) for (let x = 6; x < 100; x++) {
-    const index = y * 128 + x
-    const dx = x - cx, dy = y - cy
-    const along = cx - x
+  })) : undefined
+  const mask = new Uint8Array(width * height)
+  const heats = new Float32Array(width * height)
+  const tails = new Float32Array(width * height)
+  const solid = new Uint8Array(width * height)
+  const foreground = new Float32Array(width * height)
+  const bounds = targetBounds(view, 6, 28, 100, 100)
+  for (let y = bounds.minY; y < bounds.maxY; y++) for (let x = bounds.minX; x < bounds.maxX; x++) {
+    const { x: rx, y: ry } = toReference(view, x, y)
+    if (ry < 28 || ry >= 100 || rx < 6 || rx >= 100) continue
+    const index = y * width + x
+    const dx = rx - cx, dy = ry - cy
+    const along = cx - rx
     // An elongated rear arc holds the wrap's shoulders without flattening them into a hood.
     // The stone itself remains round; only its fire shell stretches into the wake.
     const ballDepth = wrapRadius - Math.hypot(dx > 0 ? dx : dx / 1.35, dy)
@@ -103,7 +110,10 @@ function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette:
     let best: Ribbon | undefined, bestDepth = -Infinity, bestHalf = 1, bestTwist = 1
     for (const [i, r] of ribbons.entries()) {
       if (along < 0 || along > r.length) continue
-      const { yc, slope } = paths[i][x]
+      const { yc, slope } = paths?.[i][x] ?? {
+        yc: centreline(r, along),
+        slope: (centreline(r, along + 1) - centreline(r, along - 1)) / 2,
+      }
       const t = along / r.length
       const peel = smoothStep(clamp01((along - wrapRadius) / 12))
       const pulse = Math.sin(along * 0.3 - 2 * phase + r.shift)
@@ -116,7 +126,7 @@ function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette:
         * smoothStep(clamp01((along - wrapRadius) / 16))
         * Math.sin(along * 0.37 - 2 * phase + r.shift)
       const half = r.width * laneScale(along) * taper * twist + edgeFlow - bite * 2
-      const ribbonDepth = half - Math.abs(y - yc) / Math.sqrt(1 + slope * slope)
+      const ribbonDepth = half - Math.abs(ry - yc) / Math.sqrt(1 + slope * slope)
       depth = Math.max(depth, ballDepth + release * (ribbonDepth - ballDepth))
       if (ribbonDepth > bestDepth) { best = r; bestDepth = ribbonDepth; bestHalf = half; bestTwist = twist }
     }
@@ -130,7 +140,9 @@ function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette:
       + 0.04 * Math.sin(dx * 0.9 - dy * 0.6 + 3 * phase - offset))
     // The hot core remains spherical even where the shell continues into the wake.
     const lx = dx / wrapRadius, ly = dy / wrapRadius, dome = lx
-    const light = clamp01(0.5 * dome - 0.6 * ly + 0.5 * Math.sqrt(Math.max(0, 1 - dome * dome - ly * ly)))
+    const screenLx = (dx * view.cos - dy * view.sin) / wrapRadius
+    const screenLy = (dx * view.sin + dy * view.cos) / wrapRadius
+    const light = clamp01(0.5 * screenLx - 0.6 * screenLy + 0.5 * Math.sqrt(Math.max(0, 1 - dome * dome - ly * ly)))
     let heat = 1.15 - 0.85 * core + 0.14 * (light - 0.4)
     if (best) {
       const t = along / best.length
@@ -153,8 +165,8 @@ function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette:
       for (const r of ribbons) {
         const stream = Math.sin(travel * 0.32 - 2 * phase + r.shift)
         const bend = r.lane * envelope + flowStrength * fireballBandWarp * stream * 1.4
-        const width = 1.2 + 0.65 * flowStrength * (0.5 + 0.5 * stream)
-        fireBand = Math.max(fireBand, clamp01(1 - Math.abs(dy - bend) / width))
+        const bandWidth = Math.max(1.2 + 0.65 * flowStrength * (0.5 + 0.5 * stream), 0.75 / scale)
+        fireBand = Math.max(fireBand, clamp01(1 - Math.abs(dy - bend) / bandWidth))
       }
       heat += shellGate * (fireBand * 0.25 - 0.08)
       // Moving band edges can pass in front of the rock without covering its center.
@@ -184,18 +196,19 @@ function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette:
     heats[index] = surfaceHeat
   }
   // Gaps fully enclosed where neighbouring ends meet are filled, so the body has one outline.
-  const outside = new Uint8Array(128 * 128)
+  const outside = new Uint8Array(width * height)
   const stack: number[] = []
-  for (let i = 0; i < 128; i++) stack.push(i, 127 * 128 + i, i * 128, i * 128 + 127)
+  for (let i = 0; i < width; i++) stack.push(i, (height - 1) * width + i)
+  for (let i = 0; i < height; i++) stack.push(i * width, i * width + width - 1)
   while (stack.length) {
     const i = stack.pop()!
     if (outside[i] || mask[i]) continue
     outside[i] = 1
-    const x = i % 128
+    const x = i % width
     if (x > 0) stack.push(i - 1)
-    if (x < 127) stack.push(i + 1)
-    if (i >= 128) stack.push(i - 128)
-    if (i < 127 * 128) stack.push(i + 128)
+    if (x < width - 1) stack.push(i + 1)
+    if (i >= width) stack.push(i - width)
+    if (i < (height - 1) * width) stack.push(i + width)
   }
   for (let i = 0; i < mask.length; i++) if (!mask[i] && !outside[i]) { mask[i] = 1; heats[i] = 0.3; tails[i] = 0.5 }
   const outline = warm.length - 1
@@ -204,24 +217,27 @@ function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette:
     return { x: r * Math.cos(a), y: r * Math.sin(a) }
   })
   const band = (heat: number) => Math.min(outline - 1, Math.floor((1 - Math.min(0.99, Math.max(0.21, heat))) * warm.length))
-  for (let y = 1; y < 127; y++) for (let x = 1; x < 127; x++) {
-    const index = y * 128 + x
+  for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+    const index = y * width + x
     if (!mask[index]) continue
     s.depth[index] = 1
-    if (!mask[index - 1] || !mask[index + 1] || !mask[index - 128] || !mask[index + 128]) paint(s.frame, index, warm[outline])
+    if (!mask[index - 1] || !mask[index + 1] || !mask[index - width] || !mask[index + width]) paint(s.frame, index, warm[outline])
     else if (solid[index] && foreground[index] < 0.25) {
       // Molten: dark rock with glowing cracks inside the wrap. Cracks are the borders of a few
       // seeded cells, so they read as solid lines at 1px.
-      const px = x - cx, py = y - cy
-      const lx = px / wrapRadius, ly = py / wrapRadius
-      const light = 0.55 * lx - 0.65 * ly + 0.5 * Math.sqrt(Math.max(0, 1 - lx * lx - ly * ly))
+      const { x: rx, y: ry } = toReference(view, x, y)
+      const dx = rx - cx, dy = ry - cy
+      const lx = dx / wrapRadius, ly = dy / wrapRadius
+      const screenLx = (dx * view.cos - dy * view.sin) / wrapRadius
+      const screenLy = (dx * view.sin + dy * view.cos) / wrapRadius
+      const light = 0.55 * screenLx - 0.65 * screenLy + 0.5 * Math.sqrt(Math.max(0, 1 - lx * lx - ly * ly))
       let nearest = Infinity, second = Infinity
       for (const cell of cells) {
-        const d = Math.hypot(px - cell.x, py - cell.y)
+        const d = Math.hypot(dx - cell.x, dy - cell.y)
         if (d < nearest) { second = nearest; nearest = d } else if (d < second) second = d
       }
       const glow = 0.5 + 0.5 * Math.sin(phase + offset)
-      if (second - nearest < 1.1) paint(s.frame, index, warm[glow > 0.5 ? 1 : 2])
+      if ((second - nearest) * scale < 1.1) paint(s.frame, index, warm[glow > 0.5 ? 1 : 2])
       else paint(s.frame, index, smoke[light > 0.45 ? 3 : light > 0 ? 4 : 5])
     } else if (solid[index]) {
       paint(s.frame, index, warm[foreground[index] > 0.6 ? 1 : 2])
@@ -232,10 +248,11 @@ function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette:
   return s.frame
 }
 
-function fireball(time: number, seed: number, tuning: FireballTuning, version: FireballVersion, form: FireballForm = 'teardrop', palette: FireballPalette = DEFAULT_FIREBALL_PALETTE) {
+function fireball(time: number, seed: number, tuning: FireballTuning, version: FireballVersion, form: FireballForm = 'teardrop', palette: FireballPalette = DEFAULT_FIREBALL_PALETTE, view: FireballView = REFERENCE_VIEW) {
   const { warm, smoke } = palette
-  if (version === 'current' && form === 'plasmaBall') return plasmaBall(time, seed, tuning, palette)
-  const s = surface()
+  if (version === 'current' && form === 'plasmaBall') return plasmaBall(time, seed, tuning, palette, view)
+  const s = surface(view)
+  const { width, height, scale } = view
   const { fireballTrail: trail, fireballAngular, fireballContour, fireballBandWarp, fireballBreakup } = tuning
   const flowStrength = tuning.flowStrength ?? 1
   const phase = ((time % 1 + 1) % 1) * TAU
@@ -274,10 +291,10 @@ function fireball(time: number, seed: number, tuning: FireballTuning, version: F
         + 0.45 * Math.sin(hx * 0.71 - dy * 0.2 + phase * 3 - offset + side * 1.7))
       const pinch = ((1 + Math.cos(hx * 0.45 + phase * 2 + offset + side * 0.4)) / 2) ** 6
       half *= 1 - Math.min(0.95, fireballBreakup * 3.2 * smoothStep(clamp01((tail - 0.45) / 0.3)) * pinch)
-      if (half < 1.2) return
+      if (half * scale < 1.2) return
       const depth = half - Math.abs(dy)
       if (depth <= 0) return
-      rim = depth < 1.5
+      rim = depth * scale < 1.5
       // Stable teardrop core: ripples displace its coordinates (not its heat), vanish at the
       // center and travel backward, so band edges stream off the back while the center holds.
       const cdx = x - 87, cdy = y - 64
@@ -327,13 +344,17 @@ function fireball(time: number, seed: number, tuning: FireballTuning, version: F
       paint(s.frame, index, warm[band])
     }
   }
-  for (let y = 30; y < 99; y++) for (let x = 6; x < 109; x++) sample(x, y, y * 128 + x)
+  const bounds = targetBounds(view, 6, 30, 109, 99)
+  for (let y = bounds.minY; y < bounds.maxY; y++) for (let x = bounds.minX; x < bounds.maxX; x++) {
+    const { x: rx, y: ry } = toReference(view, x, y)
+    if (ry >= 30 && ry < 99 && rx >= 6 && rx < 109) sample(rx, ry, y * width + x)
+  }
   return s.frame
 }
 
 /** Renders the accepted 128×128 fireball study in production. */
 export function renderCanonicalFireballFrame(time: number, seed: number, tuning: FireballTuning,
   form: FireballForm = 'teardrop', palette: FireballPalette = DEFAULT_FIREBALL_PALETTE,
-  version: FireballVersion = 'current'): PixelFrame {
-  return fireball(time, seed, tuning, version, form, palette)
+  version: FireballVersion = 'current', view: FireballView = REFERENCE_VIEW): PixelFrame {
+  return fireball(time, seed, tuning, version, form, palette, view)
 }

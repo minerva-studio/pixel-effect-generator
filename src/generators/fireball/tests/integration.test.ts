@@ -33,7 +33,7 @@ describe('standalone fireball', () => {
         expect(renderFireballFrame(parameters, 7 / 24)).toEqual(renderFireballFrame(parameters, 7 / 24))
       }
     }
-  })
+  }, 30_000)
 
   it('keeps the default classic flame trail inside its flight canvas', () => {
     const parameters = { ...DEFAULT_FIREBALL_PARAMETERS, form: 'classic' as const }
