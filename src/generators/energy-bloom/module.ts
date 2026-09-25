@@ -26,7 +26,7 @@ export const BLOOM_CATEGORIES = [
 export const bloomModule = defineGenerator({
   definition: {
     id: 'energyBloom',
-    index: 3,
+    index: 7,
     name: 'Energy Bloom',
     description: 'Petal, star, and corolla energy effects with vivid convergence.',
   },

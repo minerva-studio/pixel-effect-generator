@@ -16,7 +16,7 @@ const categories = [
 ] as const satisfies readonly { id: FireballCategory; label: string; description: string }[]
 
 export const fireballModule = defineGenerator({
-  definition: { id: 'fireball', index: 4, name: 'Fireball', description: 'Continuous fireball flight loops in four forms.' },
+  definition: { id: 'fireball', index: 3, name: 'Fireball', description: 'Continuous fireball flight loops in four forms.' },
   categories,
   defaultParameters: DEFAULT_FIREBALL_PARAMETERS,
   defaultPreviewFps: 20,

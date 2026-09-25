@@ -13,6 +13,7 @@ import { ThemeToggle, NewDocumentDialog } from './components/Workbench'
 import { documentGenerator, prepareNewDocument, prepareOpenedDocument, type PreparedDocument } from './components/documentSession'
 import { downloadText } from './components/export'
 import type { UnityExportSettingsState } from './components/unitySettings'
+import { GENERATOR_REGISTRY } from './generators/registry'
 
 export default function App() {
   const api = useDesktopApp()
@@ -153,7 +154,7 @@ function LanguageSelect() {
 
 /** One live document. Replacement is atomic and resets workspace-local view state even for the same type. */
 function useDocumentSession() {
-  const [document, setDocument] = useState(() => ({ ...prepareNewDocument('flame'), revision: 0 }))
+  const [document, setDocument] = useState(() => ({ ...prepareNewDocument(GENERATOR_REGISTRY.registrations[0].id), revision: 0 }))
   const fileOperations = useFileOperationController()
   const generator = documentGenerator(document.session.generatorId)
   const replace = useCallback((next: PreparedDocument) => setDocument((current) => ({ ...next, revision: current.revision + 1 })), [])

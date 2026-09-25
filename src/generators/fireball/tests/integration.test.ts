@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { parseProjectDocument, serializeProjectDocument } from '../../../shared/project/document'
-import { DEFAULT_FIREBALL_PARAMETERS, maxFireballSize, resizeFireballCanvas } from '../model'
+import { DEFAULT_FIREBALL_PARAMETERS, DEFAULT_FIREBALL_SPARKS, maxFireballSize, resizeFireballCanvas } from '../model'
 import { fireballProjectCodec } from '../project'
 import { renderFireballFrame } from '../renderer'
+import { toReference } from '../view'
 
 describe('standalone fireball', () => {
   it('allows larger fireballs and scales the size limit with the canvas', () => {
@@ -83,5 +84,42 @@ describe('standalone fireball', () => {
         expect(frame.pixels[((y * side + side - 1) * 4) + 3]).toBe(0)
       }
     }
+  })
+
+  it('lets the other forms borrow classic sparks, off by default and never over the head', () => {
+    expect(DEFAULT_FIREBALL_PARAMETERS.sparks.sparksEnabled).toBe(false)
+    const head = { stream: { x: 87, radius: 14.5 }, wrapped: { x: 84, radius: 15 }, puff: { x: 94, radius: 14 } }
+    for (const form of ['stream', 'wrapped', 'puff'] as const) for (const [side, size, rotationDegrees] of [[128, 15, 0], [256, 36, 45]] as const) {
+      const plain = { ...DEFAULT_FIREBALL_PARAMETERS, form, canvasWidth: side, canvasHeight: side, size, rotationDegrees }
+      const sparked = { ...plain, sparks: { ...plain.sparks, sparksEnabled: true } }
+      expect(renderFireballFrame(sparked, 0)).toEqual(renderFireballFrame(sparked, 1))
+      let added = 0
+      for (const time of [0, 0.25, 0.5]) {
+        const before = renderFireballFrame(plain, time).pixels, after = renderFireballFrame(sparked, time).pixels
+        for (let i = 0; i < after.length; i += 4) {
+          if ([0, 1, 2, 3].every(k => after[i + k] === before[i + k])) continue
+          added++
+          expect([0, 1].map(k => plain.warmPalette[k]).some(c => c.r === after[i] && c.g === after[i + 1] && c.b === after[i + 2])).toBe(true)
+          const x = (i / 4) % side, y = Math.floor(i / 4 / side)
+          expect(x > 0 && y > 0 && x < side - 1 && y < side - 1).toBe(true)
+          if (before[i + 3]) {
+            const angle = rotationDegrees * Math.PI / 180
+            const reference = toReference({ width: side, height: side, scale: size / 15, cos: Math.cos(angle), sin: Math.sin(angle) }, x, y)
+            expect(Math.hypot(reference.x - head[form].x, reference.y - 64)).toBeGreaterThanOrEqual(head[form].radius)
+          }
+        }
+      }
+      expect(added, `${form} ${side}`).toBeGreaterThan(0)
+    }
+  }, 30_000)
+
+  it('opens fireball documents saved before borrowed sparks with sparks off', () => {
+    const { sparks: _sparks, ...legacy } = DEFAULT_FIREBALL_PARAMETERS
+    const serialized = serializeProjectDocument(fireballProjectCodec, DEFAULT_FIREBALL_PARAMETERS, 20, { pixelsPerUnit: 16, guid: null })
+    const document = JSON.parse(serialized)
+    document.parameters = legacy
+    const reopened = parseProjectDocument(document, fireballProjectCodec)
+    expect(reopened.ok).toBe(true)
+    if (reopened.ok) expect((reopened.project.project.parameters as typeof DEFAULT_FIREBALL_PARAMETERS).sparks).toEqual(DEFAULT_FIREBALL_SPARKS)
   })
 })

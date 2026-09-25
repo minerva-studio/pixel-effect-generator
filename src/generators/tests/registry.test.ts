@@ -24,7 +24,8 @@ describe('generator registry', () => {
   })
 
   it('registers unique ids and indexes while preserving order', () => {
-    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'energyBloom', 'fireball', 'flame', 'arrow', 'crystal'])
+    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'fireball', 'flame', 'arrow', 'crystal', 'energyBloom'])
+    expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.index)).toEqual([1, 2, 3, 4, 5, 6, 7])
     expect(dualRegistry.registrations.map((registration) => registration.id)).toEqual(['blip', 'slash'])
     expect(dualRegistry.definitions.map((definition) => definition.id)).toEqual(['blip', 'slash'])
     expect(() => createGeneratorRegistry([GENERATOR_REGISTRY.get('slash'), blipGenerator] as const)).not.toThrow()
@@ -64,7 +65,7 @@ describe('generator registry', () => {
   })
 
   it('registers the energy bloom family with independent defaults and seven presets', () => {
-    expect(bloomModule.definition.index).toBe(3)
+    expect(bloomModule.definition.index).toBe(7)
     expect(bloomModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
     expect(bloomModule.defaultParameters.body.shape).toBe('softPetals')
     expect(bloomModule.defaultParameters.tongues.enabled).toBe(false)
@@ -82,7 +83,7 @@ describe('generator registry', () => {
   })
 
   it('registers independent fireball, arrow, and crystal generators', () => {
-    expect(fireballModule.definition.index).toBe(4)
+    expect(fireballModule.definition.index).toBe(3)
     expect(fireballModule.defaultParameters.form).toBe('wrapped')
     expect(fireballModule.defaultParameters.wrapped.fireballBall).toBe('hot')
     expect(fireballModule.defaultPreviewFps).toBe(20)

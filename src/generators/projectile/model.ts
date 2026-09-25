@@ -200,6 +200,17 @@ export const DEFAULT_PROJECTILE_PARAMETERS: ProjectileParameters = {
   energyPalette: builtinPalette('flameGlow'),
 }
 
+/** Trailing spark settings; the fireball's other forms borrow them from the classic body. */
+export type SparkSettings = Pick<ProjectileParameters, 'sparksEnabled' | 'sparkCount' | 'sparkSpread' | 'sparkSpacing' | 'sparkFade'>
+
+export function assertValidSparkSettings(sparks: SparkSettings): void {
+  if (typeof sparks.sparksEnabled !== 'boolean') throw new RangeError('sparksEnabled must be a boolean.')
+  assertInRange(sparks.sparkCount, 0, MAX_SPARK_COUNT, 'sparkCount')
+  assertInRange(sparks.sparkSpread, 0, 1, 'sparkSpread')
+  assertInRange(sparks.sparkSpacing, 0, 1, 'sparkSpacing')
+  assertInRange(sparks.sparkFade, 0, 1, 'sparkFade')
+}
+
 /** Validates the complete projectile flight-loop parameter contract. */
 export function assertValidProjectileParameters(parameters: ProjectileParameters): void {
   assertInRange(parameters.canvasWidth, MIN_CANVAS_SIZE, MAX_CANVAS_SIZE, 'canvasWidth')
@@ -248,11 +259,7 @@ export function assertValidProjectileParameters(parameters: ProjectileParameters
   assertInRange(parameters.trailWidth, 1, parameters.radius, 'trailWidth')
   assertInRange(parameters.trailWave, 0, 1, 'trailWave')
   assertInRange(parameters.trailBreakup, 0, 1, 'trailBreakup')
-  if (typeof parameters.sparksEnabled !== 'boolean') throw new RangeError('sparksEnabled must be a boolean.')
-  assertInRange(parameters.sparkCount, 0, MAX_SPARK_COUNT, 'sparkCount')
-  assertInRange(parameters.sparkSpread, 0, 1, 'sparkSpread')
-  assertInRange(parameters.sparkSpacing, 0, 1, 'sparkSpacing')
-  assertInRange(parameters.sparkFade, 0, 1, 'sparkFade')
+  assertValidSparkSettings(parameters)
   if (typeof parameters.afterimagesEnabled !== 'boolean') throw new RangeError('afterimagesEnabled must be a boolean.')
   assertInRange(parameters.afterimageCount, 0, MAX_AFTERIMAGE_COUNT, 'afterimageCount')
   assertInRange(parameters.afterimageSpacing, 0, 1, 'afterimageSpacing')

@@ -163,11 +163,11 @@ function registrationsOf<Registrations extends readonly RegisteredGenerator<stri
 export const GENERATOR_REGISTRY = createGeneratorRegistry([
   slashGenerator,
   explosionGenerator,
-  bloomGenerator,
   fireballGenerator,
   flameGenerator,
   arrowGenerator,
   crystalGenerator,
+  bloomGenerator,
 ] as const)
 
 export type GeneratorId = (typeof GENERATOR_REGISTRY)['registrations'][number]['id']

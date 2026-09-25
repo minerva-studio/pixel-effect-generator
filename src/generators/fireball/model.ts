@@ -1,9 +1,9 @@
 import { assertInRange, assertValidColor, type RgbColor } from '../../shared/pixel/color'
 import type { FrameSize } from '../../shared/pixel/frame'
 import {
-  assertValidProjectileParameters, DEFAULT_PROJECTILE_PARAMETERS, MAX_CANVAS_SIZE,
+  assertValidProjectileParameters, assertValidSparkSettings, DEFAULT_PROJECTILE_PARAMETERS, MAX_CANVAS_SIZE,
   MAX_FRAME_COUNT, MAX_LOOP_CYCLES, MIN_CANVAS_SIZE, MIN_FRAME_COUNT,
-  projectileFrameLimits, resizeProjectileCanvas, type ProjectileParameters,
+  projectileFrameLimits, resizeProjectileCanvas, type ProjectileParameters, type SparkSettings,
 } from '../projectile/model'
 import { DEFAULT_FIREBALL_PALETTE, type FireballTuning } from './canonical'
 import { DEFAULT_PUFF_TUNING, type PuffTuning } from './particleField'
@@ -48,6 +48,8 @@ export interface FireballParameters {
   readonly wrapped: FireballTuning
   readonly puff: PuffTuning
   readonly classic: ClassicFireballTuning
+  /** Classic trailing sparks for the stream, wrapped and puff forms; classic keeps its own. */
+  readonly sparks: SparkSettings
 }
 
 export const DEFAULT_FIREBALL_TUNING: FireballTuning = {
@@ -58,6 +60,15 @@ export const DEFAULT_FIREBALL_TUNING: FireballTuning = {
   fireballTrail: 'cooling',
   fireballRibbons: 3,
   fireballBall: 'hot',
+}
+
+/** Classic's spark look, switched off until the user opts in. */
+export const DEFAULT_FIREBALL_SPARKS: SparkSettings = {
+  sparksEnabled: false,
+  sparkCount: DEFAULT_PROJECTILE_PARAMETERS.sparkCount,
+  sparkSpread: DEFAULT_PROJECTILE_PARAMETERS.sparkSpread,
+  sparkSpacing: DEFAULT_PROJECTILE_PARAMETERS.sparkSpacing,
+  sparkFade: DEFAULT_PROJECTILE_PARAMETERS.sparkFade,
 }
 
 export const DEFAULT_FIREBALL_PARAMETERS: FireballParameters = {
@@ -75,6 +86,7 @@ export const DEFAULT_FIREBALL_PARAMETERS: FireballParameters = {
   wrapped: { ...DEFAULT_FIREBALL_TUNING },
   puff: { ...DEFAULT_PUFF_TUNING },
   classic: classicFireballTuning(DEFAULT_PROJECTILE_PARAMETERS),
+  sparks: DEFAULT_FIREBALL_SPARKS,
 }
 
 /** Projects shared fireball settings into the classic drawing algorithm. */
@@ -146,5 +158,7 @@ export function assertValidFireballParameters(parameters: FireballParameters): v
   assertInRange(parameters.puff.trailLength, 0, 1, 'trailLength')
   assertInRange(parameters.puff.billow, 0, 1, 'billow')
   if (typeof parameters.puff.smoke !== 'boolean') throw new RangeError('puff.smoke must be a boolean.')
+  assertValidSparkSettings(parameters.sparks)
+  if (!Number.isInteger(parameters.sparks.sparkCount)) throw new RangeError('sparkCount must be an integer.')
   assertValidProjectileParameters(classicProjectileParameters(parameters))
 }

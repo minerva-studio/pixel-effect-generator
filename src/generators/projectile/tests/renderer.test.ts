@@ -61,10 +61,12 @@ describe('renderProjectileFrames', () => {
     const withTrail = renderProjectileFrames(base)
     const noTrail = renderProjectileFrames({ ...base, trailMode: 'off' })
     const noSparks = renderProjectileFrames({ ...base, sparksEnabled: false })
-    const noAfterimages = renderProjectileFrames({ ...base, afterimagesEnabled: false })
+    const afterimageBase = { ...base, trailMode: 'off' as const }
+    const withAfterimages = renderProjectileFrames(afterimageBase)
+    const noAfterimages = renderProjectileFrames({ ...afterimageBase, afterimagesEnabled: false })
     expect(frameBytes(withTrail)).not.toEqual(frameBytes(noTrail))
     expect(frameBytes(withTrail)).not.toEqual(frameBytes(noSparks))
-    expect(frameBytes(withTrail)).not.toEqual(frameBytes(noAfterimages))
+    expect(frameBytes(withAfterimages)).not.toEqual(frameBytes(noAfterimages))
   })
 
   it('produces non-empty, distinct outputs for every projectile family', () => {
@@ -274,7 +276,7 @@ describe('renderProjectileFrames', () => {
     }
   })
 
-  it('uses a continuous fireball comet root and delays breakup until the tail leaves the body', () => {
+  it('keeps the fireball root stable while the far tail sheds into masses', () => {
     const base = {
       ...DEFAULT_PROJECTILE_PARAMETERS,
       kind: 'fireball' as const,
@@ -295,9 +297,6 @@ describe('renderProjectileFrames', () => {
     const tailMinX = minOccupiedX(frame)
     const bodyMinX = minOccupiedX(bodyOnly)
 
-    for (let x = tailMinX; x <= bodyMinX; x += 1) {
-      expect(columnOccupied(frame, x), `tail column ${x} is disconnected`).toBe(true)
-    }
     for (let x = rootX - 1; x <= bodyMinX; x += 1) {
       for (let y = 0; y < frame.height; y += 1) {
         const offset = (y * frame.width + x) * 4
@@ -314,6 +313,9 @@ describe('renderProjectileFrames', () => {
       }
     }
     expect(distantDifference).toBeGreaterThan(0)
+    // Masses pinch off continuously, so separation shows over the loop rather than on every frame.
+    const components = Array.from({ length: 12 }, (_, index) => componentCount(renderProjectileFrame(base, index / 12)))
+    expect(Math.max(...components)).toBeGreaterThan(1)
   })
 
   it('tapers the trail from a wide joint to a narrow far end', () => {
@@ -408,6 +410,31 @@ function columnCount(frame: PixelFrame, x: number): number {
   for (let y = 0; y < frame.height; y += 1) {
     if (frame.pixels[(y * frame.width + x) * 4 + 3] !== 0) {
       count += 1
+    }
+  }
+  return count
+}
+
+function componentCount(frame: PixelFrame): number {
+  const visited = new Set<number>()
+  let count = 0
+  for (let start = 0; start < frame.width * frame.height; start++) {
+    if (visited.has(start) || frame.pixels[start * 4 + 3] === 0) continue
+    count++
+    const pending = [start]
+    visited.add(start)
+    while (pending.length > 0) {
+      const pixel = pending.pop()!
+      const x = pixel % frame.width
+      const y = Math.floor(pixel / frame.width)
+      for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        if (nx < 0 || nx >= frame.width || ny < 0 || ny >= frame.height) continue
+        const next = ny * frame.width + nx
+        if (!visited.has(next) && frame.pixels[next * 4 + 3] > 0) {
+          visited.add(next)
+          pending.push(next)
+        }
+      }
     }
   }
   return count

@@ -22,6 +22,7 @@ import {
   MIN_ENERGY_PALETTE_SIZE,
   projectileFrameLimits,
   type ProjectileParameters,
+  type SparkSettings,
 } from './model'
 import type { ProjectileCategory } from './module'
 import { renderProjectileFrames } from './renderer'
@@ -132,20 +133,7 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
     case 'effects':
       return (
         <div className="control-list">
-          <ToggleControl
-            label={t('projectile.controls.sparks.label')}
-            description={t('projectile.controls.sparks.description')}
-            checked={parameters.sparksEnabled}
-            onChange={(value) => update('sparksEnabled', value)}
-          />
-          {parameters.sparksEnabled ? (
-            <>
-              <NumberControl label={t('projectile.controls.sparkCount.label')} description={t('projectile.controls.sparkCount.description')} value={parameters.sparkCount} minimum={0} maximum={MAX_SPARK_COUNT} onChange={(value) => update('sparkCount', value)} />
-              <NumberControl label={t('projectile.controls.sparkSpread.label')} description={t('projectile.controls.sparkSpread.description')} value={parameters.sparkSpread} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sparkSpread', value)} />
-              <NumberControl label={t('projectile.controls.sparkSpacing.label')} description={t('projectile.controls.sparkSpacing.description')} value={parameters.sparkSpacing} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sparkSpacing', value)} />
-              <NumberControl label={t('projectile.controls.sparkFade.label')} description={t('projectile.controls.sparkFade.description')} value={parameters.sparkFade} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sparkFade', value)} />
-            </>
-          ) : null}
+          <SparkControls sparks={parameters} onChange={(sparks) => onChange({ ...parameters, ...sparks })} />
           <ToggleControl
             label={t('projectile.controls.afterimages.label')}
             description={t('projectile.controls.afterimages.description')}
@@ -273,6 +261,30 @@ export function ProjectilePreviewTools({ parameters, onChange, onResize }: Omit<
       seedDescription={t('projectile.controls.randomSeed.description')}
       seedRandomizeLabel={t('projectile.seed.randomize')}
     />
+  )
+}
+
+/** Spark toggle and tuning; the fireball's other forms reuse it for their borrowed sparks. */
+export function SparkControls({ sparks, onChange }: { readonly sparks: SparkSettings; readonly onChange: (sparks: SparkSettings) => void }) {
+  const { t } = useI18n()
+  const update = <Key extends keyof SparkSettings>(key: Key, value: SparkSettings[Key]) => onChange({ ...sparks, [key]: value })
+  return (
+    <>
+      <ToggleControl
+        label={t('projectile.controls.sparks.label')}
+        description={t('projectile.controls.sparks.description')}
+        checked={sparks.sparksEnabled}
+        onChange={(value) => update('sparksEnabled', value)}
+      />
+      {sparks.sparksEnabled ? (
+        <>
+          <NumberControl label={t('projectile.controls.sparkCount.label')} description={t('projectile.controls.sparkCount.description')} value={sparks.sparkCount} minimum={0} maximum={MAX_SPARK_COUNT} onChange={(value) => update('sparkCount', value)} />
+          <NumberControl label={t('projectile.controls.sparkSpread.label')} description={t('projectile.controls.sparkSpread.description')} value={sparks.sparkSpread} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sparkSpread', value)} />
+          <NumberControl label={t('projectile.controls.sparkSpacing.label')} description={t('projectile.controls.sparkSpacing.description')} value={sparks.sparkSpacing} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sparkSpacing', value)} />
+          <NumberControl label={t('projectile.controls.sparkFade.label')} description={t('projectile.controls.sparkFade.description')} value={sparks.sparkFade} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sparkFade', value)} />
+        </>
+      ) : null}
+    </>
   )
 }
 

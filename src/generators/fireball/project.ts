@@ -1,6 +1,6 @@
 import { isPlainRecord } from '../../shared/project/document'
 import type { GeneratorProjectCodec, JsonValue } from '../../shared/project/types'
-import { assertValidFireballParameters, classicFireballTuning, type ClassicFireballTuning, type FireballParameters } from './model'
+import { assertValidFireballParameters, classicFireballTuning, DEFAULT_FIREBALL_SPARKS, type ClassicFireballTuning, type FireballParameters } from './model'
 
 /** Reads the standalone fireball document without accepting a legacy projectile body. */
 export function parseFireballParameters(value: unknown): FireballParameters {
@@ -12,6 +12,8 @@ export function parseFireballParameters(value: unknown): FireballParameters {
   const parameters = {
     ...value,
     classic: classicFireballTuning(value.classic as unknown as ClassicFireballTuning),
+    // Documents saved before the other forms could borrow sparks keep them off.
+    sparks: isPlainRecord(value.sparks) ? value.sparks : DEFAULT_FIREBALL_SPARKS,
   } as unknown as FireballParameters
   assertValidFireballParameters(parameters)
   return parameters

@@ -4,7 +4,7 @@ import { GeneratorPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
 import { hexToRgb, rgbaToHex, type RgbColor } from '../../shared/pixel/color'
 import type { FrameSize } from '../../shared/pixel/frame'
-import { ProjectileControls } from '../projectile/controls'
+import { ProjectileControls, SparkControls } from '../projectile/controls'
 import { MAX_CANVAS_SIZE, MAX_LOOP_CYCLES, MIN_CANVAS_SIZE, type ProjectileParameters } from '../projectile/model'
 import type { ProjectileCategory } from '../projectile/module'
 import { ShapeCardGrid, type ShapeCardOption } from '../shared-effects/controls'
@@ -113,6 +113,7 @@ export function FireballControls({ category, parameters, onChange }: Props) {
     {parameters.form === 'puff' && <label className="parameter-field"><span>{c.smoke}</span>
       <input type="checkbox" checked={parameters.puff.smoke} onChange={event => update('puff', { ...parameters.puff, smoke: event.target.checked })} />
     </label>}
+    <SparkControls sparks={parameters.sparks} onChange={sparks => update('sparks', sparks)} />
   </div>
   return <div className="control-list">
     <PaletteRows label={c.warm} colors={parameters.warmPalette} onChange={colors => update('warmPalette', colors)} />

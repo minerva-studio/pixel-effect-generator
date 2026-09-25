@@ -1,7 +1,7 @@
 import type { PixelFrame } from '../../shared/pixel/frame'
 import type { RgbColor } from '../../shared/pixel/color'
 import { clamp01, hashUnit } from '../../shared/pixel/rng'
-import { assertValidProjectileParameters, type ProjectileParameters } from './model'
+import { assertValidProjectileParameters, type ProjectileParameters, type SparkSettings } from './model'
 
 /** Renders every frame of the in-place flight loop, sampling [0, 1). */
 export function renderProjectileFrames(parameters: ProjectileParameters): PixelFrame[] {
@@ -34,7 +34,7 @@ export function renderProjectileFrame(parameters: ProjectileParameters, cycleTim
   drawAfterimages(pixels, width, height, parameters, centerX, centerY, cosine, sine, wrappedTime, phase)
   if (parameters.trailMode !== 'off' && parameters.trailLength > 0) {
     if (parameters.kind === 'fireball' && parameters.trailMode === 'fire') {
-      drawFireballCometTrail(pixels, width, height, parameters, centerX, centerY, cosine, sine, phase, bodyRadius, bodyLength)
+      drawFireballCometTrail(pixels, width, height, parameters, centerX, centerY, cosine, sine, wrappedTime, phase, bodyRadius, bodyLength)
     } else {
       drawTrail(pixels, width, height, parameters, centerX, centerY, cosine, sine, rearX, phase)
     }
@@ -60,9 +60,8 @@ export function renderProjectileFrame(parameters: ProjectileParameters, cycleTim
 }
 
 /**
- * Draws one continuous comet profile for fireballs. The root begins inside
- * the rear body, uses the body's own cross-section, and delays wave/breakup
- * until the profile has visibly left the body.
+ * Draws a field-based fire tongue rooted inside the body, where its own
+ * cross-section feeds the wake before the tongue pinches into flame masses.
  */
 function drawFireballCometTrail(
   pixels: Uint8ClampedArray,
@@ -73,6 +72,7 @@ function drawFireballCometTrail(
   centerY: number,
   cosine: number,
   sine: number,
+  cycleTime: number,
   phase: number,
   radius: number,
   bodyLength: number,
@@ -83,37 +83,105 @@ function drawFireballCometTrail(
   const length = Math.max(1, parameters.trailLength * radius * 5)
   const rootHalfWidth = fireballHalfWidthAt(rootX, radius, frontHalfLength, rearHalfLength, parameters, phase)
   const palette = parameters.energyPalette
+  const trailPixels = new Uint8ClampedArray(width * height * 4)
+  const bounds = rotatedBounds(width, height, centerX, centerY, cosine, sine, rootX - length - 5, rootX + 1, rootHalfWidth + 2)
+  const breakup = parameters.trailBreakup
+  const neckProgress = 0.68 - breakup * breakup * 0.24
+  const massCount = breakup === 0 ? 0 : Math.round(1 + breakup * 2)
+  const birthHalfWidth = rootHalfWidth * (1 - neckProgress) ** 0.78
+  // Each mass spans a little under half its spacing, so gaps open once the masses separate.
+  const massSpacing = (1 - neckProgress) * length / Math.max(1, massCount)
+  const seedPhase = hashUnit(parameters.seed, 3, 9) * Math.PI * 2
+  // Masses leave the neck slowly and then accelerate, so the newest one is still necked to the
+  // tongue while older ones have separated. They shrink and cool, and drop out before they
+  // could thin into specks.
+  const masses = Array.from({ length: massCount }, (_, index) => {
+    const age = fract(cycleTime * parameters.loopCycles + index / massCount)
+    const progress = neckProgress + (1 - neckProgress) * age ** 0.8
+    // The field threshold trims a lone mass to ~0.69 of its kernel radius; sizes are visible sizes.
+    const halfLength = massSpacing * 0.8 * (1 - 0.35 * age) * (0.9 + 0.2 * hashUnit(parameters.seed, index, 41))
+    const halfWidth = Math.min(birthHalfWidth * 1.45, halfLength * 0.85)
+    const weight = 1 - smoothStep(0.72, 1, age)
+    const visible = halfWidth * Math.sqrt(Math.max(0, 1 - Math.sqrt(0.28 / Math.max(weight, 0.28))))
+    return {
+      age,
+      x: rootX - progress * length,
+      y: fireballTrailWave(progress, phase, radius, parameters)
+        + (hashUnit(parameters.seed, index, 42) - 0.5) * rootHalfWidth * breakup * 0.45 * Math.sin(age * Math.PI),
+      halfLength,
+      halfWidth,
+      // A fresh tear exposes an orange core that cools as the mass drifts back.
+      heat: Math.max(1 - 0.78 * smoothStep(0.02, 0.76, progress), 0.62) * (1 - 0.4 * age),
+      spin: hashUnit(parameters.seed, index, 43) * Math.PI * 2 + age * (index % 2 === 0 ? 2.4 : -2.4),
+      weight: visible < 1.5 ? 0 : weight,
+    }
+  })
 
-  for (let localX = Math.floor(rootX - length); localX <= Math.ceil(rootX); localX += 1) {
+  for (let y = bounds.minY; y <= bounds.maxY; y++) for (let x = bounds.minX; x <= bounds.maxX; x++) {
+    const dx = x - centerX
+    const dy = y - centerY
+    const localX = dx * cosine + dy * sine
+    const localY = -dx * sine + dy * cosine
     const distance = rootX - localX
+    if (distance < 0) continue
     const progress = clamp01(distance / length)
-    const taper = (1 - progress) ** 0.78
-    const waveProgress = smoothStep(0.04, 0.34, progress)
-    const wave = parameters.trailWave * radius * 0.42
-      * waveProgress
-      * (0.72 * Math.sin(phase * 1.15 - progress * Math.PI * 3)
-        + 0.28 * Math.sin(phase * 1.9 + progress * Math.PI * 6))
-    const halfWidth = Math.max(1, rootHalfWidth * taper)
-    for (let offset = Math.floor(wave - halfWidth); offset <= Math.ceil(wave + halfWidth); offset += 1) {
-      const cross = Math.abs(offset - wave) / Math.max(1, halfWidth)
-      if (cross > 1) continue
-      const breakupProgress = smoothStep(0.16, 0.62, progress)
-      const breakupSignal = 0.5 + 0.5 * Math.sin(localX * 1.31 + offset * 2.07 - phase * 2.2 + parameters.seed * 0.001)
-      const breakupThreshold = parameters.trailBreakup * breakupProgress * (0.35 + 0.65 * cross)
-      if (breakupSignal < breakupThreshold) continue
-      const colorDepth = clamp01(progress * 0.82 + cross * 0.34)
-      writeRotated(
-        pixels,
-        width,
-        height,
-        centerX,
-        centerY,
-        cosine,
-        sine,
-        localX,
-        offset,
-        paletteColor(palette, colorDepth),
-      )
+    const centerWave = fireballTrailWave(progress, phase, radius, parameters)
+    const baseHalfWidth = rootHalfWidth * (1 - progress) ** 0.78
+    const give = Math.min(1, baseHalfWidth / 7)
+    const side = localY < centerWave ? 0 : 1.9
+    const edgeWave = fireballTrailContour(localX, localY, progress, phase, side, seedPhase, baseHalfWidth, give, parameters)
+    const halfWidth = Math.max(0.65, baseHalfWidth * (1 + 0.03 * Math.sin(phase + seedPhase)) + edgeWave)
+    const cross = (localY - centerWave) / halfWidth
+    const tongueStrength = Math.max(0, 1 - cross * cross)
+    const pinchLength = 0.3 - breakup * 0.14
+    const tongueWeight = 1 - breakup
+      * smoothStep(neckProgress + 0.02, Math.min(1, neckProgress + pinchLength), progress)
+    const tipFade = 1 - smoothStep(0.997, 1, progress)
+    let field = tongueStrength * tongueWeight * tipFade
+    let massHeat = 0
+
+    for (const mass of masses) {
+      if (mass.weight <= 0) continue
+      const dxMass = (localX - mass.x) / mass.halfLength
+      const dyMass = (localY - mass.y) / mass.halfWidth
+      let radiusSquared = dxMass * dxMass + dyMass * dyMass
+      if (radiusSquared >= 2.2) continue
+      // Lobes are carried in the mass's own frame, so the lumps roll with the material.
+      const angle = Math.atan2(dyMass, dxMass) + mass.spin
+      const lobes = 1 + 0.2 * (0.6 * Math.sin(angle * 3) + 0.4 * Math.sin(angle * 5 + 1.7))
+      radiusSquared /= lobes * lobes
+      if (radiusSquared >= 1) continue
+      const massField = (1 - radiusSquared) ** 2 * mass.weight
+      field += massField
+      massHeat = Math.max(massHeat, mass.heat * Math.sqrt(Math.min(1, massField)))
+    }
+
+    if (field < 0.28) continue
+    const edgeHeat = clamp01((field - 0.28) / 0.72) ** 2.5
+    const rootHeat = 1 - 0.78 * smoothStep(0.02, 0.76, progress)
+    const coreHeat = 0.82 + 0.18 * clamp01(field)
+    const heatFlow = 0.1 * Math.sin(localX * 0.23 + phase * 2 - progress * 3.1 + seedPhase + cross * 1.4)
+      + 0.045 * Math.sin(localX * 0.42 - phase * 3 + progress * 4 + cross * 2.3 - seedPhase)
+    const heat = edgeHeat * clamp01(Math.max(rootHeat, massHeat) + heatFlow) * coreHeat
+    const colorDepth = 1 - heat
+    writePixel(trailPixels, width, x, y, paletteColor(palette, colorDepth))
+  }
+
+  cleanFireTrail(trailPixels, width, bounds)
+  const rim = lastColor(palette)
+  for (let y = bounds.minY; y <= bounds.maxY; y++) for (let x = bounds.minX; x <= bounds.maxX; x++) {
+    const offset = (y * width + x) * 4
+    if (trailPixels[offset + 3] === 0) continue
+    const top = y > 0 && trailPixels[offset - width * 4 + 3] > 0
+    const bottom = y + 1 < height && trailPixels[offset + width * 4 + 3] > 0
+    const left = x > 0 && trailPixels[offset - 4 + 3] > 0
+    const right = x + 1 < width && trailPixels[offset + 4 + 3] > 0
+    if (!(top && bottom && left && right)) writePixel(trailPixels, width, x, y, rim)
+    if (trailPixels[offset + 3] > 0) {
+      pixels[offset] = trailPixels[offset]
+      pixels[offset + 1] = trailPixels[offset + 1]
+      pixels[offset + 2] = trailPixels[offset + 2]
+      pixels[offset + 3] = 255
     }
   }
 }
@@ -255,21 +323,43 @@ function drawSparks(
   const trailDistance = parameters.trailMode === 'off'
     ? parameters.radius * (2 + parameters.sparkSpacing * 3)
     : Math.max(parameters.radius * 2, parameters.trailLength * parameters.radius * 5)
-  for (let index = 0; index < parameters.sparkCount; index += 1) {
-    const age = fract(cycleTime * parameters.loopCycles + hashUnit(parameters.seed, index, 41))
-    if (age > 1 - parameters.sparkFade * 0.45) continue
-    const distance = rearX - age * trailDistance * (0.55 + 0.45 * parameters.sparkSpacing)
-    const side = hashUnit(parameters.seed, index, 42) < 0.5 ? -1 : 1
-    const spread = side * parameters.sparkSpread * parameters.radius * (0.2 + age * 1.15)
-      + Math.sin(phase + index * 2.39) * parameters.sparkSpread * 1.5
-    const size = age < 0.28 && hashUnit(parameters.seed, index, 43) > 0.45 ? 2 : 1
-    const color = parameters.energyPalette[Math.min(parameters.energyPalette.length - 1, age < 0.45 ? 0 : 1)]
-    for (let dx = 0; dx < size; dx += 1) {
-      for (let dy = 0; dy < size; dy += 1) {
-        writeRotated(pixels, width, height, centerX, centerY, cosine, sine, distance - dx, spread + dy, color)
+  for (const spark of sparkParticles(parameters, parameters.seed, parameters.loopCycles, parameters.radius, rearX, trailDistance, cycleTime, phase)) {
+    const color = parameters.energyPalette[Math.min(parameters.energyPalette.length - 1, spark.hot ? 0 : 1)]
+    for (let dx = 0; dx < spark.size; dx += 1) {
+      for (let dy = 0; dy < spark.size; dy += 1) {
+        writeRotated(pixels, width, height, centerX, centerY, cosine, sine, spark.x - dx, spark.y + dy, color)
       }
     }
   }
+}
+
+/**
+ * Deterministic spark positions in body-local coordinates (x forward, y across), streaming back
+ * from `rearX` over `trailDistance`. Shared with the fireball forms that borrow classic sparks.
+ */
+export function sparkParticles(
+  sparks: SparkSettings,
+  seed: number,
+  loopCycles: number,
+  radius: number,
+  rearX: number,
+  trailDistance: number,
+  cycleTime: number,
+  phase: number,
+): { x: number; y: number; size: number; hot: boolean }[] {
+  const particles = []
+  for (let index = 0; index < sparks.sparkCount; index += 1) {
+    const age = fract(cycleTime * loopCycles + hashUnit(seed, index, 41))
+    if (age > 1 - sparks.sparkFade * 0.45) continue
+    const side = hashUnit(seed, index, 42) < 0.5 ? -1 : 1
+    particles.push({
+      x: rearX - age * trailDistance * (0.55 + 0.45 * sparks.sparkSpacing),
+      y: side * sparks.sparkSpread * radius * (0.2 + age * 1.15) + Math.sin(phase + index * 2.39) * sparks.sparkSpread * 1.5,
+      size: age < 0.28 && hashUnit(seed, index, 43) > 0.45 ? 2 : 1,
+      hot: age < 0.45,
+    })
+  }
+  return particles
 }
 
 /** Draws the selected directional body and its material treatment. */
@@ -325,28 +415,30 @@ function drawFireball(
   const rearHalfLength = frontHalfLength * (1 + parameters.fireRearExtension * 0.45)
   const rear = -rearHalfLength
   const front = frontHalfLength
-  for (let localX = Math.floor(rear - 2); localX <= Math.ceil(front + 2); localX += 1) {
+  const bounds = rotatedBounds(width, height, centerX, centerY, cosine, sine, rear - 2, front + 2, radius + 2)
+  for (let y = bounds.minY; y <= bounds.maxY; y++) for (let x = bounds.minX; x <= bounds.maxX; x++) {
+    const dx = x - centerX
+    const dy = y - centerY
+    const localX = Math.round(dx * cosine + dy * sine)
+    const localY = Math.round(-dx * sine + dy * cosine)
     const normalizedX = localX / (localX < 0 ? rearHalfLength : frontHalfLength)
     if (Math.abs(normalizedX) > 1) continue
     const rearBias = clamp01(-normalizedX)
     const halfWidth = fireballHalfWidthAt(localX, radius, frontHalfLength, rearHalfLength, parameters, phase)
-    for (let localY = Math.floor(-halfWidth); localY <= Math.ceil(halfWidth); localY += 1) {
-      // The shared cross-section is the body boundary as well as the tail root.
-      // Keeping this normalization here prevents a second ellipse from smoothing
-      // away the deliberately turbulent rear contour.
-      const crossSection = Math.abs(localY) / Math.max(1, halfWidth)
-      if (crossSection > 1) continue
-      const radial = Math.hypot(normalizedX, localY / Math.max(1, radius))
-      const swirl = 0.5 + 0.5 * Math.sin(localY * 0.72 - localX * 0.43 + phase * 2.2 * parameters.fireFlowSpeed)
-      const flicker = 0.5 + 0.5 * Math.sin(localY * 1.37 + localX * 0.29 - phase * 1.4 * parameters.fireFlowSpeed)
-      const depth = clamp01(
-        radial * 0.68
-        + rearBias * 0.18
-        + (swirl * 0.13 + flicker * 0.07) * parameters.silhouetteVariation,
-      )
-      const mottleDepth = fireballMottleDepth(depth, radial, rearBias, localX, localY, parameters, phase, palette.length)
-      writeRotated(pixels, width, height, centerX, centerY, cosine, sine, localX, localY, paletteColor(palette, mottleDepth))
-    }
+    // The shared cross-section is the body boundary as well as the tail root.
+    // Keeping this normalization here preserves the deliberately turbulent contour.
+    const crossSection = Math.abs(localY) / Math.max(1, halfWidth)
+    if (crossSection > 1) continue
+    const radial = Math.hypot(normalizedX, localY / Math.max(1, radius))
+    const swirl = 0.5 + 0.5 * Math.sin(localY * 0.72 - localX * 0.43 + phase * 2.2 * parameters.fireFlowSpeed)
+    const flicker = 0.5 + 0.5 * Math.sin(localY * 1.37 + localX * 0.29 - phase * 1.4 * parameters.fireFlowSpeed)
+    const depth = clamp01(
+      radial * 0.68
+      + rearBias * 0.18
+      + (swirl * 0.13 + flicker * 0.07) * parameters.silhouetteVariation,
+    )
+    const mottleDepth = fireballMottleDepth(depth, radial, rearBias, localX, localY, parameters, phase, palette.length)
+    writePixel(pixels, width, x, y, paletteColor(palette, mottleDepth))
   }
 }
 
@@ -397,6 +489,141 @@ function fireballMottleDepth(
 function smoothStep(edge0: number, edge1: number, value: number): number {
   const normalized = clamp01((value - edge0) / (edge1 - edge0))
   return normalized * normalized * (3 - 2 * normalized)
+}
+
+function fireballTrailWave(progress: number, phase: number, radius: number, parameters: ProjectileParameters): number {
+  const lift = smoothStep(0.04, 0.34, progress)
+  const offset = hashUnit(parameters.seed, 3, 9) * Math.PI * 2
+  const transport = phase * 2 - progress * Math.PI * 3 + offset
+  return parameters.trailWave * radius * 0.55 * lift
+    * (0.72 * Math.sin(transport) + 0.28 * Math.sin(phase * 3 - progress * Math.PI * 6 + offset))
+}
+
+function fireballTrailContour(
+  localX: number,
+  localY: number,
+  progress: number,
+  phase: number,
+  side: number,
+  seedPhase: number,
+  halfWidth: number,
+  give: number,
+  parameters: ProjectileParameters,
+  strength = 1,
+): number {
+  const transport = localX * 0.33 + phase * 2 - progress * 2.4 + seedPhase
+  const amplitude = Math.min(halfWidth * 0.62,
+    parameters.fireRearTurbulence * give * (1.1 + 4.3 * progress))
+  return strength * amplitude * (Math.sin(transport + side)
+    + 0.45 * Math.sin(localX * 0.71 - localY * 0.2 + phase * 3 - seedPhase + side * 1.7))
+}
+
+function rotatedBounds(
+  width: number,
+  height: number,
+  centerX: number,
+  centerY: number,
+  cosine: number,
+  sine: number,
+  minLocalX: number,
+  maxLocalX: number,
+  halfLocalY: number,
+): { minX: number; maxX: number; minY: number; maxY: number } {
+  const corners = [
+    [minLocalX, -halfLocalY], [minLocalX, halfLocalY],
+    [maxLocalX, -halfLocalY], [maxLocalX, halfLocalY],
+  ].map(([localX, localY]) => [
+    centerX + localX * cosine - localY * sine,
+    centerY + localX * sine + localY * cosine,
+  ])
+  return {
+    minX: Math.max(0, Math.floor(Math.min(...corners.map(([x]) => x)) - 1)),
+    maxX: Math.min(width - 1, Math.ceil(Math.max(...corners.map(([x]) => x)) + 1)),
+    minY: Math.max(0, Math.floor(Math.min(...corners.map(([, y]) => y)) - 1)),
+    maxY: Math.min(height - 1, Math.ceil(Math.max(...corners.map(([, y]) => y)) + 1)),
+  }
+}
+
+function writePixel(pixels: Uint8ClampedArray, width: number, x: number, y: number, color: RgbColor): void {
+  const offset = (y * width + x) * 4
+  pixels[offset] = color.r
+  pixels[offset + 1] = color.g
+  pixels[offset + 2] = color.b
+  pixels[offset + 3] = 255
+}
+
+function cleanFireTrail(
+  pixels: Uint8ClampedArray,
+  width: number,
+  bounds: { minX: number; maxX: number; minY: number; maxY: number },
+): void {
+  const regionWidth = bounds.maxX - bounds.minX + 1
+  const regionHeight = bounds.maxY - bounds.minY + 1
+  const alpha = new Uint8Array(regionWidth * regionHeight)
+  for (let y = 0; y < regionHeight; y++) for (let x = 0; x < regionWidth; x++) {
+    alpha[y * regionWidth + x] = pixels[((bounds.minY + y) * width + bounds.minX + x) * 4 + 3]
+  }
+
+  for (let y = 0; y < regionHeight; y++) for (let x = 0; x < regionWidth; x++) {
+    const index = y * regionWidth + x
+    if (alpha[index] === 0) continue
+    const neighbors = (x > 0 && alpha[index - 1] > 0)
+      || (x + 1 < regionWidth && alpha[index + 1] > 0)
+      || (y > 0 && alpha[index - regionWidth] > 0)
+      || (y + 1 < regionHeight && alpha[index + regionWidth] > 0)
+    if (!neighbors) {
+      alpha[index] = 0
+      pixels[((bounds.minY + y) * width + bounds.minX + x) * 4 + 3] = 0
+    }
+  }
+
+  const visited = new Uint8Array(alpha.length)
+  const queue = new Int32Array(alpha.length)
+  for (let start = 0; start < alpha.length; start++) {
+    if (alpha[start] === 0 || visited[start] > 0) continue
+    let head = 0
+    let tail = 0
+    queue[tail++] = start
+    visited[start] = 1
+    while (head < tail) {
+      const index = queue[head++]
+      const x = index % regionWidth
+      const y = Math.floor(index / regionWidth)
+      if (x > 0 && alpha[index - 1] > 0 && visited[index - 1] === 0) {
+        visited[index - 1] = 1
+        queue[tail++] = index - 1
+      }
+      if (x + 1 < regionWidth && alpha[index + 1] > 0 && visited[index + 1] === 0) {
+        visited[index + 1] = 1
+        queue[tail++] = index + 1
+      }
+      if (y > 0 && alpha[index - regionWidth] > 0 && visited[index - regionWidth] === 0) {
+        visited[index - regionWidth] = 1
+        queue[tail++] = index - regionWidth
+      }
+      if (y + 1 < regionHeight && alpha[index + regionWidth] > 0 && visited[index + regionWidth] === 0) {
+        visited[index + regionWidth] = 1
+        queue[tail++] = index + regionWidth
+      }
+    }
+    if (tail < 5) for (let index = 0; index < tail; index++) {
+      const pixel = queue[index]
+      alpha[pixel] = 0
+      pixels[((bounds.minY + Math.floor(pixel / regionWidth)) * width + bounds.minX + pixel % regionWidth) * 4 + 3] = 0
+    }
+  }
+
+  for (let y = 1; y < regionHeight - 1; y++) for (let x = 1; x < regionWidth - 1; x++) {
+    const index = y * regionWidth + x
+    if (alpha[index] > 0 || alpha[index - 1] === 0 || alpha[index + 1] === 0
+      || alpha[index - regionWidth] === 0 || alpha[index + regionWidth] === 0) continue
+    const target = ((bounds.minY + y) * width + bounds.minX + x) * 4
+    const source = target - 4
+    pixels[target] = pixels[source]
+    pixels[target + 1] = pixels[source + 1]
+    pixels[target + 2] = pixels[source + 2]
+    pixels[target + 3] = 255
+  }
 }
 
 /** Draws an arrow with separately readable fletching, shaft, and head geometry. */

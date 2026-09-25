@@ -70,5 +70,5 @@ export function createSplitProjectileGenerator<Id extends 'arrow' | 'crystal'>(
   return registerGenerator(module, createGeneratorWorkspace)
 }
 
-export const arrowGenerator = createSplitProjectileGenerator('arrow', 6, 'Arrow', 'Solid and energy arrow flight loops.')
-export const crystalGenerator = createSplitProjectileGenerator('crystal', 7, 'Crystal', 'Faceted crystal projectile loops.')
+export const arrowGenerator = createSplitProjectileGenerator('arrow', 5, 'Arrow', 'Solid and energy arrow flight loops.')
+export const crystalGenerator = createSplitProjectileGenerator('crystal', 6, 'Crystal', 'Faceted crystal projectile loops.')

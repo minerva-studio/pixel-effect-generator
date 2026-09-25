@@ -8,7 +8,7 @@ import { renderFlameFrames } from './renderer'
 
 export type FlameCategory = 'shape' | 'motion' | 'details' | 'palette'
 export const flameModule = defineGenerator({
-  definition: { id: 'flame', index: 5, name: 'Flame', description: 'Seamless candle, torch, and campfire loops.' },
+  definition: { id: 'flame', index: 4, name: 'Flame', description: 'Seamless candle, torch, and campfire loops.' },
   categories: [
     { id: 'shape', label: 'Shape', description: 'Shape and size the flame.' },
     { id: 'motion', label: 'Motion', description: 'Control periodic burning and flow.' },
