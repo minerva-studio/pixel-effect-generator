@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ComponentType, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ComponentType, type ReactNode } from 'react'
 import type {
   GeneratorModule,
   GeneratorSession,
@@ -19,7 +19,7 @@ import type { PreviewZoom } from '../shared/preview/zoom'
 import { ExportPanel } from './ExportPanel'
 import type { FileOperationController } from './fileOperations'
 import { Preview } from './Preview'
-import { PresetBar } from './PresetBar'
+import { PresetBar, type PresetRestoreChange } from './PresetBar'
 import { ColorDock } from './ColorDock'
 import { usePreserveColors } from './preserveColors'
 import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
@@ -59,7 +59,6 @@ export function createProjectImportHandler<Id extends string, Parameters, Catego
 interface RegisteredWorkspaceProps {
   readonly session: RegisteredGeneratorSession<string>
   readonly onSessionAction: (action: RegisteredGeneratorAction<string>) => void
-  readonly onReset: () => void
   readonly unitySettings: UnityExportSettingsState
   readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
   readonly fileOperations: FileOperationController
@@ -81,7 +80,6 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
   const BoundWorkspace = ({
     session,
     onSessionAction,
-    onReset,
     unitySettings,
     onUnitySettingsChange,
     fileOperations,
@@ -90,6 +88,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
   }: RegisteredWorkspaceProps) => {
     const { t, locale } = useI18n()
     const [preserveColors, setPreserveColors] = usePreserveColors()
+    const [restoreChange, setRestoreChange] = useState<PresetRestoreChange | null>(null)
     const [previewZoom, setPreviewZoom] = useState<PreviewZoom>('fit')
     const [split, setSplit] = useState(40)
     const workspaceRef = useRef<HTMLElement>(null)
@@ -120,9 +119,12 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
     const parameterFrameSize = module.readFrameSize(typedSession.parameters)
     const frameWidth = firstFrame?.width ?? parameterFrameSize.width
     const frameHeight = firstFrame?.height ?? parameterFrameSize.height
-    const dispatchParameters = (parameters: Parameters) => {
-      dispatch(createRenderedParametersAction(module, parameters))
-    }
+    const dispatchParameters = useCallback((parameters: Parameters) => {
+      onSessionAction({
+        generatorId: module.definition.id,
+        action: createRenderedParametersAction(module, parameters) as GeneratorSessionAction<unknown, string>,
+      })
+    }, [module, onSessionAction])
     const resizeHandler = module.resize
     const onResize = resizeHandler
       ? (nextSize: { readonly width: number; readonly height: number }, scaleEffect: boolean) => {
@@ -153,6 +155,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
     const presetBar = module.presetCapability ? (
       <PresetBar
         capability={module.presetCapability}
+        defaultParameters={module.defaultParameters}
         paletteSlots={module.paletteSlots}
         preserveColors={preserveColors}
         generatorId={module.definition.id}
@@ -161,6 +164,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
         frameSize={{ width: frameWidth, height: frameHeight }}
         frameCount={frameCount}
         onApply={dispatchParameters}
+        onRestoreChange={setRestoreChange}
       />
     ) : undefined
 
@@ -178,7 +182,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           generatorName={generatorName}
           category={activeCategory}
           presetBar={presetBar}
-          onReset={onReset}
+          restoreChange={restoreChange}
           onParameters={dispatchParameters}
           onCategory={(nextCategory) => dispatch({ type: 'category', category: nextCategory })}
         />
@@ -249,7 +253,7 @@ function ControlsPanel<Parameters, Category extends string>({
   generatorName,
   category,
   presetBar,
-  onReset,
+  restoreChange,
   onParameters,
   onCategory,
 }: {
@@ -258,7 +262,7 @@ function ControlsPanel<Parameters, Category extends string>({
   readonly generatorName: string
   readonly category: { readonly id: Category; readonly label: string; readonly description: string }
   readonly presetBar?: ReactNode
-  readonly onReset: () => void
+  readonly restoreChange: PresetRestoreChange | null
   readonly onParameters: (parameters: Parameters) => void
   readonly onCategory: (category: Category) => void
 }) {
@@ -271,7 +275,7 @@ function ControlsPanel<Parameters, Category extends string>({
           <h2>{generatorName}</h2>
         </div>
         <div className="controls-heading-actions">
-          <button className="panel-action" type="button" onClick={onReset}>{t('workspace.reset')}</button>
+          {restoreChange ? <button className="panel-action" type="button" title={restoreChange.title} onClick={restoreChange.apply}>{restoreChange.label}</button> : null}
         </div>
       </div>
 

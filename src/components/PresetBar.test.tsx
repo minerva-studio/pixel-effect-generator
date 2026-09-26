@@ -10,8 +10,10 @@ import {
   payloadsEqual,
   PresetBar,
   PresetBarView,
+  createRestoreChange,
   presetPreviewKey,
   renderPresetFrames,
+  resolveRestoreTarget,
   resolveAppliedPresetBaseline,
   type PresetBarViewProps,
   type PresetPreviewCard,
@@ -80,6 +82,76 @@ describe('payloadsEqual', () => {
   it('compares captured payloads with stable key order', () => {
     expect(payloadsEqual({ radius: 44, direction: 'clockwise' }, { radius: 44, direction: 'clockwise' })).toBe(true)
     expect(payloadsEqual({ radius: 44 }, { radius: 45 })).toBe(false)
+  })
+})
+
+describe('preset restore target', () => {
+  const preset = slashPresetCapability.builtIns[0]
+
+  it('uses the last applied result before a matching preset or generator defaults', () => {
+    const applied = { radius: 22, seed: 100 } as never
+    const target = resolveRestoreTarget(
+      slashPresetCapability,
+      DEFAULT_SLASH_PARAMETERS,
+      { ...DEFAULT_SLASH_PARAMETERS, radius: 44 },
+      applied,
+      'My applied preset',
+      preset,
+    )
+
+    expect(target).toEqual({ payload: applied, presetName: 'My applied preset' })
+  })
+
+  it('captures a matching preset result when no preset has been applied', () => {
+    const parameters = slashPresetCapability.apply(DEFAULT_SLASH_PARAMETERS, preset.payload)
+    const target = resolveRestoreTarget(
+      slashPresetCapability,
+      parameters,
+      DEFAULT_SLASH_PARAMETERS,
+      undefined,
+      null,
+      preset,
+    )
+
+    expect(target.presetName).toBe(preset.name)
+    expect(payloadsEqual(target.payload, slashPresetCapability.capture(parameters))).toBe(true)
+  })
+
+  it('falls back to the generator defaults when no preset baseline exists', () => {
+    const target = resolveRestoreTarget(
+      slashPresetCapability,
+      { ...DEFAULT_SLASH_PARAMETERS, radius: 30 },
+      DEFAULT_SLASH_PARAMETERS,
+      undefined,
+      null,
+      null,
+    )
+
+    expect(target).toEqual({ payload: slashPresetCapability.capture(DEFAULT_SLASH_PARAMETERS), presetName: null })
+  })
+
+  it('reports only differences and restores preset fields while keeping seed and canvas settings', () => {
+    const current = { ...DEFAULT_SLASH_PARAMETERS, radius: 32, seed: 987, canvasWidth: 96, canvasHeight: 80, frameCount: 10 }
+    const onApply = vi.fn()
+    const baseline = slashPresetCapability.builtIns[0].payload
+    const change = createRestoreChange(
+      slashPresetCapability,
+      current,
+      baseline,
+      { label: 'Restore preset', title: 'Restore to Clean Arc' },
+      onApply,
+    )
+
+    expect(createRestoreChange(slashPresetCapability, slashPresetCapability.apply(current, baseline), baseline, { label: 'Restore preset', title: 'Restore to Clean Arc' }, onApply)).toBeNull()
+    expect(change).not.toBeNull()
+    change?.apply()
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({
+      radius: 44,
+      seed: current.seed,
+      canvasWidth: current.canvasWidth,
+      canvasHeight: current.canvasHeight,
+      frameCount: current.frameCount,
+    }))
   })
 })
 
@@ -186,6 +258,7 @@ describe('PresetBar component', () => {
       <I18nProvider>
         <PresetBar
           capability={slashPresetCapability}
+          defaultParameters={DEFAULT_SLASH_PARAMETERS}
           paletteSlots={[]}
           preserveColors={false}
           generatorId="slash"
@@ -211,6 +284,7 @@ describe('PresetBar component', () => {
       <I18nProvider>
         <PresetBar
           capability={slashPresetCapability}
+          defaultParameters={DEFAULT_SLASH_PARAMETERS}
           paletteSlots={[]}
           preserveColors={false}
           generatorId="slash"

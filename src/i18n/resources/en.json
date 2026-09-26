@@ -206,7 +206,6 @@
   "workspace": {
     "navLabel": "Effect generators",
     "generatorsLabel": "GENERATORS",
-    "reset": "Reset",
     "categoryTabsLabel": "{name} parameter categories",
     "categoryControls": "{label} controls",
     "exportDimensions": "{width} × {height} px · transparent PNG",
@@ -247,6 +246,9 @@
     "selectLabel": "Effect presets",
     "saveCurrent": "Save current",
     "allPresets": "All ›",
+    "restore": "Restore preset",
+    "restoreDefault": "Restore defaults",
+    "restoreHint": "Restore to {name}",
     "updateCard": "Update {name} to current parameters",
     "renameCard": "Rename {name}",
     "deleteCard": "Delete {name}",

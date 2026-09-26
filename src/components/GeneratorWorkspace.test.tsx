@@ -21,7 +21,6 @@ function workspaceMarkup(generatorId: 'slash' | 'blip', locale: 'en' | 'zh-CN' =
       <Workspace
         session={session}
         onSessionAction={() => undefined}
-        onReset={() => undefined}
         unitySettings={DEFAULT_UNITY_EXPORT_SETTINGS}
         onUnitySettingsChange={() => undefined}
         fileOperations={{
@@ -157,7 +156,6 @@ describe('GeneratorWorkspace integration', () => {
         <Workspace
           session={session}
           onSessionAction={() => undefined}
-          onReset={() => undefined}
           unitySettings={DEFAULT_UNITY_EXPORT_SETTINGS}
           onUnitySettingsChange={() => undefined}
           fileOperations={{

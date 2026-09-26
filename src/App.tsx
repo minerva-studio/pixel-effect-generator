@@ -82,7 +82,7 @@ function WebApp() {
         finally { document.fileOperations.finish('projectLoad') }
       }} />
     </div>
-    <Workspace key={document.revision} session={document.session} onSessionAction={document.dispatch} onReset={document.reset}
+    <Workspace key={document.revision} session={document.session} onSessionAction={document.dispatch}
       unitySettings={document.unitySettings} onUnitySettingsChange={document.setUnitySettings} fileOperations={document.fileOperations}
       desktopExportOpen={exportOpen} onCloseDesktopExport={() => { setExportOpen(false); window.document.getElementById('web-export-button')?.focus() }} />
     <NewDocumentDialog open={newOpen} busy={busy} onClose={() => setNewOpen(false)} onCreate={async (id) => {
@@ -131,7 +131,7 @@ function DesktopApp({ api }: { readonly api: DesktopAppApi }) {
         <DocumentIdentity name={workflow.currentFileName ?? t('workbench.untitled')} generatorId={document.generator.id} dirty={workflow.dirty} />
         <ThemeToggle />
       </div>
-      <Workspace key={document.revision} session={document.session} onSessionAction={document.dispatch} onReset={document.reset}
+    <Workspace key={document.revision} session={document.session} onSessionAction={document.dispatch}
         unitySettings={document.unitySettings} onUnitySettingsChange={document.setUnitySettings} fileOperations={document.fileOperations}
         desktopExportOpen={exportOpen} onCloseDesktopExport={closeExport} />
       <NewDocumentDialog open={newOpen} busy={document.fileOperations.activeTask !== null} onClose={() => setNewOpen(false)} onCreate={workflow.createProject} />
@@ -165,9 +165,5 @@ function useDocumentSession() {
     })
   }, [])
   const setUnitySettings = useCallback((unitySettings: UnityExportSettingsState) => setDocument((current) => ({ ...current, unitySettings })), [])
-  const reset = useCallback(() => {
-    const defaults = generator.createSession(generator.defaultPreviewFps)
-    setDocument((current) => ({ ...current, session: { ...defaults, isPlaying: current.session.isPlaying } as RegisteredGeneratorSession<string> }))
-  }, [generator])
-  return { ...document, generator, replace, dispatch, reset, setUnitySettings, fileOperations }
+  return { ...document, generator, replace, dispatch, setUnitySettings, fileOperations }
 }

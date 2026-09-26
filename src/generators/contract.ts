@@ -181,7 +181,6 @@ export interface RegisteredGenerator<Id extends string> {
   readonly Workspace: ComponentType<{
     readonly session: RegisteredGeneratorSession<string>
     readonly onSessionAction: (action: RegisteredGeneratorAction<string>) => void
-    readonly onReset: () => void
     readonly unitySettings: UnityExportSettingsState
     readonly onUnitySettingsChange: (settings: UnityExportSettingsState) => void
     readonly fileOperations: FileOperationController

@@ -50,6 +50,7 @@ export interface MessageParams {
   'presets.updateCard': { name: string }
   'presets.renameCard': { name: string }
   'presets.deleteCard': { name: string }
+  'presets.restoreHint': { name: string }
   'controls.palette.bandLabel': { index: number }
   'slash.palette.band': { index: number }
   'slash.palette.removeBand': { index: number }

@@ -91,6 +91,7 @@ export interface PresetPreviewCard {
 
 interface PresetBarProps<Parameters> {
   readonly capability: GeneratorPresetCapability<Parameters>
+  readonly defaultParameters: Parameters
   readonly paletteSlots: readonly PaletteSlot<Parameters>[]
   readonly preserveColors: boolean
   readonly generatorId: string
@@ -99,6 +100,64 @@ interface PresetBarProps<Parameters> {
   readonly frameSize: FrameSize
   readonly frameCount: number
   readonly onApply: (parameters: Parameters) => void
+  readonly onRestoreChange?: (restore: PresetRestoreChange | null) => void
+}
+
+export interface PresetRestoreChange {
+  readonly label: string
+  readonly title: string
+  readonly apply: () => void
+}
+
+export interface PresetRestoreTarget {
+  readonly payload: JsonValue
+  readonly presetName: string | null
+}
+
+/** Chooses the last applied result, the initial matching preset, or defaults. */
+export function resolveRestoreTarget<Parameters>(
+  capability: GeneratorPresetCapability<Parameters>,
+  parameters: Parameters,
+  defaultParameters: Parameters,
+  appliedPayload: JsonValue | undefined,
+  appliedPresetName: string | null,
+  matchingPreset: Pick<GeneratorPreset, 'name' | 'payload'> | null,
+): PresetRestoreTarget {
+  if (appliedPayload !== undefined) return { payload: appliedPayload, presetName: appliedPresetName }
+  if (matchingPreset !== null) {
+    return {
+      payload: capability.capture(capability.apply(parameters, matchingPreset.payload)),
+      presetName: matchingPreset.name,
+    }
+  }
+  return { payload: capability.capture(defaultParameters), presetName: null }
+}
+
+/** Creates a restore action that applies preset fields without changing the current seed. */
+export function createRestoreChange<Parameters>(
+  capability: GeneratorPresetCapability<Parameters>,
+  parameters: Parameters,
+  payload: JsonValue,
+  labels: Pick<PresetRestoreChange, 'label' | 'title'>,
+  onApply: (parameters: Parameters) => void,
+): PresetRestoreChange | null {
+  const next = applyRestorePayload(capability, parameters, payload)
+  if (payloadsEqual(capability.capture(parameters), capability.capture(next))) return null
+  return {
+    ...labels,
+    apply: () => onApply(applyRestorePayload(capability, parameters, payload)),
+  }
+}
+
+function applyRestorePayload<Parameters>(
+  capability: GeneratorPresetCapability<Parameters>,
+  parameters: Parameters,
+  payload: JsonValue,
+): Parameters {
+  const applied = capability.apply(parameters, payload)
+  if (typeof parameters !== 'object' || parameters === null || !('seed' in parameters)
+    || typeof applied !== 'object' || applied === null || !('seed' in applied)) return applied
+  return { ...applied, seed: parameters.seed }
 }
 
 export interface PresetBarViewProps {
@@ -341,6 +400,7 @@ const PresetCard = memo(function PresetCard({
  */
 export function PresetBar<Parameters>({
   capability,
+  defaultParameters,
   paletteSlots,
   preserveColors,
   generatorId,
@@ -349,12 +409,14 @@ export function PresetBar<Parameters>({
   frameSize,
   frameCount,
   onApply,
+  onRestoreChange,
 }: PresetBarProps<Parameters>) {
   const { t } = useI18n()
   const [storage] = useState<PresetStorage | null>(() => browserPresetStorage())
   const [customPresets, setCustomPresets] = useState<readonly StoredPreset[]>([])
   const [warning, setWarning] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [matchingBaselineId, setMatchingBaselineId] = useState<string | null>(null)
   const [appliedPayload, setAppliedPayload] = useState<JsonValue | undefined>(undefined)
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
@@ -437,6 +499,45 @@ export function PresetBar<Parameters>({
     return match?.id ?? null
   }, [selectedId, capability, customPresets, capture, parameters])
 
+  useEffect(() => {
+    if (selectedId === null && matchingBaselineId === null && matchingPresetId !== null) {
+      setMatchingBaselineId(matchingPresetId)
+    }
+  }, [selectedId, matchingBaselineId, matchingPresetId])
+
+  const restorePresetId = matchingBaselineId ?? matchingPresetId
+  const restorePreset = restorePresetId === null ? null
+    : capability.builtIns.find((preset) => preset.id === restorePresetId)
+      ?? customPresets.find((preset) => preset.id === restorePresetId)
+      ?? null
+  const appliedPreset = selectedId === null ? null
+    : capability.builtIns.find((preset) => preset.id === selectedId)
+      ?? customPresets.find((preset) => preset.id === selectedId)
+      ?? null
+  const displayPresetName = (preset: GeneratorPreset | StoredPreset) =>
+    'description' in preset ? presetName(generatorId, preset, t) : preset.name
+  const appliedPresetName = appliedPreset ? displayPresetName(appliedPreset) : null
+  const restorePresetName = restorePreset ? displayPresetName(restorePreset) : null
+  const restoreTarget = useMemo(() => resolveRestoreTarget(
+    capability,
+    parameters,
+    defaultParameters,
+    appliedPayload,
+    appliedPresetName,
+    restorePreset ? { name: restorePresetName!, payload: restorePreset.payload } : null,
+  ), [capability, parameters, defaultParameters, appliedPayload, appliedPresetName, restorePreset, restorePresetName])
+  const restoreLabels = restoreTarget.presetName === null
+    ? { label: t('presets.restoreDefault'), title: t('presets.restoreDefault') }
+    : { label: t('presets.restore'), title: t('presets.restoreHint', { name: restoreTarget.presetName }) }
+  const restoreChange = useMemo(
+    () => createRestoreChange(capability, parameters, restoreTarget.payload, restoreLabels, onApply),
+    [capability, parameters, restoreTarget.payload, restoreLabels.label, restoreLabels.title, onApply],
+  )
+
+  useEffect(() => {
+    onRestoreChange?.(restoreChange)
+  }, [onRestoreChange, restoreChange])
+
   const handleSelect = (presetId: string) => {
     const preset = capability.builtIns.find((entry) => entry.id === presetId)
       ?? customPresets.find((entry) => entry.id === presetId)
@@ -447,6 +548,7 @@ export function PresetBar<Parameters>({
       const { parameters: next, baseline } = resolveAppliedPresetBaseline(capability, parameters, preset.payload, paletteSlots, preserveColors)
       onApply(next)
       setSelectedId(presetId)
+      setMatchingBaselineId(null)
       setAppliedPayload(baseline)
       setPickerOpen(false)
       setError(null)
@@ -538,6 +640,7 @@ export function PresetBar<Parameters>({
     if (selectedId === presetId) {
       setSelectedId(null)
       setAppliedPayload(undefined)
+      setMatchingBaselineId(null)
     }
     setDeleteConfirmId(null)
   }

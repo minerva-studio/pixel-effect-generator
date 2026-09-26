@@ -206,7 +206,6 @@
   "workspace": {
     "navLabel": "特效生成器",
     "generatorsLabel": "生成器",
-    "reset": "重置",
     "categoryTabsLabel": "{name} 参数分类",
     "categoryControls": "{label} 控件",
     "exportDimensions": "{width} × {height} px · 透明 PNG",
@@ -247,6 +246,9 @@
     "selectLabel": "效果预设",
     "saveCurrent": "保存当前",
     "allPresets": "全部 ›",
+    "restore": "恢复至预设",
+    "restoreDefault": "恢复默认",
+    "restoreHint": "恢复为「{name}」的参数",
     "updateCard": "将{name}更新为当前参数",
     "renameCard": "重命名{name}",
     "deleteCard": "删除{name}",
