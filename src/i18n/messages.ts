@@ -48,6 +48,7 @@ export interface MessageParams {
   'preview.zoomOption': { zoom: number }
   'controls.about': { label: string }
   'controls.value': { label: string }
+  'controls.palette.removeBand': { index: number }
   'slash.palette.band': { index: number }
   'slash.palette.removeBand': { index: number }
   'explosion.palette.band': { index: number }

@@ -1,10 +1,10 @@
 import { memo, useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { drawFrame } from '../../components/export'
-import { NumberControl, SelectControl } from '../../components/controls'
-import { PaletteLibraryPicker } from '../../components/PaletteLibraryPicker'
+import { PercentControl, NumberControl, SelectControl  } from '../../components/controls'
+import { PaletteEditor } from '../../components/PaletteEditor'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
-import { hexToRgb, rgbaToHex, type RgbColor } from '../../shared/pixel/color'
+import type { RgbColor } from '../../shared/pixel/color'
 import type { PixelFrame } from '../../shared/pixel/frame'
 import {
   MAX_FRAGMENT_SIZE,
@@ -77,7 +77,7 @@ function CoreSection({
       status={core.enabled ? t(`${family}.effects.enabled`) : t(`${family}.effects.disabled`)}
     >
       <NumberControl label={t(`${family}.controls.coreRadius.label`)} description={t(`${family}.controls.coreRadius.description`)} value={core.radius} minimum={0} maximum={limits.maxRadius} unit="px" onChange={(radius) => onChange({ ...core, radius })} />
-      <NumberControl label={t(`${family}.controls.coreDuration.label`)} description={t(`${family}.controls.coreDuration.description`)} value={core.duration} minimum={0.1} maximum={0.9} step={0.01} scale={100} unit="%" onChange={(duration) => onChange({ ...core, duration })} />
+      <PercentControl label={t(`${family}.controls.coreDuration.label`)} description={t(`${family}.controls.coreDuration.description`)} value={core.duration} minimum={0.1} maximum={0.9} onChange={(duration) => onChange({ ...core, duration })} />
     </FeatureSection>
   )
 }
@@ -116,19 +116,19 @@ export function ShockwaveControls({
         { value: 'gradient', label: t(`${family}.options.shockwaveColorGradient`) },
       ]} onChange={(colorMode) => onChange({ ...shockwave, colorMode })} />
       <NumberControl label={t(`${family}.controls.shockwaveThickness.label`)} description={t(`${family}.controls.shockwaveThickness.description`)} value={shockwave.thickness} minimum={1} maximum={MAX_SHOCKWAVE_THICKNESS} unit="px" onChange={(thickness) => onChange({ ...shockwave, thickness })} />
-      <NumberControl label={t(`${family}.controls.shockwaveStartRadius.label`)} description={t(`${family}.controls.shockwaveStartRadius.description`)} value={shockwave.startRadiusScale} minimum={0} maximum={2} step={0.01} scale={100} unit="%" onChange={(startRadiusScale) => onChange({ ...shockwave, startRadiusScale: Math.min(startRadiusScale, shockwave.endRadiusScale) })} />
-      <NumberControl label={t(`${family}.controls.shockwaveEndRadius.label`)} description={t(`${family}.controls.shockwaveEndRadius.description`)} value={shockwave.endRadiusScale} minimum={0.25} maximum={2.5} step={0.01} scale={100} unit="%" onChange={(endRadiusScale) => onChange({ ...shockwave, endRadiusScale: Math.max(endRadiusScale, shockwave.startRadiusScale) })} />
-      <NumberControl label={t(`${family}.controls.shockwaveStartTime.label`)} description={t(`${family}.controls.shockwaveStartTime.description`)} value={shockwave.startTime} minimum={0} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(startTime) => onChange({ ...shockwave, startTime })} />
-      <NumberControl label={t(`${family}.controls.shockwaveDuration.label`)} description={t(`${family}.controls.shockwaveDuration.description`)} value={shockwave.duration} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(duration) => onChange({ ...shockwave, duration })} />
+      <PercentControl label={t(`${family}.controls.shockwaveStartRadius.label`)} description={t(`${family}.controls.shockwaveStartRadius.description`)} value={shockwave.startRadiusScale} minimum={0} maximum={2} onChange={(startRadiusScale) => onChange({ ...shockwave, startRadiusScale: Math.min(startRadiusScale, shockwave.endRadiusScale) })} />
+      <PercentControl label={t(`${family}.controls.shockwaveEndRadius.label`)} description={t(`${family}.controls.shockwaveEndRadius.description`)} value={shockwave.endRadiusScale} minimum={0.25} maximum={2.5} onChange={(endRadiusScale) => onChange({ ...shockwave, endRadiusScale: Math.max(endRadiusScale, shockwave.startRadiusScale) })} />
+      <PercentControl label={t(`${family}.controls.shockwaveStartTime.label`)} description={t(`${family}.controls.shockwaveStartTime.description`)} value={shockwave.startTime} minimum={0} maximum={0.8} onChange={(startTime) => onChange({ ...shockwave, startTime })} />
+      <PercentControl label={t(`${family}.controls.shockwaveDuration.label`)} description={t(`${family}.controls.shockwaveDuration.description`)} value={shockwave.duration} minimum={0.1} maximum={1} onChange={(duration) => onChange({ ...shockwave, duration })} />
       {shockwave.mode === 'multiRing' ? (
         <>
           <NumberControl label={t(`${family}.controls.shockwaveRingCount.label`)} description={t(`${family}.controls.shockwaveRingCount.description`)} value={shockwave.ringCount} minimum={1} maximum={4} onChange={(ringCount) => onChange({ ...shockwave, ringCount })} />
-          <NumberControl label={t(`${family}.controls.shockwaveRingSpacing.label`)} description={t(`${family}.controls.shockwaveRingSpacing.description`)} value={shockwave.ringSpacing} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(ringSpacing) => onChange({ ...shockwave, ringSpacing })} />
+          <PercentControl label={t(`${family}.controls.shockwaveRingSpacing.label`)} description={t(`${family}.controls.shockwaveRingSpacing.description`)} value={shockwave.ringSpacing} minimum={0} maximum={1} onChange={(ringSpacing) => onChange({ ...shockwave, ringSpacing })} />
         </>
       ) : null}
       {shockwave.mode !== 'none' ? (
         <>
-          <NumberControl label={t(`${family}.controls.shockwaveSquash.label`)} description={t(`${family}.controls.shockwaveSquash.description`)} value={shockwave.squash} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(squash) => onChange({ ...shockwave, squash })} />
+          <PercentControl label={t(`${family}.controls.shockwaveSquash.label`)} description={t(`${family}.controls.shockwaveSquash.description`)} value={shockwave.squash} minimum={0} maximum={1} onChange={(squash) => onChange({ ...shockwave, squash })} />
           <NumberControl label={t(`${family}.controls.shockwaveSquashAngle.label`)} description={t(`${family}.controls.shockwaveSquashAngle.description`)} value={shockwave.squashAngle} minimum={0} maximum={359} unit="°" onChange={(squashAngle) => onChange({ ...shockwave, squashAngle })} />
         </>
       ) : null}
@@ -166,9 +166,9 @@ export function DissolveControls({
         { value: 'edgeRoll', label: t(`${family}.options.dissolveEdgeRoll`) },
       ]} onChange={(dissolveStyle) => onChange({ dissolveStyle, dissolveSize: size, dissolveJitter: jitter, dissolveDensity: density, dissolveSpeed: speed })} />
       <NumberControl label={t(`${family}.controls.dissolveSize.label`)} description={t(`${family}.controls.dissolveSize.description`)} value={size} minimum={3} maximum={8} unit="px" onChange={(dissolveSize) => onChange({ dissolveStyle: style, dissolveSize, dissolveJitter: jitter, dissolveDensity: density, dissolveSpeed: speed })} />
-      <NumberControl label={t(`${family}.controls.dissolveJitter.label`)} description={t(`${family}.controls.dissolveJitter.description`)} value={jitter} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(dissolveJitter) => onChange({ dissolveStyle: style, dissolveSize: size, dissolveJitter, dissolveDensity: density, dissolveSpeed: speed })} />
-      <NumberControl label={t(`${family}.controls.dissolveDensity.label`)} description={t(`${family}.controls.dissolveDensity.description`)} value={density} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(dissolveDensity) => onChange({ dissolveStyle: style, dissolveSize: size, dissolveJitter: jitter, dissolveDensity, dissolveSpeed: speed })} />
-      <NumberControl label={t(`${family}.controls.dissolveSpeed.label`)} description={t(`${family}.controls.dissolveSpeed.description`)} value={speed} minimum={0.5} maximum={1.5} step={0.05} scale={100} unit="%" onChange={(dissolveSpeed) => onChange({ dissolveStyle: style, dissolveSize: size, dissolveJitter: jitter, dissolveDensity: density, dissolveSpeed })} />
+      <PercentControl label={t(`${family}.controls.dissolveJitter.label`)} description={t(`${family}.controls.dissolveJitter.description`)} value={jitter} minimum={0} maximum={1} onChange={(dissolveJitter) => onChange({ dissolveStyle: style, dissolveSize: size, dissolveJitter, dissolveDensity: density, dissolveSpeed: speed })} />
+      <PercentControl label={t(`${family}.controls.dissolveDensity.label`)} description={t(`${family}.controls.dissolveDensity.description`)} value={density} minimum={0} maximum={1} onChange={(dissolveDensity) => onChange({ dissolveStyle: style, dissolveSize: size, dissolveJitter: jitter, dissolveDensity, dissolveSpeed: speed })} />
+      <PercentControl label={t(`${family}.controls.dissolveSpeed.label`)} description={t(`${family}.controls.dissolveSpeed.description`)} value={speed} minimum={0.5} maximum={1.5} step={0.05} onChange={(dissolveSpeed) => onChange({ dissolveStyle: style, dissolveSize: size, dissolveJitter: jitter, dissolveDensity: density, dissolveSpeed })} />
     </div>
   )
 }
@@ -188,8 +188,8 @@ function TonguesSection({
       <NumberControl label={t(`${family}.controls.tongueCount.label`)} description={t(`${family}.controls.tongueCount.description`)} value={tongues.count} minimum={1} maximum={shapeCount} onChange={(count) => onChange({ ...tongues, count })} />
       <NumberControl label={t(`${family}.controls.tongueLength.label`)} description={t(`${family}.controls.tongueLength.description`)} value={tongues.length} minimum={0} maximum={limits.maxTongueLength} unit="px" onChange={(length) => onChange({ ...tongues, length })} />
       <NumberControl label={t(`${family}.controls.tongueWidth.label`)} description={t(`${family}.controls.tongueWidth.description`)} value={tongues.width} minimum={1} maximum={limits.maxTongueWidth} unit="px" onChange={(width) => onChange({ ...tongues, width })} />
-      <NumberControl label={t(`${family}.controls.tongueCurvature.label`)} description={t(`${family}.controls.tongueCurvature.description`)} value={tongues.curvature} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(curvature) => onChange({ ...tongues, curvature })} />
-      <NumberControl label={t(`${family}.controls.tongueVariation.label`)} description={t(`${family}.controls.tongueVariation.description`)} value={tongues.variation} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(variation) => onChange({ ...tongues, variation })} />
+      <PercentControl label={t(`${family}.controls.tongueCurvature.label`)} description={t(`${family}.controls.tongueCurvature.description`)} value={tongues.curvature} minimum={0} maximum={1} onChange={(curvature) => onChange({ ...tongues, curvature })} />
+      <PercentControl label={t(`${family}.controls.tongueVariation.label`)} description={t(`${family}.controls.tongueVariation.description`)} value={tongues.variation} minimum={0} maximum={1} onChange={(variation) => onChange({ ...tongues, variation })} />
     </FeatureSection>
   )
 }
@@ -211,7 +211,7 @@ function FragmentsSection({
       <NumberControl label={t(`${family}.controls.fragmentMaxSize.label`)} description={t(`${family}.controls.fragmentMaxSize.description`)} value={fragments.maxSize} minimum={1} maximum={MAX_FRAGMENT_SIZE} unit="px" onChange={(maxSize) => onChange({ ...fragments, maxSize: Math.max(maxSize, fragments.minSize) })} />
       <NumberControl label={t(`${family}.controls.fragmentTravelDistance.label`)} description={t(`${family}.controls.fragmentTravelDistance.description`)} value={fragments.travelDistance} minimum={0} maximum={limits.maxFragmentDistance} unit="px" onChange={(travelDistance) => onChange({ ...fragments, travelDistance })} />
       <NumberControl label={t(`${family}.controls.fragmentTangentialDrift.label`)} description={t(`${family}.controls.fragmentTangentialDrift.description`)} value={fragments.tangentialDrift} minimum={0} maximum={limits.maxTangentialDrift} unit="px" onChange={(tangentialDrift) => onChange({ ...fragments, tangentialDrift })} />
-      <NumberControl label={t(`${family}.controls.fragmentLifetime.label`)} description={t(`${family}.controls.fragmentLifetime.description`)} value={fragments.lifetime} minimum={0.1} maximum={1} step={0.01} scale={100} unit="%" onChange={(lifetime) => onChange({ ...fragments, lifetime })} />
+      <PercentControl label={t(`${family}.controls.fragmentLifetime.label`)} description={t(`${family}.controls.fragmentLifetime.description`)} value={fragments.lifetime} minimum={0.1} maximum={1} onChange={(lifetime) => onChange({ ...fragments, lifetime })} />
     </FeatureSection>
   )
 }
@@ -221,7 +221,7 @@ function FragmentsSection({
  * heading toggles expansion; the switch only changes the enable state, and
  * parameters appear whenever the section is expanded, even while disabled.
  */
-function FeatureSection({
+export function FeatureSection({
   label,
   description,
   enabled,
@@ -383,15 +383,8 @@ export function ShapeCardGrid<Parameters>({
   )
 }
 
-/** Ordered hot-core-to-edge colors; opaque families can hide alpha and require more bands. */
-export function FamilyPaletteEditor({
-  family,
-  t,
-  palette,
-  onChange,
-  minimumColors = 2,
-  opaque = false,
-}: {
+/** Adapts family-specific palette guidance to the common palette editor. */
+export function FamilyPaletteEditor({ family, t, palette, onChange, minimumColors = 2, opaque = false }: {
   readonly family: string
   readonly t: FamilyTranslate
   readonly palette: readonly RgbColor[]
@@ -399,76 +392,7 @@ export function FamilyPaletteEditor({
   readonly minimumColors?: number
   readonly opaque?: boolean
 }) {
-  const updateColor = (index: number, value: string) => onChange(
-    palette.map((color, colorIndex) => (colorIndex === index ? { ...hexToRgb(value), a: color.a } : color)),
-  )
-  const updateAlpha = (index: number, value: number) => onChange(
-    palette.map((color, colorIndex) => (colorIndex === index ? { ...color, a: value } : color)),
-  )
-  const removeColor = (index: number) => onChange(palette.filter((_, colorIndex) => colorIndex !== index))
-  const addColor = () => {
-    const last = palette[palette.length - 1]
-    const previous = palette[Math.max(0, palette.length - 2)]
-    onChange([...palette, {
-      r: Math.round((last.r + previous.r) / 2),
-      g: Math.round((last.g + previous.g) / 2),
-      b: Math.round((last.b + previous.b) / 2),
-      a: Math.round((last.a + previous.a) / 2),
-    }])
-  }
-  return (
-    <div className="palette-editor">
-      <PaletteLibraryPicker palette={palette} onChange={onChange} minimum={minimumColors} maximum={6} opaque={opaque} />
-      <div className="palette-guide">
-        <span>{t(`${family}.palette.hotCore`)}</span>
-        <span>{t(`${family}.palette.outerEdge`)}</span>
-      </div>
-      <div className="palette-list">
-        {palette.map((color, index) => (
-          // Palette bands are an ordered list that is never reordered, so the
-          // positional index is a stable identity; a color-derived key would
-          // remount the row on every change and interrupt picker/drag input.
-          <div className="palette-row" key={index}>
-            <span className="palette-order">{String(index + 1).padStart(2, '0')}</span>
-            <input
-              aria-label={t(`${family}.palette.band`, { index: index + 1 })}
-              type="color"
-              value={rgbaToHex(color).slice(0, 7)}
-              onChange={(event) => updateColor(index, event.target.value)}
-            />
-            {!opaque && <label className="palette-alpha">
-              <span>{t(`${family}.palette.alpha`)}</span>
-              <input
-                aria-label={t(`${family}.palette.alpha`)}
-                type="range"
-                min={0}
-                max={255}
-                value={color.a}
-                onChange={(event) => updateAlpha(index, Number(event.target.value))}
-              />
-              <code>{color.a}</code>
-            </label>}
-            <code>{rgbaToHex(color).toUpperCase()}</code>
-            <button
-              className="remove-button"
-              type="button"
-              disabled={palette.length <= minimumColors}
-              aria-label={t(`${family}.palette.removeBand`, { index: index + 1 })}
-              onClick={() => removeColor(index)}
-            >
-              {t(`${family}.palette.remove`)}
-            </button>
-          </div>
-        ))}
-      </div>
-      <button
-        className="secondary-button"
-        type="button"
-        disabled={palette.length >= 6}
-        onClick={addColor}
-      >
-        {t(`${family}.palette.addColorBand`)}
-      </button>
-    </div>
-  )
+  return <PaletteEditor palette={palette} onChange={onChange} minimum={minimumColors} maximum={6} opaque={opaque}
+    guide={[t(`${family}.palette.hotCore`), t(`${family}.palette.outerEdge`)]}
+    bandLabel={(index) => t(`${family}.palette.band`, { index: index + 1 })} />
 }

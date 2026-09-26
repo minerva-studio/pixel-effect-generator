@@ -141,7 +141,9 @@ export function assertValidFireballParameters(parameters: FireballParameters): v
     || !Number.isInteger(parameters.frameCount) || !Number.isInteger(parameters.seed)
     || !Number.isInteger(parameters.size) || !Number.isInteger(parameters.rotationDegrees)
     || !Number.isInteger(parameters.loopCycles)) throw new RangeError('Integer field is invalid.')
-  if (parameters.warmPalette.length !== 5 || parameters.smokePalette.length !== 6) throw new RangeError('Fireball palettes must keep their thermal band counts.')
+  if ([parameters.warmPalette, parameters.smokePalette].some((palette) => palette.length < 2 || palette.length > 6)) {
+    throw new RangeError('Fireball palettes must contain between two and six colors.')
+  }
   parameters.warmPalette.forEach((color, index) => assertValidColor(color, `warmPalette[${index}]`))
   parameters.smokePalette.forEach((color, index) => assertValidColor(color, `smokePalette[${index}]`))
   for (const tuning of [parameters.stream, parameters.wrapped]) {

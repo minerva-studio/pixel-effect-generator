@@ -1,8 +1,8 @@
-import { NumberControl, SelectControl } from '../../components/controls'
-import { PaletteLibraryPicker } from '../../components/PaletteLibraryPicker'
-import { GeneratorPreviewTools } from '../../components/PreviewTools'
+import { NumberControl, PercentControl, SelectControl, ToggleControl } from '../../components/controls'
+import { PaletteEditor } from '../../components/PaletteEditor'
+import { createPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
-import { hexToRgb, rgbaToHex, type RgbColor } from '../../shared/pixel/color'
+import type { RgbColor } from '../../shared/pixel/color'
 import type { FrameSize } from '../../shared/pixel/frame'
 import { ProjectileControls, SparkControls } from '../projectile/controls'
 import { MAX_CANVAS_SIZE, MAX_LOOP_CYCLES, MIN_CANVAS_SIZE, type ProjectileParameters } from '../projectile/model'
@@ -45,8 +45,13 @@ export function FireballControls({ category, parameters, onChange }: Props) {
   const tuning = parameters[tuningKey]
   const updateTuning = <Key extends keyof FireballTuning>(key: Key, value: FireballTuning[Key]) =>
     onChange({ ...parameters, [tuningKey]: { ...tuning, [key]: value } })
-  const number = (id: Exclude<FireballControlKey, 'form' | 'ball' | 'trail' | 'smoke' | 'seed'>, value: number, change: (value: number) => void, min = 0, max = 1, step = 0.01, unit = '') =>
-    <NumberControl label={t(`fireball.controls.${id}.label`)} description={t(`fireball.controls.${id}.description`)} value={value} minimum={min} maximum={max} step={step} scale={unit === '%' ? 100 : 1} unit={unit} onChange={change} />
+  const number = (id: Exclude<FireballControlKey, 'form' | 'ball' | 'trail' | 'smoke' | 'seed'>, value: number, change: (value: number) => void, min = 0, max = 1, step = 0.01, unit = '') => {
+    const label = t(`fireball.controls.${id}.label`)
+    const description = t(`fireball.controls.${id}.description`)
+    return unit === '%'
+      ? <PercentControl label={label} description={description} value={value} minimum={min} maximum={max} step={step} onChange={change} />
+      : <NumberControl label={label} description={description} value={value} minimum={min} maximum={max} step={step} unit={unit} onChange={change} />
+  }
   const selectForm = (form: string) => {
     if (form === 'stream' || form === 'wrapped' || form === 'puff' || form === 'classic') update('form', form)
   }
@@ -85,9 +90,7 @@ export function FireballControls({ category, parameters, onChange }: Props) {
     </>}
   </div>
   if (category === 'effects') return <div className="control-list">
-    {parameters.form === 'puff' && <label className="parameter-field"><span>{t('fireball.controls.smoke.label')}</span>
-      <input type="checkbox" aria-label={t('fireball.controls.smoke.label')} checked={parameters.puff.smoke} onChange={event => update('puff', { ...parameters.puff, smoke: event.target.checked })} />
-    </label>}
+    {parameters.form === 'puff' && <ToggleControl label={t('fireball.controls.smoke.label')} description={t('fireball.controls.smoke.description')} checked={parameters.puff.smoke} onChange={(smoke) => update('puff', { ...parameters.puff, smoke })} />}
     <SparkControls sparks={parameters.sparks} onChange={sparks => update('sparks', sparks)} />
   </div>
   return <div className="control-list">
@@ -98,26 +101,9 @@ export function FireballControls({ category, parameters, onChange }: Props) {
 
 function PaletteRows({ label, colors, onChange }: { label: string; colors: readonly RgbColor[]; onChange: (colors: readonly RgbColor[]) => void }) {
   const { t } = useI18n()
-  return <div className="palette-editor"><p className="panel-note">{label}</p>
-    <PaletteLibraryPicker palette={colors} onChange={palette => onChange(fitFireballPalette(palette, colors.length))}
-      minimum={2} maximum={6} />
-    <div className="palette-list">
-    {colors.map((color, index) => <div className="palette-row" key={index}>
-      <span className="palette-order">{String(index + 1).padStart(2, '0')}</span>
-      <input aria-label={t('fireball.palette.band', { index: index + 1 })} type="color" value={rgbaToHex(color).slice(0, 7)}
-        onChange={event => onChange(colors.map((entry, i) => i === index ? { ...hexToRgb(event.target.value), a: entry.a } : entry))} />
-      <label className="palette-alpha"><span>{t('fireball.palette.alpha')}</span><input aria-label={t('fireball.palette.alpha')} type="range" min={0} max={255} value={color.a}
-        onChange={event => onChange(colors.map((entry, i) => i === index ? { ...entry, a: Number(event.target.value) } : entry))} />
-        <code>{color.a}</code></label>
-      <code>{rgbaToHex(color).toUpperCase()}</code>
-    </div>)}
-  </div></div>
+  return <PaletteEditor title={label} palette={colors} onChange={onChange} minimum={2} maximum={6}
+    bandLabel={(index) => t('fireball.palette.band', { index: index + 1 })}
+    fit={(palette, length) => fitFireballPalette(palette, length)} />
 }
 
-export function FireballPreviewTools({ parameters, onChange, onResize }: Omit<Props, 'category'>) {
-  const { t } = useI18n()
-  return <GeneratorPreviewTools canvasSize={{ width: parameters.canvasWidth, height: parameters.canvasHeight }}
-    onResize={onResize} seedValue={parameters.seed} onSeedChange={seed => onChange({ ...parameters, seed })}
-    minimumSize={MIN_CANVAS_SIZE} maximumSize={MAX_CANVAS_SIZE} seedLabel={t('fireball.controls.seed.label')}
-    seedDescription={t('fireball.controls.seed.description')} seedRandomizeLabel={t('fireball.seed.randomize')} />
-}
+export const FireballPreviewTools = createPreviewTools<FireballParameters>({ keyPrefix: 'fireball', minimumSize: MIN_CANVAS_SIZE, maximumSize: MAX_CANVAS_SIZE })

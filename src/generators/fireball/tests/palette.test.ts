@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fitFireballPalette } from '../palette'
+import { assertValidFireballParameters, DEFAULT_FIREBALL_PARAMETERS } from '../model'
 
 describe('fireball palette fitting', () => {
   it('keeps endpoints and interpolates a saved two-color ramp into five bands', () => {
@@ -14,5 +15,13 @@ describe('fireball palette fitting', () => {
       { r: 150, g: 95, b: 70, a: 180 },
       { r: 200, g: 120, b: 80, a: 155 },
     ])
+  })
+
+  it('accepts editable warm and smoke palette lengths from two to six bands', () => {
+    expect(() => assertValidFireballParameters({
+      ...DEFAULT_FIREBALL_PARAMETERS,
+      warmPalette: DEFAULT_FIREBALL_PARAMETERS.warmPalette.slice(0, 2),
+      smokePalette: DEFAULT_FIREBALL_PARAMETERS.smokePalette.slice(0, 4),
+    })).not.toThrow()
   })
 })

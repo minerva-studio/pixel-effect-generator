@@ -312,7 +312,13 @@
   },
   "controls": {
     "about": "About {label}",
-    "value": "{label} value"
+    "value": "{label} value",
+    "palette": {
+      "alpha": "Opacity",
+      "add": "Add color band",
+      "remove": "Remove",
+      "removeBand": "Remove color band {index}"
+    }
   },
   "slash": {
     "name": "Slash",
@@ -459,7 +465,7 @@
         "label": "Palette order",
         "description": "Bands are sampled directly on the pixel grid. No blended colors are introduced."
       },
-      "randomSeed": {
+      "seed": {
         "label": "Random seed",
         "description": "Re-enter the same unsigned 32-bit value to reproduce breakup exactly."
       }

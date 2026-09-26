@@ -312,7 +312,13 @@
   },
   "controls": {
     "about": "关于 {label}",
-    "value": "{label} 数值"
+    "value": "{label} 数值",
+    "palette": {
+      "alpha": "不透明度",
+      "add": "添加色带",
+      "remove": "移除",
+      "removeBand": "移除第 {index} 个色带"
+    }
   },
   "slash": {
     "name": "斩击",
@@ -459,7 +465,7 @@
         "label": "调色板顺序",
         "description": "色带直接在像素网格上采样，不引入混合颜色。"
       },
-      "randomSeed": {
+      "seed": {
         "label": "随机种子",
         "description": "重新输入相同的无符号 32 位数值，可精确复现破碎效果。"
       }

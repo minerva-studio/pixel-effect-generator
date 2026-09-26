@@ -103,7 +103,7 @@ describe('projectile controls', () => {
     expect(palette).toContain('min="0"')
     expect(palette).toContain('max="255"')
     expect(palette).toContain('#FFFBC3FF')
-    expect(palette).toContain('Alpha')
+    expect(palette).toContain('Opacity')
   })
 
   it('renders localized labels and shared preview tools', () => {

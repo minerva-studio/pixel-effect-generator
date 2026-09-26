@@ -21,6 +21,66 @@ interface SelectControlProps<Value extends string> {
   readonly onChange: (value: Value) => void
 }
 
+export interface PercentControlProps extends Omit<NumberControlProps, 'minimum' | 'maximum' | 'step' | 'scale' | 'unit'> {
+  readonly minimum?: number
+  readonly maximum?: number
+  readonly step?: number
+}
+
+/** Numeric fraction control displayed as a percentage from 0 to 100 by default. */
+export function PercentControl({ minimum = 0, maximum = 1, step = 0.01, ...props }: PercentControlProps) {
+  return <NumberControl {...props} minimum={minimum} maximum={maximum} step={step} scale={100} unit="%" />
+}
+
+/** One compact switch field with a shared accessible label and help hint. */
+export function ToggleControl({ label, description, checked, onChange, ariaDescribedBy }: {
+  readonly label: string
+  readonly description: string
+  readonly checked: boolean
+  readonly onChange: (checked: boolean) => void
+  readonly ariaDescribedBy?: string
+}) {
+  const hintId = useId()
+  return (
+    <div className="parameter-field">
+      <div className="field-copy">
+        <span className="field-title">
+          <span className="field-label">{label}</span>
+          <InfoHint label={label} description={description} hintId={hintId} />
+        </span>
+      </div>
+      <label className="toggle-field" aria-label={label}>
+        <input type="checkbox" aria-label={label} aria-describedby={ariaDescribedBy} checked={checked} onChange={(event) => onChange(event.target.checked)} />
+        <span aria-hidden="true" />
+      </label>
+    </div>
+  )
+}
+
+/** Accessible mutually exclusive buttons for small, fixed option sets. */
+export function SegmentedControl<Value extends string>({ label, description, value, options, onChange }: {
+  readonly label: string
+  readonly description: string
+  readonly value: Value
+  readonly options: readonly { readonly value: Value; readonly label: string }[]
+  readonly onChange: (value: Value) => void
+}) {
+  const hintId = useId()
+  return (
+    <div className="parameter-field">
+      <div className="field-copy">
+        <span className="field-title">
+          <span className="field-label">{label}</span>
+          <InfoHint label={label} description={description} hintId={hintId} />
+        </span>
+      </div>
+      <div className="segmented-control" role="group" aria-label={label}>
+        {options.map((option) => <button key={option.value} aria-pressed={value === option.value} className={value === option.value ? 'active' : ''} type="button" onClick={() => onChange(option.value)}>{option.label}</button>)}
+      </div>
+    </div>
+  )
+}
+
 /**
  * Renders one scaled numeric parameter with synchronized slider and number input.
  * The number input keeps an in-progress draft while typing and only clamps to

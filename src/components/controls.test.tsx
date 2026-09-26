@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { I18nProvider } from '../i18n/I18nProvider'
-import { InfoHint, NumberControl, SelectControl } from './controls'
+import { InfoHint, NumberControl, PercentControl, SelectControl, SegmentedControl, ToggleControl } from './controls'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -50,5 +50,18 @@ describe('shared form controls', () => {
     )
     expect(zh).toContain('aria-label="半径 数值"')
     expect(zh).toContain('aria-label="关于 半径"')
+  })
+
+  it('renders shared percentage, toggle, and segmented controls with their values', () => {
+    const markup = renderToStaticMarkup(<I18nProvider><>
+      <PercentControl label="Coverage" description="Covered area." value={0.35} onChange={() => undefined} />
+      <ToggleControl label="Sparks" description="Enable sparks." checked onChange={() => undefined} ariaDescribedBy="extra-help" />
+      <SegmentedControl label="Direction" description="Travel direction." value="cw" options={[{ value: 'cw', label: 'Clockwise' }, { value: 'ccw', label: 'Counterclockwise' }]} onChange={() => undefined} />
+    </></I18nProvider>)
+
+    expect(markup).toContain('value="35"')
+    expect(markup).toContain('<small>%</small>')
+    expect(markup).toContain('aria-describedby="extra-help"')
+    expect(markup).toContain('aria-pressed="true"')
   })
 })

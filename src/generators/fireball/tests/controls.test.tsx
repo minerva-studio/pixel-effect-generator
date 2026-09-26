@@ -28,6 +28,9 @@ describe('fireball controls', () => {
       parameters={DEFAULT_FIREBALL_PARAMETERS} onChange={() => undefined} /></I18nProvider>)
     expect(markup.match(/class="palette-library"/g)).toHaveLength(2)
     expect(markup).toContain('Retro Burst')
+    expect(markup.match(/Add color band/g)).toHaveLength(2)
+    expect(markup.match(/type="range"/g)).toHaveLength(11)
+    expect(markup).toContain('Opacity')
     const classic = renderToStaticMarkup(<I18nProvider><FireballControls category="palette"
       parameters={{ ...DEFAULT_FIREBALL_PARAMETERS, form: 'classic' }} onChange={() => undefined} /></I18nProvider>)
     expect(classic).toBe(markup)

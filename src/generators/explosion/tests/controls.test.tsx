@@ -77,7 +77,7 @@ describe('combustion explosion controls', () => {
 
   it('renders an alpha slider and 8-digit hex for every palette band', () => {
     const palette = renderControls('palette')
-    expect(palette).toContain('Alpha')
+    expect(palette).toContain('Opacity')
     expect(palette).toContain('type="range"')
     expect(palette).toContain('min="0"')
     expect(palette).toContain('max="255"')

@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
-import { NumberControl, SelectControl } from '../../components/controls'
-import { GeneratorPreviewTools } from '../../components/PreviewTools'
+import { PercentControl, NumberControl, SelectControl, SegmentedControl } from '../../components/controls'
+import { createPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
 import type { FrameSize } from '../../shared/pixel/frame'
@@ -87,49 +87,49 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
           <NumberControl label={familyT('explosion.controls.radius.label')} description={familyT('explosion.controls.radius.description')} value={parameters.body.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(radius) => updateBody({ radius })} />
           {parameters.body.shape === 'billowBurst' ? (
             <>
-              <NumberControl label={familyT('explosion.controls.impulse.label')} description={familyT('explosion.controls.impulse.description')} value={parameters.body.impulse} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(impulse) => updateBody({ impulse })} />
-              <NumberControl label={familyT('explosion.controls.billow.label')} description={familyT('explosion.controls.billow.description')} value={parameters.body.billow} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(billow) => updateBody({ billow })} />
-              <NumberControl label={familyT('explosion.controls.midRoll.label')} description={familyT('explosion.controls.midRoll.description')} value={parameters.body.churnAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(churnAmount) => updateBody({ churnAmount })} />
+              <PercentControl label={familyT('explosion.controls.impulse.label')} description={familyT('explosion.controls.impulse.description')} value={parameters.body.impulse} minimum={0} maximum={1} onChange={(impulse) => updateBody({ impulse })} />
+              <PercentControl label={familyT('explosion.controls.billow.label')} description={familyT('explosion.controls.billow.description')} value={parameters.body.billow} minimum={0} maximum={1} onChange={(billow) => updateBody({ billow })} />
+              <PercentControl label={familyT('explosion.controls.midRoll.label')} description={familyT('explosion.controls.midRoll.description')} value={parameters.body.churnAmount} minimum={0} maximum={1} onChange={(churnAmount) => updateBody({ churnAmount })} />
               <NumberControl label={familyT('explosion.controls.debrisCount.label')} description={familyT('explosion.controls.debrisCount.description')} value={parameters.body.debrisCount} minimum={0} maximum={24} onChange={(debrisCount) => updateBody({ debrisCount })} />
             </>
           ) : null}
           {parameters.body.shape === 'puffCluster' ? (
             <>
               <NumberControl label={familyT('explosion.controls.massCount.label')} description={familyT('explosion.controls.massCount.description')} value={parameters.body.massCount} minimum={4} maximum={14} onChange={(massCount) => updateBody({ massCount })} />
-              <NumberControl label={familyT('explosion.controls.throwDistance.label')} description={familyT('explosion.controls.throwDistance.description')} value={parameters.body.throwDistance} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(throwDistance) => updateBody({ throwDistance })} />
-              <NumberControl label={familyT('explosion.controls.buoyancy.label')} description={familyT('explosion.controls.buoyancy.description')} value={parameters.body.buoyancy} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(buoyancy) => updateBody({ buoyancy })} />
-              <NumberControl label={familyT('explosion.controls.billow.label')} description={familyT('explosion.controls.billow.description')} value={parameters.body.billow} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(billow) => updateBody({ billow })} />
+              <PercentControl label={familyT('explosion.controls.throwDistance.label')} description={familyT('explosion.controls.throwDistance.description')} value={parameters.body.throwDistance} minimum={0} maximum={1} onChange={(throwDistance) => updateBody({ throwDistance })} />
+              <PercentControl label={familyT('explosion.controls.buoyancy.label')} description={familyT('explosion.controls.buoyancy.description')} value={parameters.body.buoyancy} minimum={0} maximum={1} onChange={(buoyancy) => updateBody({ buoyancy })} />
+              <PercentControl label={familyT('explosion.controls.billow.label')} description={familyT('explosion.controls.billow.description')} value={parameters.body.billow} minimum={0} maximum={1} onChange={(billow) => updateBody({ billow })} />
             </>
           ) : null}
           {parameters.body.shape === 'rollingFireball' ? (
             <>
               <NumberControl label={familyT('explosion.controls.lobeCount.label')} description={familyT('explosion.controls.lobeCount.description')} value={parameters.body.lobeCount} minimum={3} maximum={9} onChange={(lobeCount) => updateBody({ lobeCount })} />
-              <NumberControl label={familyT('explosion.controls.churnAmount.label')} description={familyT('explosion.controls.churnAmount.description')} value={parameters.body.churnAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(churnAmount) => updateBody({ churnAmount })} />
+              <PercentControl label={familyT('explosion.controls.churnAmount.label')} description={familyT('explosion.controls.churnAmount.description')} value={parameters.body.churnAmount} minimum={0} maximum={1} onChange={(churnAmount) => updateBody({ churnAmount })} />
             </>
           ) : null}
           {parameters.body.shape === 'shockBlast' ? (
             <>
               <NumberControl label={familyT('explosion.controls.pressureCount.label')} description={familyT('explosion.controls.pressureCount.description')} value={parameters.body.pressureCount} minimum={3} maximum={12} onChange={(pressureCount) => updateBody({ pressureCount })} />
               <NumberControl label={familyT('explosion.controls.pressureWidth.label')} description={familyT('explosion.controls.pressureWidth.description')} value={parameters.body.pressureWidth} minimum={1} maximum={48} unit="px" onChange={(pressureWidth) => updateBody({ pressureWidth })} />
-              <NumberControl label={familyT('explosion.controls.pressureSharpness.label')} description={familyT('explosion.controls.pressureSharpness.description')} value={parameters.body.pressureSharpness} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(pressureSharpness) => updateBody({ pressureSharpness })} />
+              <PercentControl label={familyT('explosion.controls.pressureSharpness.label')} description={familyT('explosion.controls.pressureSharpness.description')} value={parameters.body.pressureSharpness} minimum={0} maximum={1} onChange={(pressureSharpness) => updateBody({ pressureSharpness })} />
             </>
           ) : null}
           {parameters.body.shape === 'smokeBurst' ? (
             <>
               <SelectControl label={familyT('explosion.controls.smokeMotion.label')} description={familyT('explosion.controls.smokeMotion.description')} value={parameters.body.smokeMotion} options={SMOKE_MOTION_OPTIONS.map((value) => ({ value, label: familyT(`explosion.options.${value}`) }))} onChange={(smokeMotion) => updateBody({ smokeMotion: smokeMotion as ExplosionSmokeMotion })} />
               <NumberControl label={familyT('explosion.controls.smokeCount.label')} description={familyT('explosion.controls.smokeCount.description')} value={parameters.body.smokeCount} minimum={3} maximum={9} onChange={(smokeCount) => updateBody({ smokeCount })} />
-              <NumberControl label={familyT('explosion.controls.smokeSpread.label')} description={familyT('explosion.controls.smokeSpread.description')} value={parameters.body.smokeSpread} minimum={0.2} maximum={1.4} step={0.01} scale={100} unit="%" onChange={(smokeSpread) => updateBody({ smokeSpread })} />
-              <NumberControl label={familyT('explosion.controls.smokeRise.label')} description={familyT('explosion.controls.smokeRise.description')} value={parameters.body.smokeRise} minimum={-0.6} maximum={0.6} step={0.01} scale={100} unit="%" onChange={(smokeRise) => updateBody({ smokeRise })} />
+              <PercentControl label={familyT('explosion.controls.smokeSpread.label')} description={familyT('explosion.controls.smokeSpread.description')} value={parameters.body.smokeSpread} minimum={0.2} maximum={1.4} onChange={(smokeSpread) => updateBody({ smokeSpread })} />
+              <PercentControl label={familyT('explosion.controls.smokeRise.label')} description={familyT('explosion.controls.smokeRise.description')} value={parameters.body.smokeRise} minimum={-0.6} maximum={0.6} onChange={(smokeRise) => updateBody({ smokeRise })} />
             </>
           ) : null}
-          {isFieldExplosionShape(parameters.body.shape) ? null : <NumberControl label={familyT('explosion.controls.shapeIrregularity.label')} description={familyT('explosion.controls.shapeIrregularity.description')} value={parameters.body.shapeIrregularity} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(shapeIrregularity) => updateBody({ shapeIrregularity })} />}
+          {isFieldExplosionShape(parameters.body.shape) ? null : <PercentControl label={familyT('explosion.controls.shapeIrregularity.label')} description={familyT('explosion.controls.shapeIrregularity.description')} value={parameters.body.shapeIrregularity} minimum={0} maximum={1} onChange={(shapeIrregularity) => updateBody({ shapeIrregularity })} />}
           <NumberControl label={familyT('explosion.controls.rotation.label')} description={familyT('explosion.controls.rotation.description')} value={parameters.body.rotation} minimum={0} maximum={359} unit="°" onChange={(rotation) => updateBody({ rotation })} />
         </div>
       )
     case 'motion':
       return (
         <div className="control-list">
-          <SelectControl label={familyT('explosion.controls.mode.label')} description={familyT('explosion.controls.mode.description')} value={parameters.motion.mode} options={[
+          <SegmentedControl label={familyT('explosion.controls.mode.label')} description={familyT('explosion.controls.mode.description')} value={parameters.motion.mode} options={[
             { value: 'explosion', label: familyT('explosion.options.explosion') },
             { value: 'implosion', label: familyT('explosion.options.implosion') },
           ]} onChange={(mode) => updateMotion({ mode })} />
@@ -139,8 +139,8 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
             { value: 'balanced', label: familyT('explosion.options.balanced') },
             { value: 'drifting', label: familyT('explosion.options.drifting') },
           ]} onChange={(motionCurve) => updateMotion({ motionCurve })} />
-          <NumberControl label={familyT('explosion.controls.formationDuration.label')} description={familyT('explosion.controls.formationDuration.description')} value={parameters.motion.formationDuration} minimum={0.1} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(formationDuration) => updateMotion({ formationDuration })} />
-          <NumberControl label={familyT('explosion.controls.holdDuration.label')} description={familyT('explosion.controls.holdDuration.description')} value={parameters.motion.holdDuration} minimum={0} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(holdDuration) => updateMotion({ holdDuration })} />
+          <PercentControl label={familyT('explosion.controls.formationDuration.label')} description={familyT('explosion.controls.formationDuration.description')} value={parameters.motion.formationDuration} minimum={0.1} maximum={0.8} onChange={(formationDuration) => updateMotion({ formationDuration })} />
+          <PercentControl label={familyT('explosion.controls.holdDuration.label')} description={familyT('explosion.controls.holdDuration.description')} value={parameters.motion.holdDuration} minimum={0} maximum={0.5} onChange={(holdDuration) => updateMotion({ holdDuration })} />
           </>}
         </div>
       )
@@ -181,9 +181,9 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
             </div>
           ) : null}
           <SelectControl label={familyT('explosion.controls.surfaceStyle.label')} description={familyT('explosion.controls.surfaceStyle.description')} value={parameters.surface.style} options={SURFACE_OPTIONS.map((style) => ({ value: style, label: familyT(`explosion.options.${style}`) }))} onChange={(style) => onChange({ ...parameters, surface: createExplosionSurface(style as ExplosionSurfaceStyle, parameters.surface.coverage) })} />
-          <NumberControl label={familyT('explosion.controls.coverage.label')} description={familyT('explosion.controls.coverage.description')} value={parameters.surface.coverage} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(coverage) => onChange({ ...parameters, surface: { ...parameters.surface, coverage } })} />
+          <PercentControl label={familyT('explosion.controls.coverage.label')} description={familyT('explosion.controls.coverage.description')} value={parameters.surface.coverage} minimum={0} maximum={1} onChange={(coverage) => onChange({ ...parameters, surface: { ...parameters.surface, coverage } })} />
           <ExplosionSurfaceAdvancedControls parameters={parameters} onChange={onChange} familyT={familyT} />
-          <NumberControl label={familyT('explosion.controls.dissolveStart.label')} description={familyT('explosion.controls.dissolveStart.description')} value={parameters.motion.dissolveStart} minimum={0.1} maximum={0.9} step={0.01} scale={100} unit="%" onChange={(dissolveStart) => updateMotion({ dissolveStart })} />
+          <PercentControl label={familyT('explosion.controls.dissolveStart.label')} description={familyT('explosion.controls.dissolveStart.description')} value={parameters.motion.dissolveStart} minimum={0.1} maximum={0.9} onChange={(dissolveStart) => updateMotion({ dissolveStart })} />
         </div>
       )
     }
@@ -232,12 +232,12 @@ function ExplosionSurfaceAdvancedControls({
     <>
       {surface.style === 'burningLayers' ? (
         <>
-          <NumberControl label={familyT('explosion.controls.bandWarp.label')} description={familyT('explosion.controls.bandWarp.description')} value={surface.bandWarp} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(bandWarp) => onChange({ ...parameters, surface: { ...surface, bandWarp } })} />
-          <NumberControl label={familyT('explosion.controls.edgeBreakup.label')} description={familyT('explosion.controls.edgeBreakup.description')} value={surface.edgeBreakup} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(edgeBreakup) => onChange({ ...parameters, surface: { ...surface, edgeBreakup } })} />
+          <PercentControl label={familyT('explosion.controls.bandWarp.label')} description={familyT('explosion.controls.bandWarp.description')} value={surface.bandWarp} minimum={0} maximum={1} onChange={(bandWarp) => onChange({ ...parameters, surface: { ...surface, bandWarp } })} />
+          <PercentControl label={familyT('explosion.controls.edgeBreakup.label')} description={familyT('explosion.controls.edgeBreakup.description')} value={surface.edgeBreakup} minimum={0} maximum={1} onChange={(edgeBreakup) => onChange({ ...parameters, surface: { ...surface, edgeBreakup } })} />
         </>
       ) : (
         <>
-          <NumberControl label={familyT('explosion.controls.sootAmount.label')} description={familyT('explosion.controls.sootAmount.description')} value={surface.sootAmount} minimum={0} maximum={0.65} step={0.01} scale={100} unit="%" onChange={(sootAmount) => onChange({ ...parameters, surface: { ...surface, sootAmount } })} />
+          <PercentControl label={familyT('explosion.controls.sootAmount.label')} description={familyT('explosion.controls.sootAmount.description')} value={surface.sootAmount} minimum={0} maximum={0.65} onChange={(sootAmount) => onChange({ ...parameters, surface: { ...surface, sootAmount } })} />
           <NumberControl label={familyT('explosion.controls.sootScale.label')} description={familyT('explosion.controls.sootScale.description')} value={surface.sootScale} minimum={6} maximum={24} unit="px" onChange={(sootScale) => onChange({ ...parameters, surface: { ...surface, sootScale } })} />
         </>
       )}
@@ -245,27 +245,7 @@ function ExplosionSurfaceAdvancedControls({
   )
 }
 
-/** Renders canvas size and deterministic seed controls under the timeline. */
-export function ExplosionPreviewTools({ parameters, onChange, onResize }: {
-  readonly parameters: ExplosionParameters
-  readonly onChange: (parameters: ExplosionParameters) => void
-  readonly onResize?: (nextSize: FrameSize, scaleEffect: boolean) => void
-}) {
-  const { t } = useI18n()
-  return (
-    <GeneratorPreviewTools
-      canvasSize={{ width: parameters.canvasWidth, height: parameters.canvasHeight }}
-      onResize={onResize}
-      seedValue={parameters.seed}
-      onSeedChange={(seed) => onChange({ ...parameters, seed })}
-      minimumSize={MIN_CANVAS_SIZE}
-      maximumSize={MAX_CANVAS_SIZE}
-      seedLabel={t('explosion.controls.seed.label')}
-      seedDescription={t('explosion.controls.seed.description')}
-      seedRandomizeLabel={t('explosion.seed.randomize')}
-    />
-  )
-}
+export const ExplosionPreviewTools = createPreviewTools<ExplosionParameters>({ keyPrefix: 'explosion', minimumSize: MIN_CANVAS_SIZE, maximumSize: MAX_CANVAS_SIZE })
 
 /** Fixed-seed thumbnail parameters for every combustion shape card. */
 const THUMBNAIL_SEED = 1337

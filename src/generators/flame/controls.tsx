@@ -1,8 +1,7 @@
-import { NumberControl } from '../../components/controls'
-import { GeneratorPreviewTools } from '../../components/PreviewTools'
+import { NumberControl, ToggleControl } from '../../components/controls'
+import { createPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
-import type { FrameSize } from '../../shared/pixel/frame'
 import { FamilyPaletteEditor, ShapeCardGrid, type FamilyTranslate } from '../shared-effects/controls'
 import { FLAME_SHAPES, MAX_CANVAS_SIZE, MIN_CANVAS_SIZE, flameNumericBounds, type FlameParameters, type FlameShape } from './model'
 import { FLAME_SHAPE_DEFAULTS } from './presets'
@@ -30,14 +29,11 @@ export function FlameControls({ category, parameters: p, onChange }: { readonly 
     {category === 'shape' && <ShapeCardGrid familyId="flame" label={t('flame.controls.shape.label')} options={cards} selected={p.shape} render={renderFlameFrames} onSelect={(shape) => onChange({ ...p, shape: shape as FlameShape })} />}
     {categoryFields[category].map(field)}
     {category === 'details' && <>
-      <label className="toggle-field"><input type="checkbox" checked={p.sparksEnabled} onChange={(e) => onChange({ ...p, sparksEnabled: e.target.checked })} />{t('flame.controls.sparksEnabled.label')}</label>
+      <ToggleControl label={t('flame.controls.sparksEnabled.label')} description={t('flame.controls.sparksEnabled.description')} checked={p.sparksEnabled} onChange={(sparksEnabled) => onChange({ ...p, sparksEnabled })} />
       {p.sparksEnabled && (['sparkCount', 'sparkSpread', 'sparkRise'] as const).map(field)}
     </>}
   </div>
 }
 
 /** Canvas resize and seed controls shared with the other generator workspaces. */
-export function FlamePreviewTools({ parameters: p, onChange, onResize }: { readonly parameters: FlameParameters; readonly onChange: (p: FlameParameters) => void; readonly onResize?: (size: FrameSize, scaleEffect: boolean) => void }) {
-  const { t } = useI18n()
-  return <GeneratorPreviewTools canvasSize={{ width: p.canvasWidth, height: p.canvasHeight }} onResize={onResize} seedValue={p.seed} onSeedChange={(seed) => onChange({ ...p, seed })} minimumSize={MIN_CANVAS_SIZE} maximumSize={MAX_CANVAS_SIZE} seedLabel={t('flame.controls.seed.label')} seedDescription={t('flame.controls.seed.description')} seedRandomizeLabel={t('flame.seed.randomize')} />
-}
+export const FlamePreviewTools = createPreviewTools<FlameParameters>({ keyPrefix: 'flame', minimumSize: MIN_CANVAS_SIZE, maximumSize: MAX_CANVAS_SIZE })

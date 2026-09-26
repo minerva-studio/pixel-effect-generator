@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { useI18n } from '../i18n/I18nProvider'
+import type { MessageKey } from '../i18n/messages'
 import type { FrameSize } from '../shared/pixel/frame'
 import { InfoHint } from './controls'
 
@@ -30,6 +31,46 @@ interface GeneratorPreviewToolsProps {
   readonly seedLabel: string
   readonly seedDescription?: string
   readonly seedRandomizeLabel: string
+}
+
+export interface PreviewToolParameters {
+  readonly canvasWidth: number
+  readonly canvasHeight: number
+  readonly seed: number
+}
+
+export interface PreviewToolsProps<Parameters extends PreviewToolParameters> {
+  readonly parameters: Parameters
+  readonly onChange: (parameters: Parameters) => void
+  readonly onResize?: (nextSize: FrameSize, scaleEffect: boolean) => void
+}
+
+/** Creates the repeated generator wrapper around the shared preview controls. */
+export function createPreviewTools<Parameters extends PreviewToolParameters>({
+  keyPrefix,
+  minimumSize,
+  maximumSize,
+  seedKey = 'seed',
+}: {
+  readonly keyPrefix: string
+  readonly minimumSize: number
+  readonly maximumSize: number
+  readonly seedKey?: string
+}) {
+  return function GeneratorPreviewToolsFor({ parameters, onChange, onResize }: PreviewToolsProps<Parameters>) {
+    const { t } = useI18n()
+    return <GeneratorPreviewTools
+      canvasSize={{ width: parameters.canvasWidth, height: parameters.canvasHeight }}
+      onResize={onResize}
+      seedValue={parameters.seed}
+      onSeedChange={(seed) => onChange({ ...parameters, seed })}
+      minimumSize={minimumSize}
+      maximumSize={maximumSize}
+      seedLabel={t(`${keyPrefix}.controls.${seedKey}.label` as MessageKey)}
+      seedDescription={t(`${keyPrefix}.controls.${seedKey}.description` as MessageKey)}
+      seedRandomizeLabel={t(`${keyPrefix}.seed.randomize` as MessageKey)}
+    />
+  }
 }
 
 /**

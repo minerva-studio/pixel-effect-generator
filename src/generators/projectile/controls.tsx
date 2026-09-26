@@ -1,9 +1,7 @@
-import { useId } from 'react'
-import { InfoHint, NumberControl, SelectControl } from '../../components/controls'
-import { GeneratorPreviewTools } from '../../components/PreviewTools'
-import { PaletteLibraryPicker } from '../../components/PaletteLibraryPicker'
+import { PercentControl, NumberControl, SelectControl, ToggleControl } from '../../components/controls'
+import { createPreviewTools } from '../../components/PreviewTools'
+import { PaletteEditor } from '../../components/PaletteEditor'
 import { useI18n } from '../../i18n/I18nProvider'
-import { hexToRgb, rgbaToHex, type RgbColor } from '../../shared/pixel/color'
 import type { FrameSize } from '../../shared/pixel/frame'
 import {
   ShapeCardGrid,
@@ -64,35 +62,35 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
           />}
           {!embeddedClassic && <NumberControl label={t('projectile.controls.radius.label')} description={t('projectile.controls.radius.description')} value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />}
           <NumberControl label={t('projectile.controls.bodyLength.label')} description={t('projectile.controls.bodyLength.description')} value={parameters.bodyLength} minimum={4} maximum={limits.maxBodyLength} unit="px" onChange={(value) => update('bodyLength', value)} />
-          <NumberControl label={t('projectile.controls.silhouetteVariation.label')} description={t('projectile.controls.silhouetteVariation.description')} value={parameters.silhouetteVariation} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('silhouetteVariation', value)} />
+          <PercentControl label={t('projectile.controls.silhouetteVariation.label')} description={t('projectile.controls.silhouetteVariation.description')} value={parameters.silhouetteVariation} minimum={0} maximum={1} onChange={(value) => update('silhouetteVariation', value)} />
           {parameters.kind === 'fireball' ? <>
-            <NumberControl label={t('projectile.controls.fireRearExtension.label')} description={t('projectile.controls.fireRearExtension.description')} value={parameters.fireRearExtension} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fireRearExtension', value)} />
-            <NumberControl label={t('projectile.controls.fireRearTurbulence.label')} description={t('projectile.controls.fireRearTurbulence.description')} value={parameters.fireRearTurbulence} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fireRearTurbulence', value)} />
+            <PercentControl label={t('projectile.controls.fireRearExtension.label')} description={t('projectile.controls.fireRearExtension.description')} value={parameters.fireRearExtension} minimum={0} maximum={1} onChange={(value) => update('fireRearExtension', value)} />
+            <PercentControl label={t('projectile.controls.fireRearTurbulence.label')} description={t('projectile.controls.fireRearTurbulence.description')} value={parameters.fireRearTurbulence} minimum={0} maximum={1} onChange={(value) => update('fireRearTurbulence', value)} />
             <NumberControl label={t('projectile.controls.fireFlowSpeed.label')} description={t('projectile.controls.fireFlowSpeed.description')} value={parameters.fireFlowSpeed} minimum={0.25} maximum={3} step={0.05} unit="×" onChange={(value) => update('fireFlowSpeed', value)} />
-            <NumberControl label={t('projectile.controls.fireMottleAmount.label')} description={t('projectile.controls.fireMottleAmount.description')} value={parameters.fireMottleAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('fireMottleAmount', value)} />
+            <PercentControl label={t('projectile.controls.fireMottleAmount.label')} description={t('projectile.controls.fireMottleAmount.description')} value={parameters.fireMottleAmount} minimum={0} maximum={1} onChange={(value) => update('fireMottleAmount', value)} />
           </> : null}
           {parameters.kind === 'arrow' && parameters.arrowMaterial === 'solid' ? <>
-            <NumberControl label={t('projectile.controls.solidHeadLength.label')} description={t('projectile.controls.solidHeadLength.description')} value={parameters.solidHeadLength} minimum={0.15} maximum={0.55} step={0.01} scale={100} unit="%" onChange={(value) => update('solidHeadLength', value)} />
-            <NumberControl label={t('projectile.controls.solidShaftWidth.label')} description={t('projectile.controls.solidShaftWidth.description')} value={parameters.solidShaftWidth} minimum={0.08} maximum={0.4} step={0.01} scale={100} unit="%" onChange={(value) => update('solidShaftWidth', value)} />
-            <NumberControl label={t('projectile.controls.solidFletchingSpread.label')} description={t('projectile.controls.solidFletchingSpread.description')} value={parameters.solidFletchingSpread} minimum={0.2} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('solidFletchingSpread', value)} />
+            <PercentControl label={t('projectile.controls.solidHeadLength.label')} description={t('projectile.controls.solidHeadLength.description')} value={parameters.solidHeadLength} minimum={0.15} maximum={0.55} onChange={(value) => update('solidHeadLength', value)} />
+            <PercentControl label={t('projectile.controls.solidShaftWidth.label')} description={t('projectile.controls.solidShaftWidth.description')} value={parameters.solidShaftWidth} minimum={0.08} maximum={0.4} onChange={(value) => update('solidShaftWidth', value)} />
+            <PercentControl label={t('projectile.controls.solidFletchingSpread.label')} description={t('projectile.controls.solidFletchingSpread.description')} value={parameters.solidFletchingSpread} minimum={0.2} maximum={1} onChange={(value) => update('solidFletchingSpread', value)} />
           </> : null}
           {parameters.kind === 'arrow' && parameters.arrowMaterial === 'energy' ? <>
-            <NumberControl label={t('projectile.controls.energyCoreLength.label')} description={t('projectile.controls.energyCoreLength.description')} value={parameters.energyCoreLength} minimum={0.25} maximum={0.85} step={0.01} scale={100} unit="%" onChange={(value) => update('energyCoreLength', value)} />
-            <NumberControl label={t('projectile.controls.energyShellWidth.label')} description={t('projectile.controls.energyShellWidth.description')} value={parameters.energyShellWidth} minimum={0.05} maximum={0.5} step={0.01} scale={100} unit="%" onChange={(value) => update('energyShellWidth', value)} />
-            <NumberControl label={t('projectile.controls.energyTipSharpness.label')} description={t('projectile.controls.energyTipSharpness.description')} value={parameters.energyTipSharpness} minimum={0.2} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(value) => update('energyTipSharpness', value)} />
+            <PercentControl label={t('projectile.controls.energyCoreLength.label')} description={t('projectile.controls.energyCoreLength.description')} value={parameters.energyCoreLength} minimum={0.25} maximum={0.85} onChange={(value) => update('energyCoreLength', value)} />
+            <PercentControl label={t('projectile.controls.energyShellWidth.label')} description={t('projectile.controls.energyShellWidth.description')} value={parameters.energyShellWidth} minimum={0.05} maximum={0.5} onChange={(value) => update('energyShellWidth', value)} />
+            <PercentControl label={t('projectile.controls.energyTipSharpness.label')} description={t('projectile.controls.energyTipSharpness.description')} value={parameters.energyTipSharpness} minimum={0.2} maximum={0.8} onChange={(value) => update('energyTipSharpness', value)} />
           </> : null}
           {parameters.kind === 'crystal' && parameters.crystalForm === 'spear' ? <>
-            <NumberControl label={t('projectile.controls.crystalSpearTaper.label')} description={t('projectile.controls.crystalSpearTaper.description')} value={parameters.crystalSpearTaper} minimum={0.2} maximum={0.8} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalSpearTaper', value)} />
-            <NumberControl label={t('projectile.controls.crystalSpearThickness.label')} description={t('projectile.controls.crystalSpearThickness.description')} value={parameters.crystalSpearThickness} minimum={0.5} maximum={1.5} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalSpearThickness', value)} />
-            <NumberControl label={t('projectile.controls.crystalRefractionStrength.label')} description={t('projectile.controls.crystalRefractionStrength.description')} value={parameters.crystalRefractionStrength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalRefractionStrength', value)} />
-            <NumberControl label={t('projectile.controls.crystalGlintStrength.label')} description={t('projectile.controls.crystalGlintStrength.description')} value={parameters.crystalGlintStrength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalGlintStrength', value)} />
+            <PercentControl label={t('projectile.controls.crystalSpearTaper.label')} description={t('projectile.controls.crystalSpearTaper.description')} value={parameters.crystalSpearTaper} minimum={0.2} maximum={0.8} onChange={(value) => update('crystalSpearTaper', value)} />
+            <PercentControl label={t('projectile.controls.crystalSpearThickness.label')} description={t('projectile.controls.crystalSpearThickness.description')} value={parameters.crystalSpearThickness} minimum={0.5} maximum={1.5} onChange={(value) => update('crystalSpearThickness', value)} />
+            <PercentControl label={t('projectile.controls.crystalRefractionStrength.label')} description={t('projectile.controls.crystalRefractionStrength.description')} value={parameters.crystalRefractionStrength} minimum={0} maximum={1} onChange={(value) => update('crystalRefractionStrength', value)} />
+            <PercentControl label={t('projectile.controls.crystalGlintStrength.label')} description={t('projectile.controls.crystalGlintStrength.description')} value={parameters.crystalGlintStrength} minimum={0} maximum={1} onChange={(value) => update('crystalGlintStrength', value)} />
             <NumberControl label={t('projectile.controls.crystalGlintSpeed.label')} description={t('projectile.controls.crystalGlintSpeed.description')} value={parameters.crystalGlintSpeed} minimum={0.25} maximum={3} step={0.05} unit="×" onChange={(value) => update('crystalGlintSpeed', value)} />
           </> : null}
           {parameters.kind === 'crystal' && parameters.crystalForm === 'core' ? <>
-            <NumberControl label={t('projectile.controls.crystalCoreScale.label')} description={t('projectile.controls.crystalCoreScale.description')} value={parameters.crystalCoreScale} minimum={0.5} maximum={1.5} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalCoreScale', value)} />
-            <NumberControl label={t('projectile.controls.crystalOrbitRadius.label')} description={t('projectile.controls.crystalOrbitRadius.description')} value={parameters.crystalOrbitRadius} minimum={0.75} maximum={2.25} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalOrbitRadius', value)} />
+            <PercentControl label={t('projectile.controls.crystalCoreScale.label')} description={t('projectile.controls.crystalCoreScale.description')} value={parameters.crystalCoreScale} minimum={0.5} maximum={1.5} onChange={(value) => update('crystalCoreScale', value)} />
+            <PercentControl label={t('projectile.controls.crystalOrbitRadius.label')} description={t('projectile.controls.crystalOrbitRadius.description')} value={parameters.crystalOrbitRadius} minimum={0.75} maximum={2.25} onChange={(value) => update('crystalOrbitRadius', value)} />
             <NumberControl label={t('projectile.controls.crystalOrbitSpeed.label')} description={t('projectile.controls.crystalOrbitSpeed.description')} value={parameters.crystalOrbitSpeed} minimum={0.25} maximum={3} step={0.05} unit="×" onChange={(value) => update('crystalOrbitSpeed', value)} />
-            <NumberControl label={t('projectile.controls.crystalGlintStrength.label')} description={t('projectile.controls.crystalGlintStrength.description')} value={parameters.crystalGlintStrength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('crystalGlintStrength', value)} />
+            <PercentControl label={t('projectile.controls.crystalGlintStrength.label')} description={t('projectile.controls.crystalGlintStrength.description')} value={parameters.crystalGlintStrength} minimum={0} maximum={1} onChange={(value) => update('crystalGlintStrength', value)} />
             <NumberControl label={t('projectile.controls.crystalGlintSpeed.label')} description={t('projectile.controls.crystalGlintSpeed.description')} value={parameters.crystalGlintSpeed} minimum={0.25} maximum={3} step={0.05} unit="×" onChange={(value) => update('crystalGlintSpeed', value)} />
           </> : null}
           {!embeddedClassic && <NumberControl label={t('projectile.controls.rotation.label')} description={t('projectile.controls.rotation.description')} value={parameters.rotationDegrees} minimum={0} maximum={359} unit="°" onChange={(value) => update('rotationDegrees', value)} />}
@@ -102,8 +100,8 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
       return (
         <div className="control-list">
           {!embeddedClassic && <NumberControl label={t('projectile.controls.loopCycles.label')} description={t('projectile.controls.loopCycles.description')} value={parameters.loopCycles} minimum={1} maximum={MAX_LOOP_CYCLES} unit="×" onChange={(value) => update('loopCycles', value)} />}
-          <NumberControl label={t('projectile.controls.pulseAmount.label')} description={t('projectile.controls.pulseAmount.description')} value={parameters.pulseAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('pulseAmount', value)} />
-          <NumberControl label={t('projectile.controls.wobbleAmount.label')} description={t('projectile.controls.wobbleAmount.description')} value={parameters.wobbleAmount} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('wobbleAmount', value)} />
+          <PercentControl label={t('projectile.controls.pulseAmount.label')} description={t('projectile.controls.pulseAmount.description')} value={parameters.pulseAmount} minimum={0} maximum={1} onChange={(value) => update('pulseAmount', value)} />
+          <PercentControl label={t('projectile.controls.wobbleAmount.label')} description={t('projectile.controls.wobbleAmount.description')} value={parameters.wobbleAmount} minimum={0} maximum={1} onChange={(value) => update('wobbleAmount', value)} />
         </div>
       )
     case 'trail':
@@ -122,10 +120,10 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
           />
           {parameters.trailMode !== 'off' ? (
             <>
-              <NumberControl label={t('projectile.controls.trailLength.label')} description={t('projectile.controls.trailLength.description')} value={parameters.trailLength} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('trailLength', value)} />
+              <PercentControl label={t('projectile.controls.trailLength.label')} description={t('projectile.controls.trailLength.description')} value={parameters.trailLength} minimum={0} maximum={1} onChange={(value) => update('trailLength', value)} />
               <NumberControl label={t('projectile.controls.trailWidth.label')} description={t('projectile.controls.trailWidth.description')} value={parameters.trailWidth} minimum={1} maximum={parameters.radius} unit="px" onChange={(value) => update('trailWidth', value)} />
-              <NumberControl label={t('projectile.controls.trailWave.label')} description={t('projectile.controls.trailWave.description')} value={parameters.trailWave} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('trailWave', value)} />
-              <NumberControl label={t('projectile.controls.trailBreakup.label')} description={t('projectile.controls.trailBreakup.description')} value={parameters.trailBreakup} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('trailBreakup', value)} />
+              <PercentControl label={t('projectile.controls.trailWave.label')} description={t('projectile.controls.trailWave.description')} value={parameters.trailWave} minimum={0} maximum={1} onChange={(value) => update('trailWave', value)} />
+              <PercentControl label={t('projectile.controls.trailBreakup.label')} description={t('projectile.controls.trailBreakup.description')} value={parameters.trailBreakup} minimum={0} maximum={1} onChange={(value) => update('trailBreakup', value)} />
             </>
           ) : null}
         </div>
@@ -143,8 +141,8 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
           {parameters.afterimagesEnabled ? (
             <>
               <NumberControl label={t('projectile.controls.afterimageCount.label')} description={t('projectile.controls.afterimageCount.description')} value={parameters.afterimageCount} minimum={0} maximum={MAX_AFTERIMAGE_COUNT} onChange={(value) => update('afterimageCount', value)} />
-              <NumberControl label={t('projectile.controls.afterimageSpacing.label')} description={t('projectile.controls.afterimageSpacing.description')} value={parameters.afterimageSpacing} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('afterimageSpacing', value)} />
-              <NumberControl label={t('projectile.controls.afterimageDecay.label')} description={t('projectile.controls.afterimageDecay.description')} value={parameters.afterimageDecay} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('afterimageDecay', value)} />
+              <PercentControl label={t('projectile.controls.afterimageSpacing.label')} description={t('projectile.controls.afterimageSpacing.description')} value={parameters.afterimageSpacing} minimum={0} maximum={1} onChange={(value) => update('afterimageSpacing', value)} />
+              <PercentControl label={t('projectile.controls.afterimageDecay.label')} description={t('projectile.controls.afterimageDecay.description')} value={parameters.afterimageDecay} minimum={0} maximum={1} onChange={(value) => update('afterimageDecay', value)} />
             </>
           ) : null}
         </div>
@@ -152,23 +150,17 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
     case 'palette':
       return (
         <div className="control-list">
-          <PaletteBandEditor
+          <PaletteEditor
             title={t('projectile.palette.bodyTitle')}
             bandLabel={(index) => t('projectile.palette.bodyBand', { index: index + 1 })}
-            removeLabel={(index) => t('projectile.palette.removeBand', { index: index + 1 })}
-            addLabel={t('projectile.palette.addBodyColor')}
-            alphaLabel={t('projectile.palette.alpha')}
             palette={parameters.bodyPalette}
             minimum={MIN_BODY_PALETTE_SIZE}
             maximum={MAX_BODY_PALETTE_SIZE}
             onChange={(bodyPalette) => update('bodyPalette', bodyPalette)}
           />
-          <PaletteBandEditor
+          <PaletteEditor
             title={t('projectile.palette.energyTitle')}
             bandLabel={(index) => t('projectile.palette.energyBand', { index: index + 1 })}
-            removeLabel={(index) => t('projectile.palette.removeBand', { index: index + 1 })}
-            addLabel={t('projectile.palette.addEnergyColor')}
-            alphaLabel={t('projectile.palette.alpha')}
             palette={parameters.energyPalette}
             minimum={MIN_ENERGY_PALETTE_SIZE}
             maximum={MAX_ENERGY_PALETTE_SIZE}
@@ -246,23 +238,7 @@ export function selectBodyCard(parameters: ProjectileParameters, card: Projectil
   }
 }
 
-/** Renders projectile preview tools: shared canvas sizing plus the seed. */
-export function ProjectilePreviewTools({ parameters, onChange, onResize }: Omit<ProjectileControlsProps, 'category'>) {
-  const { t } = useI18n()
-  return (
-    <GeneratorPreviewTools
-      canvasSize={{ width: parameters.canvasWidth, height: parameters.canvasHeight }}
-      onResize={onResize}
-      seedValue={parameters.seed}
-      onSeedChange={(seed) => onChange({ ...parameters, seed })}
-      minimumSize={MIN_CANVAS_SIZE}
-      maximumSize={MAX_CANVAS_SIZE}
-      seedLabel={t('projectile.controls.randomSeed.label')}
-      seedDescription={t('projectile.controls.randomSeed.description')}
-      seedRandomizeLabel={t('projectile.seed.randomize')}
-    />
-  )
-}
+export const ProjectilePreviewTools = createPreviewTools<ProjectileParameters>({ keyPrefix: 'projectile', minimumSize: MIN_CANVAS_SIZE, maximumSize: MAX_CANVAS_SIZE, seedKey: 'randomSeed' })
 
 /** Spark toggle and tuning; the fireball's other forms reuse it for their borrowed sparks. */
 export function SparkControls({ sparks, onChange }: { readonly sparks: SparkSettings; readonly onChange: (sparks: SparkSettings) => void }) {
@@ -279,139 +255,11 @@ export function SparkControls({ sparks, onChange }: { readonly sparks: SparkSett
       {sparks.sparksEnabled ? (
         <>
           <NumberControl label={t('projectile.controls.sparkCount.label')} description={t('projectile.controls.sparkCount.description')} value={sparks.sparkCount} minimum={0} maximum={MAX_SPARK_COUNT} onChange={(value) => update('sparkCount', value)} />
-          <NumberControl label={t('projectile.controls.sparkSpread.label')} description={t('projectile.controls.sparkSpread.description')} value={sparks.sparkSpread} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sparkSpread', value)} />
-          <NumberControl label={t('projectile.controls.sparkSpacing.label')} description={t('projectile.controls.sparkSpacing.description')} value={sparks.sparkSpacing} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sparkSpacing', value)} />
-          <NumberControl label={t('projectile.controls.sparkFade.label')} description={t('projectile.controls.sparkFade.description')} value={sparks.sparkFade} minimum={0} maximum={1} step={0.01} scale={100} unit="%" onChange={(value) => update('sparkFade', value)} />
+          <PercentControl label={t('projectile.controls.sparkSpread.label')} description={t('projectile.controls.sparkSpread.description')} value={sparks.sparkSpread} minimum={0} maximum={1} onChange={(value) => update('sparkSpread', value)} />
+          <PercentControl label={t('projectile.controls.sparkSpacing.label')} description={t('projectile.controls.sparkSpacing.description')} value={sparks.sparkSpacing} minimum={0} maximum={1} onChange={(value) => update('sparkSpacing', value)} />
+          <PercentControl label={t('projectile.controls.sparkFade.label')} description={t('projectile.controls.sparkFade.description')} value={sparks.sparkFade} minimum={0} maximum={1} onChange={(value) => update('sparkFade', value)} />
         </>
       ) : null}
     </>
-  )
-}
-
-/** One compact on/off field with the shared toggle-track markup. */
-function ToggleControl({
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  readonly label: string
-  readonly description: string
-  readonly checked: boolean
-  readonly onChange: (checked: boolean) => void
-}) {
-  const hintId = useId()
-  return (
-    <div className="parameter-field">
-      <div className="field-copy">
-        <span className="field-title">
-          <span className="field-label">{label}</span>
-          <InfoHint label={label} description={description} hintId={hintId} />
-        </span>
-      </div>
-      <label className="toggle-field" aria-label={label}>
-        <input
-          type="checkbox"
-          aria-label={label}
-          checked={checked}
-          onChange={(event) => onChange(event.target.checked)}
-        />
-        <span aria-hidden="true" />
-      </label>
-    </div>
-  )
-}
-
-/** Edits one ordered palette with stable row identity and alpha support. */
-function PaletteBandEditor({
-  title,
-  bandLabel,
-  removeLabel,
-  addLabel,
-  alphaLabel,
-  palette,
-  minimum,
-  maximum,
-  onChange,
-}: {
-  readonly title: string
-  readonly bandLabel: (index: number) => string
-  readonly removeLabel: (index: number) => string
-  readonly addLabel: string
-  readonly alphaLabel: string
-  readonly palette: readonly RgbColor[]
-  readonly minimum: number
-  readonly maximum: number
-  readonly onChange: (palette: readonly RgbColor[]) => void
-}) {
-  const { t } = useI18n()
-  const updateColor = (index: number, value: string) => onChange(
-    palette.map((color, colorIndex) => (colorIndex === index ? { ...hexToRgb(value), a: color.a } : color)),
-  )
-  const updateAlpha = (index: number, value: number) => onChange(
-    palette.map((color, colorIndex) => (colorIndex === index ? { ...color, a: value } : color)),
-  )
-  const removeColor = (index: number) => onChange(palette.filter((_, colorIndex) => colorIndex !== index))
-  const addColor = () => {
-    const last = palette[palette.length - 1]
-    const previous = palette[Math.max(0, palette.length - 2)]
-    onChange([...palette, {
-      r: Math.round((last.r + previous.r) / 2),
-      g: Math.round((last.g + previous.g) / 2),
-      b: Math.round((last.b + previous.b) / 2),
-      a: Math.round((last.a + previous.a) / 2),
-    }])
-  }
-  return (
-    <div className="palette-editor">
-      <p className="panel-note">{title}</p>
-      <PaletteLibraryPicker palette={palette} onChange={onChange} minimum={minimum} maximum={maximum} />
-      <div className="palette-list">
-        {palette.map((color, index) => (
-          // Palette bands are an ordered list that is never reordered, so the
-          // positional index is a stable identity; a color-derived key would
-          // remount the row on every change and interrupt picker/drag input.
-          <div className="palette-row" key={index}>
-            <span className="palette-order">{String(index + 1).padStart(2, '0')}</span>
-            <input
-              aria-label={bandLabel(index)}
-              type="color"
-              value={rgbaToHex(color).slice(0, 7)}
-              onChange={(event) => updateColor(index, event.target.value)}
-            />
-            <label className="palette-alpha">
-              <span>{alphaLabel}</span>
-              <input
-                aria-label={alphaLabel}
-                type="range"
-                min={0}
-                max={255}
-                value={color.a}
-                onChange={(event) => updateAlpha(index, Number(event.target.value))}
-              />
-              <code>{color.a}</code>
-            </label>
-            <code>{rgbaToHex(color).toUpperCase()}</code>
-            <button
-              className="remove-button"
-              type="button"
-              disabled={palette.length <= minimum}
-              aria-label={removeLabel(index)}
-              onClick={() => removeColor(index)}
-            >
-              {t('projectile.palette.remove')}
-            </button>
-          </div>
-        ))}
-      </div>
-      <button
-        className="secondary-button"
-        type="button"
-        disabled={palette.length >= maximum}
-        onClick={addColor}
-      >
-        {addLabel}
-      </button>
-    </div>
   )
 }
