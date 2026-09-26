@@ -276,26 +276,27 @@ function buildRollingFireballPrimitives(
   lifecycle: number,
 ): BodyPrimitive[] {
   const radius = parameters.body.radius
-  // Game fireballs grow across most of the clip instead of finishing during the shared fast formation phase.
-  // The final visible frame remains mid-growth; the transparent endpoint never exposes a held full-size body.
-  const growthEnd = 1
-  const growth = clamp01(lifecycle / growthEnd)
+  const growthEnd = 0.7
+  const growth = easeOutCubic(clamp01(lifecycle / growthEnd))
+  const lateExpansion = 1 + clamp01((lifecycle - growthEnd) / (0.96 - growthEnd)) * 0.08
   const coreScale = parameters.volume.profile === 'moltenCore' ? 0.46 : 0.34
   const coreExpansion = 1 + growth * 0.16 * parameters.body.churnAmount
-  const primitives: BodyPrimitive[] = [{
+  const coreBurnout = 1 - smoothStep(clamp01((lifecycle - parameters.motion.dissolveStart) / Math.max(0.05, 0.82 - parameters.motion.dissolveStart)))
+  const primitives: BodyPrimitive[] = []
+  if (coreBurnout > 0) primitives.push({
     kind: 'ellipse', owner: 0, depth: parameters.volume.profile === 'moltenCore' ? 4 : 0, role: 'core',
     x: 0, y: 0,
-    rx: radius * coreScale * growth * coreExpansion,
-    ry: radius * coreScale * growth * coreExpansion,
+    rx: radius * coreScale * growth * coreExpansion * coreBurnout,
+    ry: radius * coreScale * growth * coreExpansion * coreBurnout,
     angle: 0,
-  }]
+  })
   blobs.slice(0, parameters.body.lobeCount).forEach((blob, index) => {
     const lobeDelay = blob.delay * 0.45 + index * 0.006
-    const lobeGrowth = clamp01((lifecycle - lobeDelay) / Math.max(0.01, growthEnd - lobeDelay))
+    const lobeGrowth = easeOutCubic(clamp01((lifecycle - lobeDelay) / Math.max(0.01, growthEnd - lobeDelay)))
     // Slightly different rates preserve local motion while the overall expansion remains steady.
     const lobeRate = 0.28 + blob.tongueNoise * 0.04
     const continuingExpansion = 1 + lobeGrowth * lobeRate * parameters.body.churnAmount
-    const centerDistance = radius * 0.34 * lobeGrowth
+    const centerDistance = radius * 0.34 * lobeGrowth * lateExpansion
       * (1 + lobeGrowth * 0.18 * parameters.body.churnAmount) * blob.radialScale
     const highCount = Math.max(0, parameters.body.lobeCount - 5)
     const horizontalRadius = parameters.body.lobeCount <= 5
@@ -305,9 +306,9 @@ function buildRollingFireballPrimitives(
       kind: 'ellipse', owner: index + 1, depth: blob.depth, role: 'fire',
       x: Math.cos(blob.angle) * centerDistance,
       y: Math.sin(blob.angle) * centerDistance,
-      rx: radius * horizontalRadius * blob.radiusScale * lobeGrowth
+      rx: radius * horizontalRadius * blob.radiusScale * lobeGrowth * lateExpansion
         * continuingExpansion * (1 + lobeGrowth * 0.1 * parameters.body.churnAmount),
-      ry: radius * 0.3 * blob.radiusScale * lobeGrowth * continuingExpansion,
+      ry: radius * 0.3 * blob.radiusScale * lobeGrowth * continuingExpansion * lateExpansion,
       angle: blob.angle,
     })
   })
@@ -315,12 +316,15 @@ function buildRollingFireballPrimitives(
   const cinderCount = Math.max(7, Math.round(parameters.body.lobeCount * 1.5))
   for (let index = 0; index < cinderCount; index += 1) {
     const launch = 0.54 + hashUnit(parameters.seed, index, 101) * 0.2
-    const progress = clamp01((lifecycle - launch) / Math.max(0.01, 0.96 - launch))
-    if (progress <= 0) continue
+    const expiry = 0.965 + hashUnit(parameters.seed, index, 106) * 0.02
+    const progress = clamp01((lifecycle - launch) / Math.max(0.01, expiry - launch))
+    if (progress <= 0 || lifecycle >= expiry) continue
     const angle = parameters.body.rotation / 180 * Math.PI + hashUnit(parameters.seed, index, 102) * Math.PI * 2
     const distance = radius * (0.58 + progress * (0.38 + hashUnit(parameters.seed, index, 103) * 0.34))
     const tangent = (hashUnit(parameters.seed, index, 104) * 2 - 1) * radius * 0.1 * Math.sin(progress * Math.PI)
-    const cinderRadius = Math.max(1, radius * (0.026 + hashUnit(parameters.seed, index, 105) * 0.025) * (1 - progress * 0.35))
+    const cinderBloom = 0.45 + smoothStep(clamp01(progress / 0.75)) * 0.55
+    const cinderShrink = smoothStep(clamp01((progress - 0.7) / 0.3))
+    const cinderRadius = Math.max(0.7, radius * (0.026 + hashUnit(parameters.seed, index, 105) * 0.025) * cinderBloom * (1 - cinderShrink * 0.8))
     primitives.push({
       kind: 'ellipse', owner: 30 + index, depth: 4, role: 'cinder',
       x: Math.cos(angle) * distance - Math.sin(angle) * tangent,
@@ -879,11 +883,13 @@ function rollingFireballHitEroded(
   lifecycle: number,
 ): boolean {
   if (parameters.body.shape !== 'rollingFireball' || hit.role !== 'fire') return false
-  const ending = smoothStep(clamp01((lifecycle - 0.62) / 0.34))
+  const end = 0.9 + hashUnit(parameters.seed, hit.owner, 107) * 0.07
+  const ending = clamp01((lifecycle - parameters.motion.dissolveStart) / Math.max(0.05, end - parameters.motion.dissolveStart)) ** 1.5
   const angle = Math.atan2(y, x)
   const sector = Math.floor((angle + Math.PI) / (Math.PI / 6))
-  const erosion = 0.08 + hashUnit(parameters.seed, hit.owner, sector) * 0.2
-  return hit.distance > 1 - ending * erosion
+  const erosion = 0.9 + hashUnit(parameters.seed, hit.owner, sector) * 0.1
+  const cavity = Math.hypot(x, y) < parameters.body.radius * 0.35 * ending
+  return lifecycle >= end || cavity || hit.distance > 1 - ending * erosion
 }
 
 /** Draws ordered rear/core/front volumes with deterministic occlusion and fixed top-left light. */

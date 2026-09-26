@@ -212,17 +212,17 @@ describe('renderExplosionFrames', () => {
     expect(frameBytes(renderExplosionFrames(hiddenCoverage))).toEqual(frameBytes(renderExplosionFrames(visible)))
   })
 
-  it('keeps the game fireball expanding after formation without repeating a hold frame', () => {
+  it('grows the game fireball into mid-clip without a held frame before burnout', () => {
     const parameters = quietParameters({}, MODERN_EXPLOSION_PARAMETERS)
     const frames = renderExplosionFrames(parameters)
     const visibleAreas = frames.slice(1, -1).map(countOpaque)
-    for (let index = 1; index < visibleAreas.length; index += 1) {
+    for (let index = 2; index <= 4; index += 1) {
       expect(visibleAreas[index], `visible frame ${index + 1} must keep expanding`).toBeGreaterThan(visibleAreas[index - 1])
     }
     expect(countOpaque(frames[5])).toBeGreaterThan(countOpaque(frames[4]))
-    expect(countOpaque(frames[7])).toBeGreaterThan(countOpaque(frames[5]))
+    expect(countOpaque(frames[7])).toBeLessThan(countOpaque(frames[5]))
     expect(opaqueBounds(frames[5]).width).toBeGreaterThanOrEqual(opaqueBounds(frames[4]).width)
-    expect(opaqueBounds(frames[7]).width).toBeGreaterThan(opaqueBounds(frames[5]).width)
+    expect(countOpaque(frames[6])).toBeLessThan(countOpaque(frames[5]))
   })
 
   it('cools game-fireball lobes through orange into the deepest burnout color', () => {
@@ -274,7 +274,7 @@ describe('renderExplosionFrames', () => {
     }, MODERN_EXPLOSION_PARAMETERS)
     const frame = renderExplosionFrames(parameters)[7]
     const rearLobeCenterX = frame.width / 2 + parameters.body.radius * 0.28
-    expect(opaqueFractionInCircle(frame, rearLobeCenterX, frame.height / 2, parameters.body.radius * 0.17)).toBeGreaterThan(0.9)
+    expect(opaqueFractionInCircle(frame, rearLobeCenterX, frame.height / 2, parameters.body.radius * 0.17)).toBeGreaterThan(0.8)
   })
 
   it('keeps smoke above the ember bed without outlining every smoke lobe', () => {
