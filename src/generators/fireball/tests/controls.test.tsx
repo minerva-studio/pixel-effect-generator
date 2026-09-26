@@ -2,9 +2,19 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { I18nProvider } from '../../../i18n/I18nProvider'
 import { FireballControls } from '../controls'
-import { DEFAULT_FIREBALL_PARAMETERS } from '../model'
+import { DEFAULT_FIREBALL_PARAMETERS, selectFireballShape } from '../model'
 
 describe('fireball controls', () => {
+  it('changes only the selected fireball form', () => {
+    const base = { ...DEFAULT_FIREBALL_PARAMETERS, warmPalette: DEFAULT_FIREBALL_PARAMETERS.warmPalette.slice().reverse() }
+    const selected = selectFireballShape(base, 'puff')
+    expect(selected.form).toBe('puff')
+    expect(selected.warmPalette).toBe(base.warmPalette)
+    expect(selected.smokePalette).toBe(base.smokePalette)
+    expect(selected.sparks).toBe(base.sparks)
+    expect(selected.puff).toBe(base.puff)
+  })
+
   it('keeps four form previews and selects the wrapped core through a shape setting', () => {
     const parameters = { ...DEFAULT_FIREBALL_PARAMETERS, form: 'classic' as const }
     const markup = renderToStaticMarkup(

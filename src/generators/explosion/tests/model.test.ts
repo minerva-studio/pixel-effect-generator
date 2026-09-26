@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   LEGACY_EXPLOSION_PARAMETERS,
+  DEFAULT_EXPLOSION_PARAMETERS,
   MODERN_EXPLOSION_PARAMETERS,
   assertValidExplosionParameters,
   createExplosionSurface,
@@ -9,9 +10,21 @@ import {
   explosionVolumeProfiles,
   normalizeExplosionVolume,
   resizeExplosionCanvas,
+  selectExplosionShape,
 } from '../model'
 
 describe('combustion explosion parameter model', () => {
+  it('changes body shape while preserving palette and effects and normalizing required dependencies', () => {
+    const base = { ...DEFAULT_EXPLOSION_PARAMETERS, volume: { enabled: true, profile: 'hardShell' as const } }
+    const selected = selectExplosionShape(base, 'billowBurst')
+    expect(selected.body.shape).toBe('billowBurst')
+    expect(selected.palette).toBe(base.palette)
+    expect(selected.core).toBe(base.core)
+    expect(selected.fragments).toBe(base.fragments)
+    expect(selected.surface.style).toBe('burningLayers')
+    expect(selected.volume).toEqual({ enabled: false, profile: 'hardShell' })
+  })
+
   it('defaults to the classic retro radial look while modern defaults stay billowing', () => {
     expect(LEGACY_EXPLOSION_PARAMETERS.body.shape).toBe('legacyRadial')
     expect(LEGACY_EXPLOSION_PARAMETERS.surface.style).toBe('retroPixel')

@@ -1,8 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../../i18n/I18nProvider'
-import { ProjectileControls, ProjectilePreviewTools, selectBodyCard, selectedBodyCard } from '../controls'
-import { DEFAULT_PROJECTILE_PARAMETERS, type ProjectileParameters } from '../model'
+import { ProjectileControls, ProjectilePreviewTools } from '../controls'
+import { DEFAULT_PROJECTILE_PARAMETERS, selectProjectileShape, selectedProjectileShape, type ProjectileParameters } from '../model'
 import type { ProjectileCategory } from '../module'
 
 afterEach(() => vi.unstubAllGlobals())
@@ -34,26 +34,26 @@ describe('projectile controls', () => {
   })
 
   it('maps every body card without changing unrelated parameters', () => {
-    const base = { ...DEFAULT_PROJECTILE_PARAMETERS, radius: 23, arrowMaterial: 'energy' as const }
-    const fireball = selectBodyCard(base, 'fireball')
+    const base = { ...DEFAULT_PROJECTILE_PARAMETERS, radius: 23, arrowMaterial: 'energy' as const, trailMode: 'off' as const, sparksEnabled: true }
+    const fireball = selectProjectileShape(base, 'fireball')
     expect(fireball).toMatchObject({ kind: 'fireball', arrowMaterial: 'energy', radius: 23 })
-    expect(selectedBodyCard(fireball)).toBe('fireball')
+    expect(selectedProjectileShape(fireball)).toBe('fireball')
 
-    const solidArrow = selectBodyCard(base, 'solidArrow')
+    const solidArrow = selectProjectileShape(base, 'solidArrow')
     expect(solidArrow).toMatchObject({ kind: 'arrow', arrowMaterial: 'solid', radius: 23 })
-    expect(selectedBodyCard(solidArrow)).toBe('solidArrow')
+    expect(selectedProjectileShape(solidArrow)).toBe('solidArrow')
 
-    const energyArrow = selectBodyCard(base, 'energyArrow')
+    const energyArrow = selectProjectileShape(base, 'energyArrow')
     expect(energyArrow).toMatchObject({ kind: 'arrow', arrowMaterial: 'energy', radius: 23 })
-    expect(selectedBodyCard(energyArrow)).toBe('energyArrow')
+    expect(selectedProjectileShape(energyArrow)).toBe('energyArrow')
 
-    const crystalSpear = selectBodyCard(base, 'crystalSpear')
-    expect(crystalSpear).toMatchObject({ kind: 'crystal', crystalForm: 'spear', trailMode: 'energy' })
-    expect(selectedBodyCard(crystalSpear)).toBe('crystalSpear')
+    const crystalSpear = selectProjectileShape(base, 'crystalSpear')
+    expect(crystalSpear).toMatchObject({ kind: 'crystal', crystalForm: 'spear', trailMode: 'off', sparksEnabled: true, bodyPalette: base.bodyPalette, energyPalette: base.energyPalette })
+    expect(selectedProjectileShape(crystalSpear)).toBe('crystalSpear')
 
-    const crystalCore = selectBodyCard(base, 'crystalCore')
-    expect(crystalCore).toMatchObject({ kind: 'crystal', crystalForm: 'core', trailMode: 'energy' })
-    expect(selectedBodyCard(crystalCore)).toBe('crystalCore')
+    const crystalCore = selectProjectileShape(base, 'crystalCore')
+    expect(crystalCore).toMatchObject({ kind: 'crystal', crystalForm: 'core', trailMode: 'off', sparksEnabled: true, bodyPalette: base.bodyPalette, energyPalette: base.energyPalette })
+    expect(selectedProjectileShape(crystalCore)).toBe('crystalCore')
   })
 
   it('shows only the selected body family controls', () => {
@@ -70,29 +70,30 @@ describe('projectile controls', () => {
     expect(core).not.toContain('Crystal taper')
   })
 
-  it('renders the trail category with conditional fields', () => {
+  it('renders the trail as a foldable optional layer', () => {
     const trail = renderControls('trail')
-    expect(trail).toContain('Trail length')
-    expect(trail).toContain('Trail width')
-    expect(trail).toContain('Trail wave')
+    expect(trail).toContain('class="effect-section enabled')
+    expect(trail).toContain('aria-label="Trail"')
+    expect(trail).not.toContain('Trail length')
     const off = renderControls('trail', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, trailMode: 'off' })
-    expect(off).not.toContain('Trail length')
+    expect(off).toContain('class="effect-section  "')
+    expect(off).toContain('Off')
   })
 
-  it('renders effect toggles with conditional sliders', () => {
+  it('renders sparks and afterimages as foldable optional layers', () => {
     const effects = renderControls('effects')
     expect(effects).toContain('class="toggle-field"')
     expect(effects).toContain('type="checkbox"')
     expect(effects).not.toContain('scale-toggle')
-    expect(effects).toContain('Spark count')
-    expect(effects).toContain('Afterimage count')
+    expect(effects).toContain('aria-label="Sparks"')
+    expect(effects).toContain('aria-label="Afterimages"')
+    expect(effects).not.toContain('Spark count')
     const disabled = renderControls('effects', 'en', {
       ...DEFAULT_PROJECTILE_PARAMETERS,
       sparksEnabled: false,
       afterimagesEnabled: false,
     })
-    expect(disabled).not.toContain('Spark count')
-    expect(disabled).not.toContain('Afterimage count')
+    expect(disabled.match(/class="effect-section  "/g)).toHaveLength(2)
   })
 
   it('renders both palette editors with alpha sliders and 8-digit hex', () => {

@@ -318,6 +318,10 @@
       "add": "Add color band",
       "remove": "Remove",
       "removeBand": "Remove color band {index}"
+    },
+    "feature": {
+      "enabled": "On",
+      "disabled": "Off"
     }
   },
   "slash": {
@@ -502,7 +506,7 @@
     "previewTitle": "Fire burst study",
     "categories": {
       "body": {
-        "label": "Body",
+        "label": "Shape",
         "description": "Choose the explosion shape and tune its size and outline."
       },
       "motion": {
@@ -802,7 +806,8 @@
       "seed": {
         "label": "Random seed",
         "description": "Unsigned 32-bit value used to reproduce the same effect."
-      }
+      },
+      "fieldMotionNote": "Set explosion or implosion for this field shape on the Shape tab. Field simulation fixes its formation and hold timing."
     },
     "options": {
       "billowBurst": "Billow burst",
@@ -904,7 +909,7 @@
     "previewTitle": "Bloom study",
     "categories": {
       "body": {
-        "label": "Body",
+        "label": "Shape",
         "description": "Choose the bloom shape and tune its size and outline."
       },
       "motion": {
@@ -1396,7 +1401,7 @@
     "previewTitle": "Flight loop study",
     "categories": {
       "body": {
-        "label": "Body",
+        "label": "Shape",
         "description": "Pick the projectile body, size, and baked facing."
       },
       "motion": {

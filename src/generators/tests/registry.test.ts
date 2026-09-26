@@ -168,7 +168,7 @@ describe('dual module sessions', () => {
     expect(sheet.height).toBe(updatedParameters.canvasHeight)
   })
   it('exposes per-generator preview metadata', () => {
-    expect(slashModule.categories.map((category) => category.id)).toEqual(['shape', 'palette', 'motion', 'fragments', 'breakup'])
+    expect(slashModule.categories.map((category) => category.id)).toEqual(['shape', 'motion', 'breakup', 'fragments', 'palette'])
     expect(GENERATOR_REGISTRY.get('slash').previewTitle).toBe('Sweep study')
     expect(GENERATOR_REGISTRY.get('slash').readFrameSize(GENERATOR_REGISTRY.get('slash').createSession(12))).toEqual({ width: 128, height: 128 })
     expect(dualRegistry.get('blip').previewTitle).toBe('Blip loop')

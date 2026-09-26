@@ -6,9 +6,21 @@ import {
   bloomShapeCount,
   createBloomSurface,
   resizeBloomCanvas,
+  selectBloomShape,
 } from '../model'
 
 describe('energy bloom parameter model', () => {
+  it('changes only the selected body shape', () => {
+    const base = { ...DEFAULT_BLOOM_PARAMETERS, palette: [...DEFAULT_BLOOM_PARAMETERS.palette].reverse() }
+    const selected = selectBloomShape(base, 'arcaneBurst')
+    expect(selected.body.shape).toBe('arcaneBurst')
+    expect(selected.palette).toBe(base.palette)
+    expect(selected.surface).toBe(base.surface)
+    expect(selected.motion).toBe(base.motion)
+    expect(selected.tongues).toBe(base.tongues)
+    expect(selected.fragments).toBe(base.fragments)
+  })
+
   it('defaults to soft petals with tongues disabled', () => {
     expect(DEFAULT_BLOOM_PARAMETERS.body.shape).toBe('softPetals')
     expect(DEFAULT_BLOOM_PARAMETERS.tongues.enabled).toBe(false)

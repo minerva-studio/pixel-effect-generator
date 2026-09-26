@@ -74,6 +74,26 @@ export interface ProjectileParameters {
   readonly energyPalette: readonly RgbColor[]
 }
 
+export type ProjectileShape = 'fireball' | 'solidArrow' | 'energyArrow' | 'crystalSpear' | 'crystalCore'
+
+/** Returns the card identity represented by a projectile's body fields. */
+export function selectedProjectileShape(parameters: ProjectileParameters): ProjectileShape {
+  if (parameters.kind === 'fireball') return 'fireball'
+  if (parameters.kind === 'crystal') return parameters.crystalForm === 'spear' ? 'crystalSpear' : 'crystalCore'
+  return parameters.arrowMaterial === 'solid' ? 'solidArrow' : 'energyArrow'
+}
+
+/** Changes only projectile body identity and leaves the selected trail/effects intact. */
+export function selectProjectileShape(parameters: ProjectileParameters, shape: ProjectileShape): ProjectileParameters {
+  switch (shape) {
+    case 'fireball': return { ...parameters, kind: 'fireball' }
+    case 'solidArrow': return { ...parameters, kind: 'arrow', arrowMaterial: 'solid' }
+    case 'energyArrow': return { ...parameters, kind: 'arrow', arrowMaterial: 'energy' }
+    case 'crystalSpear': return { ...parameters, kind: 'crystal', crystalForm: 'spear' }
+    case 'crystalCore': return { ...parameters, kind: 'crystal', crystalForm: 'core' }
+  }
+}
+
 /** Size-dependent bounds for one centered flight loop. */
 export interface ProjectileFrameLimits {
   readonly maxRadius: number

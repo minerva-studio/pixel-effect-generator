@@ -39,6 +39,11 @@ export interface FlameParameters {
   readonly palette: readonly RgbColor[]
 }
 
+/** Changes the selected shape without resetting the flame's other parameters. */
+export function selectFlameShape(parameters: FlameParameters, shape: FlameShape): FlameParameters {
+  return { ...parameters, shape }
+}
+
 /** Reserves room for the animated silhouette and its bottom anchor. */
 export function flameFrameLimits(size: FrameSize) {
   return { width: Math.max(4, Math.floor((size.width - 4) / 1.4)), height: Math.max(4, Math.floor((size.height - 4) / 1.2)), sparkRise: size.height - 4 }

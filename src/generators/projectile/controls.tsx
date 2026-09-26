@@ -1,9 +1,10 @@
-import { PercentControl, NumberControl, SelectControl, ToggleControl } from '../../components/controls'
+import { PercentControl, NumberControl, SelectControl } from '../../components/controls'
 import { createPreviewTools } from '../../components/PreviewTools'
 import { PaletteEditor } from '../../components/PaletteEditor'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { FrameSize } from '../../shared/pixel/frame'
 import {
+  FeatureSection,
   ShapeCardGrid,
   type ShapeCardOption,
 } from '../shared-effects/controls'
@@ -19,7 +20,10 @@ import {
   MIN_CANVAS_SIZE,
   MIN_ENERGY_PALETTE_SIZE,
   projectileFrameLimits,
+  selectProjectileShape,
+  selectedProjectileShape,
   type ProjectileParameters,
+  type ProjectileShape,
   type SparkSettings,
 } from './model'
 import type { ProjectileCategory } from './module'
@@ -56,9 +60,9 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
             options={allowedKind ? BODY_CARD_OPTIONS.filter((option) =>
               allowedKind === 'arrow' ? option.value === 'solidArrow' || option.value === 'energyArrow'
                 : option.value === 'crystalSpear' || option.value === 'crystalCore') : BODY_CARD_OPTIONS}
-            selected={selectedBodyCard(parameters)}
+            selected={selectedProjectileShape(parameters)}
             render={renderProjectileFrames}
-            onSelect={(value) => onChange(selectBodyCard(parameters, value as ProjectileBodyCard))}
+            onSelect={(value) => onChange(selectProjectileShape(parameters, value as ProjectileShape))}
           />}
           {!embeddedClassic && <NumberControl label={t('projectile.controls.radius.label')} description={t('projectile.controls.radius.description')} value={parameters.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(value) => update('radius', value)} />}
           <NumberControl label={t('projectile.controls.bodyLength.label')} description={t('projectile.controls.bodyLength.description')} value={parameters.bodyLength} minimum={4} maximum={limits.maxBodyLength} unit="px" onChange={(value) => update('bodyLength', value)} />
@@ -107,44 +111,27 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
     case 'trail':
       return (
         <div className="control-list">
-          <SelectControl
-            label={t('projectile.controls.trailMode.label')}
-            description={t('projectile.controls.trailMode.description')}
-            value={parameters.trailMode}
-            options={[
-              { value: 'off', label: t('projectile.options.trailOff') },
+          <FeatureSection label={t('projectile.controls.trailMode.label')} description={t('projectile.controls.trailMode.description')} enabled={parameters.trailMode !== 'off'} status={t(parameters.trailMode === 'off' ? 'controls.feature.disabled' : 'controls.feature.enabled')} onChangeEnabled={(enabled) => update('trailMode', enabled ? (parameters.kind === 'fireball' ? 'fire' : 'energy') : 'off')}>
+            <SelectControl label={t('projectile.controls.trailMode.label')} description={t('projectile.controls.trailMode.description')} value={parameters.trailMode === 'off' ? (parameters.kind === 'fireball' ? 'fire' : 'energy') : parameters.trailMode} options={[
               { value: 'fire', label: t('projectile.options.trailFire') },
               { value: 'energy', label: t('projectile.options.trailEnergy') },
-            ]}
-            onChange={(value) => update('trailMode', value)}
-          />
-          {parameters.trailMode !== 'off' ? (
-            <>
-              <PercentControl label={t('projectile.controls.trailLength.label')} description={t('projectile.controls.trailLength.description')} value={parameters.trailLength} minimum={0} maximum={1} onChange={(value) => update('trailLength', value)} />
-              <NumberControl label={t('projectile.controls.trailWidth.label')} description={t('projectile.controls.trailWidth.description')} value={parameters.trailWidth} minimum={1} maximum={parameters.radius} unit="px" onChange={(value) => update('trailWidth', value)} />
-              <PercentControl label={t('projectile.controls.trailWave.label')} description={t('projectile.controls.trailWave.description')} value={parameters.trailWave} minimum={0} maximum={1} onChange={(value) => update('trailWave', value)} />
-              <PercentControl label={t('projectile.controls.trailBreakup.label')} description={t('projectile.controls.trailBreakup.description')} value={parameters.trailBreakup} minimum={0} maximum={1} onChange={(value) => update('trailBreakup', value)} />
-            </>
-          ) : null}
+            ]} onChange={(value) => update('trailMode', value)} />
+            <PercentControl label={t('projectile.controls.trailLength.label')} description={t('projectile.controls.trailLength.description')} value={parameters.trailLength} minimum={0} maximum={1} onChange={(value) => update('trailLength', value)} />
+            <NumberControl label={t('projectile.controls.trailWidth.label')} description={t('projectile.controls.trailWidth.description')} value={parameters.trailWidth} minimum={1} maximum={parameters.radius} unit="px" onChange={(value) => update('trailWidth', value)} />
+            <PercentControl label={t('projectile.controls.trailWave.label')} description={t('projectile.controls.trailWave.description')} value={parameters.trailWave} minimum={0} maximum={1} onChange={(value) => update('trailWave', value)} />
+            <PercentControl label={t('projectile.controls.trailBreakup.label')} description={t('projectile.controls.trailBreakup.description')} value={parameters.trailBreakup} minimum={0} maximum={1} onChange={(value) => update('trailBreakup', value)} />
+          </FeatureSection>
         </div>
       )
     case 'effects':
       return (
         <div className="control-list">
           <SparkControls sparks={parameters} onChange={(sparks) => onChange({ ...parameters, ...sparks })} />
-          <ToggleControl
-            label={t('projectile.controls.afterimages.label')}
-            description={t('projectile.controls.afterimages.description')}
-            checked={parameters.afterimagesEnabled}
-            onChange={(value) => update('afterimagesEnabled', value)}
-          />
-          {parameters.afterimagesEnabled ? (
-            <>
-              <NumberControl label={t('projectile.controls.afterimageCount.label')} description={t('projectile.controls.afterimageCount.description')} value={parameters.afterimageCount} minimum={0} maximum={MAX_AFTERIMAGE_COUNT} onChange={(value) => update('afterimageCount', value)} />
-              <PercentControl label={t('projectile.controls.afterimageSpacing.label')} description={t('projectile.controls.afterimageSpacing.description')} value={parameters.afterimageSpacing} minimum={0} maximum={1} onChange={(value) => update('afterimageSpacing', value)} />
-              <PercentControl label={t('projectile.controls.afterimageDecay.label')} description={t('projectile.controls.afterimageDecay.description')} value={parameters.afterimageDecay} minimum={0} maximum={1} onChange={(value) => update('afterimageDecay', value)} />
-            </>
-          ) : null}
+          <FeatureSection label={t('projectile.controls.afterimages.label')} description={t('projectile.controls.afterimages.description')} enabled={parameters.afterimagesEnabled} status={t(parameters.afterimagesEnabled ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(value) => update('afterimagesEnabled', value)}>
+            <NumberControl label={t('projectile.controls.afterimageCount.label')} description={t('projectile.controls.afterimageCount.description')} value={parameters.afterimageCount} minimum={0} maximum={MAX_AFTERIMAGE_COUNT} onChange={(value) => update('afterimageCount', value)} />
+            <PercentControl label={t('projectile.controls.afterimageSpacing.label')} description={t('projectile.controls.afterimageSpacing.description')} value={parameters.afterimageSpacing} minimum={0} maximum={1} onChange={(value) => update('afterimageSpacing', value)} />
+            <PercentControl label={t('projectile.controls.afterimageDecay.label')} description={t('projectile.controls.afterimageDecay.description')} value={parameters.afterimageDecay} minimum={0} maximum={1} onChange={(value) => update('afterimageDecay', value)} />
+          </FeatureSection>
         </div>
       )
     case 'palette':
@@ -171,9 +158,7 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
   }
 }
 
-type ProjectileBodyCard = 'fireball' | 'solidArrow' | 'energyArrow' | 'crystalSpear' | 'crystalCore'
-
-/** Fixed, body-only parameters keep the three animated thumbnails comparable. */
+/** Neutral fixed-seed parameters keep body thumbnails comparable. */
 const BODY_THUMBNAIL_BASE: ProjectileParameters = {
   ...DEFAULT_PROJECTILE_PARAMETERS,
   seed: 1337,
@@ -183,83 +168,25 @@ const BODY_THUMBNAIL_BASE: ProjectileParameters = {
 }
 
 const BODY_CARD_OPTIONS: readonly ShapeCardOption<ProjectileParameters>[] = [
-  {
-    value: 'fireball',
-    labelKey: 'projectile.bodyCards.fireball.label',
-    descriptionKey: 'projectile.bodyCards.fireball.description',
-    buildParameters: () => BODY_THUMBNAIL_BASE,
-  },
-  {
-    value: 'solidArrow',
-    labelKey: 'projectile.bodyCards.solidArrow.label',
-    descriptionKey: 'projectile.bodyCards.solidArrow.description',
-    buildParameters: () => ({ ...BODY_THUMBNAIL_BASE, kind: 'arrow', arrowMaterial: 'solid', radius: 7, bodyLength: 54, trailWidth: 6 }),
-  },
-  {
-    value: 'energyArrow',
-    labelKey: 'projectile.bodyCards.energyArrow.label',
-    descriptionKey: 'projectile.bodyCards.energyArrow.description',
-    buildParameters: () => ({ ...BODY_THUMBNAIL_BASE, kind: 'arrow', arrowMaterial: 'energy', radius: 8, bodyLength: 50, trailWidth: 6 }),
-  },
-  {
-    value: 'crystalSpear',
-    labelKey: 'projectile.bodyCards.crystalSpear.label',
-    descriptionKey: 'projectile.bodyCards.crystalSpear.description',
-    buildParameters: () => ({ ...BODY_THUMBNAIL_BASE, kind: 'crystal', crystalForm: 'spear', radius: 10, bodyLength: 46, trailWidth: 6 }),
-  },
-  {
-    value: 'crystalCore',
-    labelKey: 'projectile.bodyCards.crystalCore.label',
-    descriptionKey: 'projectile.bodyCards.crystalCore.description',
-    buildParameters: () => ({ ...BODY_THUMBNAIL_BASE, kind: 'crystal', crystalForm: 'core', radius: 13, bodyLength: 28, trailWidth: 5 }),
-  },
+  { value: 'fireball', labelKey: 'projectile.bodyCards.fireball.label', descriptionKey: 'projectile.bodyCards.fireball.description', buildParameters: () => selectProjectileShape(BODY_THUMBNAIL_BASE, 'fireball') },
+  { value: 'solidArrow', labelKey: 'projectile.bodyCards.solidArrow.label', descriptionKey: 'projectile.bodyCards.solidArrow.description', buildParameters: () => selectProjectileShape(BODY_THUMBNAIL_BASE, 'solidArrow') },
+  { value: 'energyArrow', labelKey: 'projectile.bodyCards.energyArrow.label', descriptionKey: 'projectile.bodyCards.energyArrow.description', buildParameters: () => selectProjectileShape(BODY_THUMBNAIL_BASE, 'energyArrow') },
+  { value: 'crystalSpear', labelKey: 'projectile.bodyCards.crystalSpear.label', descriptionKey: 'projectile.bodyCards.crystalSpear.description', buildParameters: () => selectProjectileShape(BODY_THUMBNAIL_BASE, 'crystalSpear') },
+  { value: 'crystalCore', labelKey: 'projectile.bodyCards.crystalCore.label', descriptionKey: 'projectile.bodyCards.crystalCore.description', buildParameters: () => selectProjectileShape(BODY_THUMBNAIL_BASE, 'crystalCore') },
 ]
-
-/** Maps persisted projectile parameters to exactly one selected body card. */
-export function selectedBodyCard(parameters: ProjectileParameters): ProjectileBodyCard {
-  if (parameters.kind === 'fireball') return 'fireball'
-  if (parameters.kind === 'crystal') return parameters.crystalForm === 'spear' ? 'crystalSpear' : 'crystalCore'
-  return parameters.arrowMaterial === 'solid' ? 'solidArrow' : 'energyArrow'
-}
-
-/** Applies only the body identity represented by a thumbnail card. */
-export function selectBodyCard(parameters: ProjectileParameters, card: ProjectileBodyCard): ProjectileParameters {
-  switch (card) {
-    case 'fireball':
-      return { ...parameters, kind: 'fireball' }
-    case 'solidArrow':
-      return { ...parameters, kind: 'arrow', arrowMaterial: 'solid' }
-    case 'energyArrow':
-      return { ...parameters, kind: 'arrow', arrowMaterial: 'energy' }
-    case 'crystalSpear':
-      return { ...parameters, kind: 'crystal', crystalForm: 'spear', trailMode: 'energy' }
-    case 'crystalCore':
-      return { ...parameters, kind: 'crystal', crystalForm: 'core', trailMode: 'energy' }
-  }
-}
 
 export const ProjectilePreviewTools = createPreviewTools<ProjectileParameters>({ keyPrefix: 'projectile', minimumSize: MIN_CANVAS_SIZE, maximumSize: MAX_CANVAS_SIZE, seedKey: 'randomSeed' })
 
-/** Spark toggle and tuning; the fireball's other forms reuse it for their borrowed sparks. */
+/** Shared spark section; the fireball's other forms reuse the same controls. */
 export function SparkControls({ sparks, onChange }: { readonly sparks: SparkSettings; readonly onChange: (sparks: SparkSettings) => void }) {
   const { t } = useI18n()
   const update = <Key extends keyof SparkSettings>(key: Key, value: SparkSettings[Key]) => onChange({ ...sparks, [key]: value })
   return (
-    <>
-      <ToggleControl
-        label={t('projectile.controls.sparks.label')}
-        description={t('projectile.controls.sparks.description')}
-        checked={sparks.sparksEnabled}
-        onChange={(value) => update('sparksEnabled', value)}
-      />
-      {sparks.sparksEnabled ? (
-        <>
-          <NumberControl label={t('projectile.controls.sparkCount.label')} description={t('projectile.controls.sparkCount.description')} value={sparks.sparkCount} minimum={0} maximum={MAX_SPARK_COUNT} onChange={(value) => update('sparkCount', value)} />
-          <PercentControl label={t('projectile.controls.sparkSpread.label')} description={t('projectile.controls.sparkSpread.description')} value={sparks.sparkSpread} minimum={0} maximum={1} onChange={(value) => update('sparkSpread', value)} />
-          <PercentControl label={t('projectile.controls.sparkSpacing.label')} description={t('projectile.controls.sparkSpacing.description')} value={sparks.sparkSpacing} minimum={0} maximum={1} onChange={(value) => update('sparkSpacing', value)} />
-          <PercentControl label={t('projectile.controls.sparkFade.label')} description={t('projectile.controls.sparkFade.description')} value={sparks.sparkFade} minimum={0} maximum={1} onChange={(value) => update('sparkFade', value)} />
-        </>
-      ) : null}
-    </>
+    <FeatureSection label={t('projectile.controls.sparks.label')} description={t('projectile.controls.sparks.description')} enabled={sparks.sparksEnabled} status={t(sparks.sparksEnabled ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(enabled) => update('sparksEnabled', enabled)}>
+      <NumberControl label={t('projectile.controls.sparkCount.label')} description={t('projectile.controls.sparkCount.description')} value={sparks.sparkCount} minimum={0} maximum={MAX_SPARK_COUNT} onChange={(value) => update('sparkCount', value)} />
+      <PercentControl label={t('projectile.controls.sparkSpread.label')} description={t('projectile.controls.sparkSpread.description')} value={sparks.sparkSpread} minimum={0} maximum={1} onChange={(value) => update('sparkSpread', value)} />
+      <PercentControl label={t('projectile.controls.sparkSpacing.label')} description={t('projectile.controls.sparkSpacing.description')} value={sparks.sparkSpacing} minimum={0} maximum={1} onChange={(value) => update('sparkSpacing', value)} />
+      <PercentControl label={t('projectile.controls.sparkFade.label')} description={t('projectile.controls.sparkFade.description')} value={sparks.sparkFade} minimum={0} maximum={1} onChange={(value) => update('sparkFade', value)} />
+    </FeatureSection>
   )
 }

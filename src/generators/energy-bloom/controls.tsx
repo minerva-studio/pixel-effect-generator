@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback } from 'react'
 import { PercentControl, NumberControl, SelectControl, SegmentedControl } from '../../components/controls'
 import { createPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
@@ -23,6 +23,7 @@ import {
   type BloomParameters,
   type BloomShape,
   type BloomSurfaceStyle,
+  selectBloomShape,
 } from './model'
 import { renderBloomFrames } from './renderer'
 
@@ -42,14 +43,7 @@ export function BloomControls({ category, parameters, onChange }: BloomControlsP
   const limits = bloomFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
   const updateBody = (patch: Partial<BloomParameters['body']>) => onChange({ ...parameters, body: { ...parameters.body, ...patch } })
   const updateMotion = (patch: Partial<BloomParameters['motion']>) => onChange({ ...parameters, motion: { ...parameters.motion, ...patch } })
-  const parametersRef = useRef(parameters)
-  parametersRef.current = parameters
-  const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
-  const selectShape = useCallback((shape: string) => {
-    const current = parametersRef.current
-    onChangeRef.current({ ...current, body: { ...current.body, shape: shape as BloomShape } })
-  }, [])
+  const selectShape = (shape: string) => onChange(selectBloomShape(parameters, shape as BloomShape))
   const updateEffects = useCallback((values: FamilyEffectValues) => {
     onChange({ ...parameters, core: values.core, shockwave: values.shockwave, tongues: values.tongues, fragments: values.fragments })
   }, [parameters, onChange])
@@ -182,39 +176,21 @@ function BloomSurfaceAdvancedControls({
 
 export const BloomPreviewTools = createPreviewTools<BloomParameters>({ keyPrefix: 'energyBloom', minimumSize: MIN_CANVAS_SIZE, maximumSize: MAX_CANVAS_SIZE })
 
-/** Fixed-seed thumbnail parameters for every bloom shape card. */
-const THUMBNAIL_SEED = 1337
-const SHAPE_THUMBNAILS: Readonly<Record<BloomShape, BloomParameters>> = {
-  softPetals: { ...DEFAULT_BLOOM_PARAMETERS, seed: THUMBNAIL_SEED },
-  sharpStarburst: {
-    ...DEFAULT_BLOOM_PARAMETERS,
-    seed: THUMBNAIL_SEED,
-    body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'sharpStarburst', rayCount: 12, rayTaper: 0.75, shapeIrregularity: 0.12 },
-    surface: { style: 'crystalShards', coverage: 0.95, chunkSize: 10, crackWidth: 1 },
-    tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: true, count: 6, length: 26, width: 2 },
-  },
-  layeredCorolla: {
-    ...DEFAULT_BLOOM_PARAMETERS,
-    seed: THUMBNAIL_SEED,
-    body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'layeredCorolla', corollaLayers: 2, layerDelay: 0.2, petalCount: 8 },
-    surface: { style: 'moltenCavities', coverage: 0.94, cavityAmount: 0.22, cavityScale: 12 },
-    tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: true, count: 8, length: 18, width: 2 },
-  },
-  arcaneBurst: {
-    ...DEFAULT_BLOOM_PARAMETERS,
-    seed: THUMBNAIL_SEED,
-    body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'arcaneBurst', petalCount: 5, petalStretch: 0.7, shapeIrregularity: 0.12 },
-    surface: { style: 'crystalShards', coverage: 0.95, chunkSize: 7, crackWidth: 1 },
-    shockwave: { ...DEFAULT_BLOOM_PARAMETERS.shockwave, mode: 'none' },
-    tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: false },
-  },
+/** Neutral fixed-seed parameters keep bloom shape cards focused on body geometry. */
+const SHAPE_THUMBNAIL_BASE: BloomParameters = {
+  ...DEFAULT_BLOOM_PARAMETERS,
+  seed: 1337,
+  core: { ...DEFAULT_BLOOM_PARAMETERS.core, enabled: false },
+  shockwave: { ...DEFAULT_BLOOM_PARAMETERS.shockwave, mode: 'none' },
+  tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, enabled: false },
+  fragments: { ...DEFAULT_BLOOM_PARAMETERS.fragments, enabled: false },
 }
 
 const SHAPE_CARD_OPTIONS: readonly ShapeCardOption<BloomParameters>[] = [
-  { value: 'softPetals', labelKey: 'energyBloom.options.softPetals', descriptionKey: 'energyBloom.shapeDescriptions.softPetals', buildParameters: () => SHAPE_THUMBNAILS.softPetals },
-  { value: 'sharpStarburst', labelKey: 'energyBloom.options.sharpStarburst', descriptionKey: 'energyBloom.shapeDescriptions.sharpStarburst', buildParameters: () => SHAPE_THUMBNAILS.sharpStarburst },
-  { value: 'layeredCorolla', labelKey: 'energyBloom.options.layeredCorolla', descriptionKey: 'energyBloom.shapeDescriptions.layeredCorolla', buildParameters: () => SHAPE_THUMBNAILS.layeredCorolla },
-  { value: 'arcaneBurst', labelKey: 'energyBloom.options.arcaneBurst', descriptionKey: 'energyBloom.shapeDescriptions.arcaneBurst', buildParameters: () => SHAPE_THUMBNAILS.arcaneBurst },
+  { value: 'softPetals', labelKey: 'energyBloom.options.softPetals', descriptionKey: 'energyBloom.shapeDescriptions.softPetals', buildParameters: () => selectBloomShape(SHAPE_THUMBNAIL_BASE, 'softPetals') },
+  { value: 'sharpStarburst', labelKey: 'energyBloom.options.sharpStarburst', descriptionKey: 'energyBloom.shapeDescriptions.sharpStarburst', buildParameters: () => selectBloomShape(SHAPE_THUMBNAIL_BASE, 'sharpStarburst') },
+  { value: 'layeredCorolla', labelKey: 'energyBloom.options.layeredCorolla', descriptionKey: 'energyBloom.shapeDescriptions.layeredCorolla', buildParameters: () => selectBloomShape(SHAPE_THUMBNAIL_BASE, 'layeredCorolla') },
+  { value: 'arcaneBurst', labelKey: 'energyBloom.options.arcaneBurst', descriptionKey: 'energyBloom.shapeDescriptions.arcaneBurst', buildParameters: () => selectBloomShape(SHAPE_THUMBNAIL_BASE, 'arcaneBurst') },
 ]
 
 const SURFACE_OPTIONS: readonly BloomSurfaceStyle[] = ['celBands', 'moltenCavities', 'crystalShards', 'gridNoise', 'pixelNoise']

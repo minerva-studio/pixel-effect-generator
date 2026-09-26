@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../../i18n/I18nProvider'
 import { FlameControls } from '../controls'
-import { DEFAULT_FLAME_PARAMETERS as base } from '../model'
+import { DEFAULT_FLAME_PARAMETERS as base, selectFlameShape } from '../model'
 import { GENERATOR_REGISTRY, createDefaultSessionRecord, updateSessionRecord } from '../../registry'
 import { flameModule } from '../module'
 import { createRenderedParametersAction } from '../../contract'
@@ -10,6 +10,13 @@ import { createRenderedParametersAction } from '../../contract'
 afterEach(() => vi.unstubAllGlobals())
 
 describe('flame workspace integration', () => {
+  it('changes only the selected flame shape', () => {
+    const selected = selectFlameShape(base, 'campfire')
+    expect(selected.shape).toBe('campfire')
+    expect(selected.palette).toBe(base.palette)
+    expect(selected.sparksEnabled).toBe(base.sparksEnabled)
+    expect(selected.width).toBe(base.width)
+  })
   it.each(['en-US', 'zh-CN'])('renders translated controls and three animated shape cards (%s)', language => {
     vi.stubGlobal('navigator', { language })
     const render = (category: 'shape' | 'palette' | 'motion' | 'details') => renderToStaticMarkup(<I18nProvider><FlameControls category={category} parameters={base} onChange={() => undefined} /></I18nProvider>)
@@ -21,7 +28,7 @@ describe('flame workspace integration', () => {
     expect(palette.match(/type="color"/g)).toHaveLength(5)
     expect(palette).not.toContain('type="range"')
     expect(render('motion')).toContain(language === 'zh-CN' ? '上升流速' : 'Rising flow')
-    expect(render('details')).toContain(language === 'zh-CN' ? '火星数量' : 'Spark count')
+    expect(render('details')).toContain(language === 'zh-CN' ? '启用火星' : 'Enable sparks')
   })
   it('registers complete capabilities and updates only its own session', () => {
     expect(flameModule.projectCodec?.generatorId).toBe('flame')

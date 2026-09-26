@@ -10,10 +10,10 @@ export type SlashCategory = 'shape' | 'palette' | 'motion' | 'breakup' | 'fragme
 
 export const SLASH_CATEGORIES = [
   { id: 'shape', label: 'Shape', description: 'Define the arc silhouette, orientation, and perspective.' },
-  { id: 'palette', label: 'Palette', description: 'Build the radial color bands from the inner edge outward.' },
   { id: 'motion', label: 'Motion', description: 'Control timing, trail length, and the direction of the sweep.' },
-  { id: 'fragments', label: 'Fragments', description: 'Shape and animate debris released from the trailing edge.' },
   { id: 'breakup', label: 'Breakup', description: 'Control dissolve and outer-edge damage patterns.' },
+  { id: 'fragments', label: 'Fragments', description: 'Shape and animate debris released from the trailing edge.' },
+  { id: 'palette', label: 'Palette', description: 'Build the radial color bands from the inner edge outward.' },
 ] as const satisfies readonly { id: SlashCategory; label: string; description: string }[]
 
 /** Slash generator registered once for navigation, workspace, and exports. */

@@ -1,4 +1,4 @@
-import { NumberControl, PercentControl, SelectControl, ToggleControl } from '../../components/controls'
+import { NumberControl, PercentControl, SelectControl } from '../../components/controls'
 import { PaletteEditor } from '../../components/PaletteEditor'
 import { createPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
@@ -7,9 +7,9 @@ import type { FrameSize } from '../../shared/pixel/frame'
 import { ProjectileControls, SparkControls } from '../projectile/controls'
 import { MAX_CANVAS_SIZE, MAX_LOOP_CYCLES, MIN_CANVAS_SIZE, type ProjectileParameters } from '../projectile/model'
 import type { ProjectileCategory } from '../projectile/module'
-import { ShapeCardGrid, type ShapeCardOption } from '../shared-effects/controls'
+import { FeatureSection, ShapeCardGrid, type ShapeCardOption } from '../shared-effects/controls'
 import type { FireballTuning } from './canonical'
-import { DEFAULT_FIREBALL_PARAMETERS, classicFireballTuning, classicProjectileParameters, maxFireballSize, type FireballParameters } from './model'
+import { DEFAULT_FIREBALL_PARAMETERS, classicFireballTuning, classicProjectileParameters, maxFireballSize, selectFireballShape, type FireballParameters } from './model'
 import { fitFireballPalette } from './palette'
 import { renderFireballFrames } from './renderer'
 
@@ -23,13 +23,21 @@ interface Props {
   readonly onResize?: (nextSize: FrameSize, scaleEffect: boolean) => void
 }
 
+const SHAPE_THUMBNAIL_BASE: FireballParameters = {
+  ...DEFAULT_FIREBALL_PARAMETERS,
+  seed: 1337,
+  sparks: { ...DEFAULT_FIREBALL_PARAMETERS.sparks, sparksEnabled: false },
+  puff: { ...DEFAULT_FIREBALL_PARAMETERS.puff, smoke: false },
+  classic: { ...DEFAULT_FIREBALL_PARAMETERS.classic, trailMode: 'off', sparksEnabled: false, afterimagesEnabled: false },
+}
+
 const FORM_CARDS: readonly ShapeCardOption<FireballParameters>[] = (
   ['stream', 'wrapped', 'puff', 'classic'] as const
 ).map((form) => ({
   value: form,
   labelKey: `fireball.forms.${form}.label`,
   descriptionKey: `fireball.forms.${form}.description`,
-  buildParameters: () => ({ ...DEFAULT_FIREBALL_PARAMETERS, form }),
+  buildParameters: () => selectFireballShape(SHAPE_THUMBNAIL_BASE, form),
 }))
 
 /** Renders only the selected form's controls while retaining the other forms' values. */
@@ -52,13 +60,10 @@ export function FireballControls({ category, parameters, onChange }: Props) {
       ? <PercentControl label={label} description={description} value={value} minimum={min} maximum={max} step={step} onChange={change} />
       : <NumberControl label={label} description={description} value={value} minimum={min} maximum={max} step={step} unit={unit} onChange={change} />
   }
-  const selectForm = (form: string) => {
-    if (form === 'stream' || form === 'wrapped' || form === 'puff' || form === 'classic') update('form', form)
-  }
 
   if (category === 'shape') return <div className="control-list">
     <ShapeCardGrid familyId="fireball" label={t('fireball.controls.form.label')} options={FORM_CARDS} selected={parameters.form}
-      render={renderFireballFrames} onSelect={selectForm} />
+      render={renderFireballFrames} onSelect={(form) => onChange(selectFireballShape(parameters, form as FireballParameters['form']))} />
     {parameters.form === 'wrapped' && <SelectControl label={t('fireball.controls.ball.label')} description={t('fireball.controls.ball.description')} value={parameters.wrapped.fireballBall}
         options={[{ value: 'hot', label: t('fireball.options.hot') }, { value: 'molten', label: t('fireball.options.molten') }]}
         onChange={value => updateTuning('fireballBall', value)} />}
@@ -90,7 +95,9 @@ export function FireballControls({ category, parameters, onChange }: Props) {
     </>}
   </div>
   if (category === 'effects') return <div className="control-list">
-    {parameters.form === 'puff' && <ToggleControl label={t('fireball.controls.smoke.label')} description={t('fireball.controls.smoke.description')} checked={parameters.puff.smoke} onChange={(smoke) => update('puff', { ...parameters.puff, smoke })} />}
+    {parameters.form === 'puff' && <FeatureSection label={t('fireball.controls.smoke.label')} description={t('fireball.controls.smoke.description')} enabled={parameters.puff.smoke} status={t(parameters.puff.smoke ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(smoke) => update('puff', { ...parameters.puff, smoke })}>
+      <p className="material-mode-note">{t('fireball.controls.smoke.description')}</p>
+    </FeatureSection>}
     <SparkControls sparks={parameters.sparks} onChange={sparks => update('sparks', sparks)} />
   </div>
   return <div className="control-list">

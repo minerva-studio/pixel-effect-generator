@@ -318,6 +318,10 @@
       "add": "添加色带",
       "remove": "移除",
       "removeBand": "移除第 {index} 个色带"
+    },
+    "feature": {
+      "enabled": "开启",
+      "disabled": "关闭"
     }
   },
   "slash": {
@@ -502,7 +506,7 @@
     "previewTitle": "火焰爆发研究",
     "categories": {
       "body": {
-        "label": "主体",
+        "label": "形状",
         "description": "选择爆炸形状并调整尺寸与轮廓。"
       },
       "motion": {
@@ -802,7 +806,8 @@
       "seed": {
         "label": "随机种子",
         "description": "用于精确复现同一效果的无符号 32 位数值。"
-      }
+      },
+      "fieldMotionNote": "场形在此调整爆发或内聚模式；其成形与停留时间由场模拟固定。"
     },
     "options": {
       "billowBurst": "翻卷火团",
@@ -904,7 +909,7 @@
     "previewTitle": "能量绽放研究",
     "categories": {
       "body": {
-        "label": "主体",
+        "label": "形状",
         "description": "选择能量绽放形状并调整尺寸与轮廓。"
       },
       "motion": {
@@ -1396,7 +1401,7 @@
     "previewTitle": "飞行循环预览",
     "categories": {
       "body": {
-        "label": "主体",
+        "label": "形状",
         "description": "选择弹体类型、尺寸与烘焙朝向。"
       },
       "motion": {

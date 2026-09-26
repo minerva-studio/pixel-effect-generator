@@ -5,7 +5,7 @@ import { en, messagesForLocale, translate, type MessageKey } from '../../../i18n
 import { ShapeCardGrid, ShockwaveControls, type DissolvePatch, type FamilyTranslate } from '../../shared-effects/controls'
 import type { SharedShockwaveParameters } from '../../shared-effects/types'
 import { ExplosionControls, ExplosionPreviewTools } from '../controls'
-import { LEGACY_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
+import { DEFAULT_EXPLOSION_PARAMETERS, LEGACY_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
 import type { ExplosionCategory } from '../module'
 
 afterEach(() => vi.unstubAllGlobals())
@@ -92,6 +92,15 @@ describe('combustion explosion controls', () => {
     expect(motion).toContain('Formation time')
     expect(motion).toContain('Hold time')
     expect(motion).not.toContain('Dissolve time')
+  })
+
+  it('moves field-shape motion mode into Shape and explains its fixed timing', () => {
+    const body = renderControls('body', 'en', DEFAULT_EXPLOSION_PARAMETERS)
+    const motion = renderControls('motion', 'en', DEFAULT_EXPLOSION_PARAMETERS)
+    expect(body).toContain('aria-label="Direction"')
+    expect(body).toContain('aria-pressed="true"')
+    expect(motion).toContain('Set explosion or implosion for this field shape on the Shape tab.')
+    expect(motion).not.toContain('Formation time')
   })
 
   it('defaults every effect section collapsed with one title and an accessible compact switch', () => {

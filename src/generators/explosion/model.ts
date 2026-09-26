@@ -103,6 +103,19 @@ export interface ExplosionParameters {
   readonly fragments: SharedFragmentParameters
 }
 
+/** Changes only the selected shape and the volume/surface dependencies required to validate it. */
+export function selectExplosionShape(parameters: ExplosionParameters, shape: ExplosionShape): ExplosionParameters {
+  const surface = isFieldExplosionShape(shape) && parameters.surface.style !== 'burningLayers'
+    ? createExplosionSurface('burningLayers', parameters.surface.coverage)
+    : parameters.surface
+  return {
+    ...parameters,
+    body: { ...parameters.body, shape },
+    volume: normalizeExplosionVolume(shape, parameters.volume),
+    surface,
+  }
+}
+
 /** Size-dependent limits re-exported for the shared effect controls. */
 export type ExplosionFrameLimits = SharedFrameLimits
 

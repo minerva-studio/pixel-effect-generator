@@ -1,14 +1,14 @@
-import { NumberControl, ToggleControl } from '../../components/controls'
+import { NumberControl } from '../../components/controls'
 import { createPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
-import { FamilyPaletteEditor, ShapeCardGrid, type FamilyTranslate } from '../shared-effects/controls'
-import { FLAME_SHAPES, MAX_CANVAS_SIZE, MIN_CANVAS_SIZE, flameNumericBounds, type FlameParameters, type FlameShape } from './model'
-import { FLAME_SHAPE_DEFAULTS } from './presets'
+import { FamilyPaletteEditor, FeatureSection, ShapeCardGrid, type FamilyTranslate } from '../shared-effects/controls'
+import { DEFAULT_FLAME_PARAMETERS, FLAME_SHAPES, MAX_CANVAS_SIZE, MIN_CANVAS_SIZE, flameNumericBounds, selectFlameShape, type FlameParameters, type FlameShape } from './model'
 import { renderFlameFrames } from './renderer'
 import type { FlameCategory } from './module'
 
-const cards = FLAME_SHAPES.map((shape) => ({ value: shape, labelKey: `flame.options.${shape}`, descriptionKey: `flame.shapeDescriptions.${shape}`, buildParameters: () => ({ ...FLAME_SHAPE_DEFAULTS[shape], seed: 1337 }) }))
+const SHAPE_THUMBNAIL_BASE: FlameParameters = { ...DEFAULT_FLAME_PARAMETERS, seed: 1337, sparksEnabled: false }
+const cards = FLAME_SHAPES.map((shape) => ({ value: shape, labelKey: `flame.options.${shape}`, descriptionKey: `flame.shapeDescriptions.${shape}`, buildParameters: () => selectFlameShape(SHAPE_THUMBNAIL_BASE, shape) }))
 const categoryFields = {
   shape: ['width', 'height', 'baseWidth', 'fork', 'roughness'],
   motion: ['loopCycles', 'sway', 'flicker', 'flowSpeed', 'turbulence'],
@@ -26,12 +26,11 @@ export function FlameControls({ category, parameters: p, onChange }: { readonly 
   }
   if (category === 'palette') return <FamilyPaletteEditor family="flame" t={translate} palette={p.palette} minimumColors={3} opaque onChange={(palette) => onChange({ ...p, palette })} />
   return <div className="control-list">
-    {category === 'shape' && <ShapeCardGrid familyId="flame" label={t('flame.controls.shape.label')} options={cards} selected={p.shape} render={renderFlameFrames} onSelect={(shape) => onChange({ ...p, shape: shape as FlameShape })} />}
+    {category === 'shape' && <ShapeCardGrid familyId="flame" label={t('flame.controls.shape.label')} options={cards} selected={p.shape} render={renderFlameFrames} onSelect={(shape) => onChange(selectFlameShape(p, shape as FlameShape))} />}
     {categoryFields[category].map(field)}
-    {category === 'details' && <>
-      <ToggleControl label={t('flame.controls.sparksEnabled.label')} description={t('flame.controls.sparksEnabled.description')} checked={p.sparksEnabled} onChange={(sparksEnabled) => onChange({ ...p, sparksEnabled })} />
-      {p.sparksEnabled && (['sparkCount', 'sparkSpread', 'sparkRise'] as const).map(field)}
-    </>}
+    {category === 'details' && <FeatureSection label={t('flame.controls.sparksEnabled.label')} description={t('flame.controls.sparksEnabled.description')} enabled={p.sparksEnabled} status={t(p.sparksEnabled ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(sparksEnabled) => onChange({ ...p, sparksEnabled })}>
+      {(['sparkCount', 'sparkSpread', 'sparkRise'] as const).map(field)}
+    </FeatureSection>}
   </div>
 }
 

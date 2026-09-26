@@ -64,6 +64,11 @@ export interface BloomParameters {
   readonly fragments: SharedFragmentParameters
 }
 
+/** Applies a body-card choice while preserving palette, motion, surface, and effects. */
+export function selectBloomShape(parameters: BloomParameters, shape: BloomShape): BloomParameters {
+  return { ...parameters, body: { ...parameters.body, shape } }
+}
+
 /** Size-dependent limits re-exported for the shared effect controls. */
 export type BloomFrameLimits = SharedFrameLimits
 

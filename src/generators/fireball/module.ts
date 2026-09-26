@@ -11,7 +11,7 @@ const categories = [
   { id: 'shape', label: 'Shape', description: 'Choose the fireball form and baked facing.' },
   { id: 'motion', label: 'Motion', description: 'Control the continuous flight loop.' },
   { id: 'trail', label: 'Trail', description: 'Tune wrapped bands and shedding fire.' },
-  { id: 'effects', label: 'Material', description: 'Choose the core and smoke treatment.' },
+  { id: 'effects', label: 'Effects', description: 'Configure smoke and sparks around the fireball.' },
   { id: 'palette', label: 'Palette', description: 'Edit the fire, smoke, and rock colors.' },
 ] as const satisfies readonly { id: FireballCategory; label: string; description: string }[]
 

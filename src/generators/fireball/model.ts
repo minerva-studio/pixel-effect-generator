@@ -52,6 +52,11 @@ export interface FireballParameters {
   readonly sparks: SparkSettings
 }
 
+/** Selects a fireball form while retaining each form's independent settings. */
+export function selectFireballShape(parameters: FireballParameters, form: FireballForm): FireballParameters {
+  return { ...parameters, form }
+}
+
 export const DEFAULT_FIREBALL_TUNING: FireballTuning = {
   fireballAngular: 0.55,
   fireballContour: 0.5,
