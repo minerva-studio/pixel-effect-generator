@@ -346,8 +346,6 @@ function buildShockBlastPrimitives(
   const drift = parameters.motion.mode === 'explosion' ? time : 1 - time
   const dissolveStart = parameters.motion.dissolveStart
   const growth = Math.max(formationGrowth(parameters.motion.mode, parameters.motion, lifecycle), Math.sqrt(clamp01(drift / 0.12)) * 0.9)
-  const flight = easeOutCubic(clamp01(drift / dissolveStart))
-  const decay = clamp01((drift - dissolveStart) / Math.max(0.05, 0.95 - dissolveStart))
   const rotation = parameters.body.rotation / 180 * Math.PI
   const coreRetreat = 1 - smoothStep(clamp01((drift - dissolveStart) / 0.2))
   const primitives: BodyPrimitive[] = []
@@ -362,36 +360,23 @@ function buildShockBlastPrimitives(
     if (drift <= delay) continue
     const jitter = (blob?.tongueNoise ?? 0) * parameters.body.shapeIrregularity * 0.14
     const angle = rotation + index / plateCount * Math.PI * 2 + jitter
-    const radialCenter = radius * (0.25 + flight * 0.55 + easeOutCubic(decay) * 0.2) * growth
-    const thickness = Math.max(1, parameters.body.pressureWidth * growth * (1 - decay * 0.96))
-    const halfAngle = (Math.PI / plateCount) * (0.52 + (blob?.radiusScale ?? 1) * 0.08) * (1 - decay * 0.6)
-    const pieceCount = decay > 0.05 ? 2 + (hashUnit(parameters.seed, index, 106) > 0.5 ? 1 : 0) : 1
-    for (let piece = 0; piece < pieceCount; piece += 1) {
-      const expiry = 0.82 + hashUnit(parameters.seed, index * 3 + piece, 107) * 0.13
-      if (drift >= expiry) continue
-      const pieceHalfAngle = halfAngle / pieceCount * (1 - decay * 0.38)
-      primitives.push({
-        kind: 'shellSector', owner: index + 1, depth: 2 + (blob?.depth ?? 1) * 0.2, role: 'shell',
-        innerRadius: Math.max(0, radialCenter - thickness * 0.5),
-        outerRadius: radialCenter + thickness * 0.5,
-        angle: angle + (piece * 2 + 1 - pieceCount) * halfAngle / pieceCount,
-        halfAngle: pieceHalfAngle, sharpness: parameters.body.pressureSharpness,
-      })
-    }
-    for (let spark = 0; spark < 2; spark += 1) {
-      const launch = dissolveStart + hashUnit(parameters.seed, index * 2 + spark, 108) * 0.1
-      const expiry = 0.965 + hashUnit(parameters.seed, index * 2 + spark, 109) * 0.02
-      if (drift < launch || drift >= expiry) continue
-      const progress = clamp01((drift - launch) / (expiry - launch))
-      const sparkAngle = angle + (spark - 0.5) * halfAngle * 1.2
-      const distance = radius * (0.8 + progress * 0.35)
-      const sparkRadius = Math.max(0.7, (1.7 + hashUnit(parameters.seed, index * 2 + spark, 110)) * (1 - progress * 0.65))
-      primitives.push({
-        kind: 'ellipse', owner: 30 + index * 2 + spark, depth: 4, role: 'cinder',
-        x: Math.cos(sparkAngle) * distance, y: Math.sin(sparkAngle) * distance,
-        rx: sparkRadius * (1 + (1 - progress) * 0.3), ry: sparkRadius, angle: sparkAngle,
-      })
-    }
+    // Each plate stays whole and keeps pushing outward until it leaves; exits are lightly staggered.
+    const exit = 0.92 + hashUnit(parameters.seed, index, 107) * 0.06
+    const life = clamp01((drift - delay) / Math.max(0.05, exit - delay))
+    if (life >= 1) continue
+    // One continuous trajectory: fast launch that decelerates but never stops, so the front never stalls.
+    const travel = 0.25 + 0.55 * (1 - (1 - life) ** 2) + 0.25 * life
+    const outerEdge = radius * travel * growth + parameters.body.pressureWidth * growth * 0.5
+    // After dissolve start the trailing edge catches up with the front, thinning the plate into a 1px rim.
+    const fade = clamp01((drift - dissolveStart) / Math.max(0.05, exit - dissolveStart))
+    const thickness = Math.max(1, parameters.body.pressureWidth * growth * (1 - fade) ** 1.4)
+    const halfAngle = (Math.PI / plateCount) * (0.52 + (blob?.radiusScale ?? 1) * 0.08)
+    primitives.push({
+      kind: 'shellSector', owner: index + 1, depth: 2 + (blob?.depth ?? 1) * 0.2, role: 'shell',
+      innerRadius: Math.max(0, outerEdge - thickness),
+      outerRadius: outerEdge,
+      angle, halfAngle, sharpness: parameters.body.pressureSharpness,
+    })
   }
   return primitives
 }

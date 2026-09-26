@@ -149,18 +149,21 @@ describe('renderExplosionFrames', () => {
     expect(wedgeSpans[1]).toBeGreaterThan(wedgeSpans[2])
   })
 
-  it('breaks retreating shock plates into pieces while their total area shrinks', () => {
+  it('keeps shock plates whole and pushing outward every frame while they thin', () => {
     const preset = EXPLOSION_BUILTIN_PRESETS.find(({ id }) => id === 'pressureBurst')!
-    const parameters = applyExplosionPreset({ ...MODERN_EXPLOSION_PARAMETERS, frameCount: 24 }, preset.payload)
+    const applied = applyExplosionPreset({ ...MODERN_EXPLOSION_PARAMETERS, frameCount: 24 }, preset.payload)
+    const parameters = { ...applied, fragments: { ...applied.fragments, enabled: false } }
     const frames = renderExplosionFrames(parameters)
-    const tail = frames.slice(14, 19)
-    expect(opaqueComponents(tail[2])).toBeGreaterThanOrEqual(opaqueComponents(tail[0]))
-    for (let index = 1; index < tail.length; index += 1) {
-      expect(countOpaque(tail[index])).toBeLessThan(countOpaque(tail[index - 1]))
+    for (let index = 14; index <= 20; index += 1) {
+      expect(occupiedAngleRunsOutside(frames[index], 144, parameters.body.radius * 0.5), `frame ${index} plates`).toBe(parameters.body.pressureCount)
+      expect(countOpaque(frames[index]), `frame ${index} area`).toBeLessThan(countOpaque(frames[index - 1]))
+    }
+    for (let index = 2; index <= 21; index += 1) {
+      expect(maximumRadius(frames[index]), `frame ${index} front`).toBeGreaterThan(maximumRadius(frames[index - 1]))
     }
   })
 
-  it('keeps outward cinders in the last two visible shock frames', () => {
+  it('keeps the thinning shock front travelling in the last two visible frames', () => {
     const preset = EXPLOSION_BUILTIN_PRESETS.find(({ id }) => id === 'pressureBurst')!
     const parameters = applyExplosionPreset({ ...MODERN_EXPLOSION_PARAMETERS, frameCount: 24 }, preset.payload)
     const frames = renderExplosionFrames(parameters)
@@ -198,11 +201,11 @@ describe('renderExplosionFrames', () => {
       body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'shockBlast', pressureWidth: 4, pressureSharpness: 0.8, shapeIrregularity: 0, rotation: 0 },
       volume: { enabled: true, profile: 'hardShell' },
     }, MODERN_EXPLOSION_PARAMETERS)
-    const thin = renderExplosionFrames(base)[6]
-    const normal = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 14 } })[6]
-    const thick = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 24 } })[6]
-    const maximum = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 48 } })[6]
-    const minimumRadius = base.body.radius * 0.25
+    const thin = renderExplosionFrames(base)[5]
+    const normal = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 14 } })[5]
+    const thick = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 24 } })[5]
+    const maximum = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 48 } })[5]
+    const minimumRadius = base.body.radius * 0.35
     expect(countOpaque(normal)).toBeGreaterThan(countOpaque(thin))
     expect(countOpaque(thick)).toBeGreaterThan(countOpaque(normal))
     expect(countOpaque(maximum)).toBeGreaterThan(countOpaque(thick))
