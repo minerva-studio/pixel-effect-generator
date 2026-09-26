@@ -247,8 +247,9 @@
   },
   "presets": {
     "selectLabel": "效果预设",
-    "actionsMenu": "预设",
-    "pickerOpen": "选择预设…",
+    "actionsMenu": "更多预设操作",
+    "pickerOpen": "查看全部",
+    "preserveColors": "保留当前颜色",
     "pickerTitle": "预设",
     "pickerCancel": "取消",
     "pickerClose": "关闭预设选择器",

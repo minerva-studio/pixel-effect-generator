@@ -247,8 +247,9 @@
   },
   "presets": {
     "selectLabel": "Effect presets",
-    "actionsMenu": "Presets",
-    "pickerOpen": "Select preset…",
+    "actionsMenu": "More preset actions",
+    "pickerOpen": "View all",
+    "preserveColors": "Keep current colors",
     "pickerTitle": "Presets",
     "pickerCancel": "Cancel",
     "pickerClose": "Close preset picker",

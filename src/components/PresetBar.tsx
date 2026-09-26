@@ -1,5 +1,6 @@
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react'
-import type { GeneratorPreset, GeneratorPresetCapability } from '../generators/contract'
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import type { GeneratorPreset, GeneratorPresetCapability, PaletteSlot } from '../generators/contract'
+import { applyPreservingColors } from '../generators/paletteSlots'
 import { runPresetMigration } from '../generators/presetMigration'
 import { useI18n } from '../i18n/I18nProvider'
 import { presetDisplayKeys, type TranslateFunction } from '../i18n/messages'
@@ -33,8 +34,11 @@ export function resolveAppliedPresetBaseline<Parameters>(
   capability: GeneratorPresetCapability<Parameters>,
   parameters: Parameters,
   payload: JsonValue,
+  paletteSlots: readonly PaletteSlot<Parameters>[] = [],
+  preserveColors = false,
 ): { readonly parameters: Parameters; readonly baseline: JsonValue } {
-  const next = capability.apply(parameters, payload)
+  const applied = capability.apply(parameters, payload)
+  const next = preserveColors ? applyPreservingColors(paletteSlots, parameters, applied) : applied
   return { parameters: next, baseline: capability.capture(next) }
 }
 
@@ -47,12 +51,16 @@ export function renderPresetFrames<Parameters>(
   render: (parameters: Parameters) => readonly PixelFrame[],
   parameters: Parameters,
   payload: JsonValue,
+  paletteSlots: readonly PaletteSlot<Parameters>[] = [],
+  preserveColors = false,
 ): readonly PixelFrame[] {
-  return render(capability.apply(parameters, payload))
+  const applied = capability.apply(parameters, payload)
+  return render(preserveColors ? applyPreservingColors(paletteSlots, parameters, applied) : applied)
 }
 
 /** Cache of rendered preview frame sets keyed by generator, preset, and canvas. */
 const presetFrameCache = new Map<string, readonly PixelFrame[]>()
+const PRESERVE_COLORS_STORAGE_KEY = 'pixel-effect-generator:preserve-preset-colors'
 
 /** Stable cache key for one preset preview on a specific canvas. */
 export function presetPreviewKey(
@@ -60,8 +68,10 @@ export function presetPreviewKey(
   presetId: string,
   frameSize: FrameSize,
   frameCount: number,
+  colorSignature = '',
 ): string {
-  return `${generatorId}:${presetId}:${frameSize.width}x${frameSize.height}x${frameCount}`
+  const base = `${generatorId}:${presetId}:${frameSize.width}x${frameSize.height}x${frameCount}`
+  return colorSignature ? `${base}:${colorSignature}` : base
 }
 
 /** Drops every cached preview belonging to one generator. */
@@ -69,6 +79,10 @@ function clearPresetFrameCache(generatorId: string): void {
   for (const key of presetFrameCache.keys()) {
     if (key.startsWith(`${generatorId}:`)) presetFrameCache.delete(key)
   }
+}
+
+function readPreserveColors(): boolean {
+  try { return typeof window !== 'undefined' && window.localStorage.getItem(PRESERVE_COLORS_STORAGE_KEY) === 'true' } catch { return false }
 }
 
 /** One normalized preset entry rendered as a preview card. */
@@ -82,6 +96,7 @@ export interface PresetPreviewCard {
 
 interface PresetBarProps<Parameters> {
   readonly capability: GeneratorPresetCapability<Parameters>
+  readonly paletteSlots: readonly PaletteSlot<Parameters>[]
   readonly generatorId: string
   readonly parameters: Parameters
   readonly render: (parameters: Parameters) => readonly PixelFrame[]
@@ -97,6 +112,7 @@ export interface PresetBarViewProps {
   readonly pickerOpen: boolean
   readonly actionsOpen: boolean
   readonly modified: boolean
+  readonly preserveColors: boolean
   readonly storageUnavailable: boolean
   readonly warning: boolean
   readonly error: string | null
@@ -110,6 +126,7 @@ export interface PresetBarViewProps {
   readonly actionsRef: RefObject<HTMLDivElement | null>
   readonly actionsButtonRef: RefObject<HTMLButtonElement | null>
   readonly onSelect: (presetId: string) => void
+  readonly onPreserveColorsChange: (preserve: boolean) => void
   readonly onPickerOpen: () => void
   readonly onPickerClose: () => void
   readonly onActionsToggle: () => void
@@ -134,6 +151,7 @@ export function PresetBarView({
   pickerOpen,
   actionsOpen,
   modified,
+  preserveColors,
   storageUnavailable,
   warning,
   error,
@@ -147,6 +165,7 @@ export function PresetBarView({
   actionsRef,
   actionsButtonRef,
   onSelect,
+  onPreserveColorsChange,
   onPickerOpen,
   onPickerClose,
   onActionsToggle,
@@ -166,7 +185,7 @@ export function PresetBarView({
   const selectedCustom = customCards.find((card) => card.id === selectedId)
   return (
     <>
-      <div className="preset-actions" ref={actionsRef}>
+      <PresetStrip cards={[...builtInCards, ...customCards]} selectedId={selectedId} modified={modified} preserveColors={preserveColors} onSelect={onSelect} onPreserveColorsChange={onPreserveColorsChange} actions={<div className="preset-actions" ref={actionsRef}>
         <button
           className="project-menu-button preset-actions-toggle"
           type="button"
@@ -174,14 +193,13 @@ export function PresetBarView({
           aria-expanded={actionsOpen}
           aria-controls={actionsPanelId}
           aria-haspopup="menu"
+          aria-label={t('presets.actionsMenu')}
           onClick={onActionsToggle}
         >
-          {t('presets.actionsMenu')}
-          <span className="project-menu-chevron" aria-hidden="true">▾</span>
+          <span aria-hidden="true">⋯</span>
         </button>
         {actionsOpen ? (
           <div className="preset-actions-panel" id={actionsPanelId} role="menu" aria-label={t('presets.actionsMenu')}>
-            {modified ? <p className="preset-modified">{t('presets.modified')}</p> : null}
             <button className="project-menu-item" type="button" role="menuitem" onClick={onPickerOpen}>
               {t('presets.pickerOpen')}
             </button>
@@ -249,7 +267,7 @@ export function PresetBarView({
             {storageUnavailable ? <p className="preset-hint">{t('presets.storageHint')}</p> : null}
           </div>
         ) : null}
-      </div>
+        </div>} />
 
       {pickerOpen ? (
         <div className="preset-dialog-backdrop" onClick={onPickerClose}>
@@ -304,16 +322,41 @@ export function PresetBarView({
   )
 }
 
+/** Always-visible one-line preset browser and color-preservation setting. */
+export function PresetStrip({ cards, selectedId, modified, preserveColors, onSelect, onPreserveColorsChange, actions }: {
+  readonly cards: readonly PresetPreviewCard[]
+  readonly selectedId: string | null
+  readonly modified: boolean
+  readonly preserveColors: boolean
+  readonly onSelect: (presetId: string) => void
+  readonly onPreserveColorsChange: (preserve: boolean) => void
+  readonly actions: ReactNode
+}) {
+  const { t } = useI18n()
+  return <div className="preset-strip">
+    <div className="preset-strip-cards" role="list" aria-label={t('presets.selectLabel')}>
+      {cards.map((card) => <PresetCard key={card.id} card={card} selected={card.id === selectedId} modified={card.id === selectedId && modified} compact onSelect={onSelect} />)}
+    </div>
+    <label className="preset-preserve-colors"><input type="checkbox" checked={preserveColors} onChange={(event) => onPreserveColorsChange(event.target.checked)} />{t('presets.preserveColors')}</label>
+    {actions}
+  </div>
+}
+
 /** One looping preview card backed by lazily rendered preset frames. */
 const PresetCard = memo(function PresetCard({
   card,
   selected,
+  modified = false,
+  compact = false,
   onSelect,
 }: {
   readonly card: PresetPreviewCard
   readonly selected: boolean
+  readonly modified?: boolean
+  readonly compact?: boolean
   readonly onSelect: (presetId: string) => void
 }) {
+  const { t } = useI18n()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const frameIndexRef = useRef(0)
   const [failed, setFailed] = useState(false)
@@ -349,14 +392,15 @@ const PresetCard = memo(function PresetCard({
   }, [card.buildFrames])
   return (
     <button
-      className={`preset-card ${selected ? 'active' : ''} ${failed ? 'failed' : ''}`}
+      className={`preset-card ${compact ? 'compact' : ''} ${selected ? 'active' : ''} ${failed ? 'failed' : ''}`}
       type="button"
       aria-pressed={selected}
       onClick={() => onSelect(card.id)}
     >
       <canvas ref={canvasRef} aria-hidden="true" />
       <span className="preset-card-label">{card.name}</span>
-      {card.description ? <small className="preset-card-description">{card.description}</small> : null}
+      {modified ? <small className="preset-card-modified">{t('presets.modified')}</small> : null}
+      {card.description && !compact ? <small className="preset-card-description">{card.description}</small> : null}
     </button>
   )
 })
@@ -369,6 +413,7 @@ const PresetCard = memo(function PresetCard({
  */
 export function PresetBar<Parameters>({
   capability,
+  paletteSlots,
   generatorId,
   parameters,
   render,
@@ -380,6 +425,7 @@ export function PresetBar<Parameters>({
   const [storage] = useState<PresetStorage | null>(() => browserPresetStorage())
   const [customPresets, setCustomPresets] = useState<readonly StoredPreset[]>([])
   const [warning, setWarning] = useState(false)
+  const [preserveColors, setPreserveColors] = useState(readPreserveColors)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [appliedPayload, setAppliedPayload] = useState<JsonValue | undefined>(undefined)
   const [saveOpen, setSaveOpen] = useState(false)
@@ -396,6 +442,11 @@ export function PresetBar<Parameters>({
   const actionsPanelId = useId()
   const parametersRef = useRef(parameters)
   parametersRef.current = parameters
+  const colorSignature = preserveColors ? JSON.stringify(paletteSlots.map((slot) => slot.read(parameters))) : ''
+
+  useEffect(() => {
+    try { window.localStorage.setItem(PRESERVE_COLORS_STORAGE_KEY, preserveColors ? 'true' : 'false') } catch { /* Storage is optional. */ }
+  }, [preserveColors])
 
   useEffect(() => {
     runPresetMigration(generatorId, storage)
@@ -452,15 +503,15 @@ export function PresetBar<Parameters>({
    * count, or the generator identity invalidate the previews.
    */
   const buildFrames = useCallback((presetId: string, payload: JsonValue) => {
-    const key = presetPreviewKey(generatorId, presetId, frameSize, frameCount)
+    const key = presetPreviewKey(generatorId, presetId, frameSize, frameCount, colorSignature)
     return (): readonly PixelFrame[] => {
       const cached = presetFrameCache.get(key)
       if (cached) return cached
-      const frames = renderPresetFrames(capability, render, parametersRef.current, payload)
+      const frames = renderPresetFrames(capability, render, parametersRef.current, payload, paletteSlots, preserveColors)
       presetFrameCache.set(key, frames)
       return frames
     }
-  }, [capability, render, generatorId, frameSize.width, frameSize.height, frameCount])
+  }, [capability, render, generatorId, frameSize.width, frameSize.height, frameCount, paletteSlots, preserveColors, colorSignature])
 
   const builtInCards = useMemo(() => capability.builtIns.map((preset) => ({
     id: preset.id,
@@ -485,7 +536,7 @@ export function PresetBar<Parameters>({
       return
     }
     try {
-      const { parameters: next, baseline } = resolveAppliedPresetBaseline(capability, parameters, preset.payload)
+      const { parameters: next, baseline } = resolveAppliedPresetBaseline(capability, parameters, preset.payload, paletteSlots, preserveColors)
       onApply(next)
       setSelectedId(presetId)
       setAppliedPayload(baseline)
@@ -591,6 +642,7 @@ export function PresetBar<Parameters>({
       pickerOpen={pickerOpen}
       actionsOpen={actionsOpen}
       modified={modified}
+      preserveColors={preserveColors}
       storageUnavailable={storage === null}
       warning={warning}
       error={error}
@@ -604,6 +656,7 @@ export function PresetBar<Parameters>({
       actionsRef={actionsRef}
       actionsButtonRef={actionsButtonRef}
       onSelect={handleSelect}
+      onPreserveColorsChange={setPreserveColors}
       onPickerOpen={() => {
         setError(null)
         setActionsOpen(false)

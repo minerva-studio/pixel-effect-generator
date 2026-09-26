@@ -151,6 +151,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
     const presetBar = module.presetCapability ? (
       <PresetBar
         capability={module.presetCapability}
+        paletteSlots={module.paletteSlots}
         generatorId={module.definition.id}
         parameters={typedSession.parameters}
         render={module.render}

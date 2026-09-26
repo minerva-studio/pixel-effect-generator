@@ -4,6 +4,7 @@ import { I18nProvider } from '../i18n/I18nProvider'
 import { slashPresetCapability } from '../generators/slash/presets'
 import { DEFAULT_SLASH_PARAMETERS } from '../generators/slash/model'
 import { captureSlashPreset } from '../generators/slash/presets'
+import type { PaletteSlot } from '../generators/contract'
 import { renderSlashFrames } from '../generators/slash/renderer'
 import {
   payloadsEqual,
@@ -42,6 +43,7 @@ function baseViewProps(overrides: Partial<PresetBarViewProps> = {}): PresetBarVi
     pickerOpen: false,
     actionsOpen: false,
     modified: false,
+    preserveColors: false,
     storageUnavailable: false,
     warning: false,
     error: null,
@@ -55,6 +57,7 @@ function baseViewProps(overrides: Partial<PresetBarViewProps> = {}): PresetBarVi
     actionsRef: { current: null },
     actionsButtonRef: { current: null },
     onSelect: () => undefined,
+    onPreserveColorsChange: () => undefined,
     onPickerOpen: () => undefined,
     onPickerClose: () => undefined,
     onActionsToggle: () => undefined,
@@ -90,31 +93,32 @@ describe('payloadsEqual', () => {
 })
 
 describe('PresetBarView structure', () => {
-  it('renders compact header controls without a standalone panel or select', () => {
+  it('renders the preset strip and compact actions without a select control', () => {
     const markup = viewMarkup(baseViewProps())
     expect(markup).not.toContain('<select')
-    expect(markup).not.toContain('preset-card')
-    expect(markup).not.toContain('preset-bar')
+    expect(markup).toContain('preset-card compact')
+    expect(markup).toContain('preset-strip')
+    expect(markup).toContain('Keep current colors')
     expect(markup).not.toContain('preset-panel')
-    expect(markup).not.toContain('Select preset…')
+    expect(markup).not.toContain('View all')
     expect(markup).toContain('preset-actions')
-    expect(markup).toContain('>Presets<')
+    expect(markup).toContain('aria-label="More preset actions"')
   })
 
   it('opens the actions menu with save, update, and manage entries', () => {
     const markup = viewMarkup(baseViewProps({ actionsOpen: true, customCards }))
     expect(markup).toContain('preset-actions-panel')
-    expect(markup).toContain('aria-label="Presets"')
-    expect(markup).toContain('Select preset…')
+    expect(markup).toContain('aria-label="More preset actions"')
+    expect(markup).toContain('View all')
     expect(markup).toContain('Save as…')
     expect(markup).toContain('Update')
     expect(markup).toContain('Manage')
   })
 
-  it('shows the Modified badge inside the actions menu only when modified', () => {
-    const plain = viewMarkup(baseViewProps({ actionsOpen: true }))
+  it('shows the Modified badge on the selected preset card only when modified', () => {
+    const plain = viewMarkup(baseViewProps({ selectedId: 'cleanArc' }))
     expect(plain).not.toContain('>Modified<')
-    const modified = viewMarkup(baseViewProps({ actionsOpen: true, modified: true }))
+    const modified = viewMarkup(baseViewProps({ selectedId: 'cleanArc', modified: true }))
     expect(modified).toContain('>Modified<')
   })
 
@@ -147,8 +151,8 @@ describe('PresetBarView structure', () => {
 
   it('renders Simplified Chinese labels', () => {
     const markup = viewMarkup(baseViewProps({ actionsOpen: true, pickerOpen: true }), 'zh-CN')
-    expect(markup).toContain('选择预设…')
-    expect(markup).toContain('>预设<')
+    expect(markup).toContain('查看全部')
+    expect(markup).toContain('保留当前颜色')
     expect(markup).toContain('效果预设')
   })
 
@@ -156,7 +160,7 @@ describe('PresetBarView structure', () => {
     const markup = viewMarkup(baseViewProps({ actionsOpen: true, storageUnavailable: true, warning: false }))
     expect(markup).toContain('Custom presets need browser storage; built-in presets still work.')
     expect((markup.match(/disabled=""/g) ?? []).length).toBe(2)
-    expect(markup).toContain('Select preset…')
+    expect(markup).toContain('View all')
   })
 
   it('shows alerts and warnings inside the actions menu', () => {
@@ -175,6 +179,7 @@ describe('PresetBar component', () => {
       <I18nProvider>
         <PresetBar
           capability={slashPresetCapability}
+          paletteSlots={[]}
           generatorId="slash"
           parameters={DEFAULT_SLASH_PARAMETERS}
           render={renderSlashFrames}
@@ -184,9 +189,9 @@ describe('PresetBar component', () => {
         />
       </I18nProvider>,
     )
-    expect(markup).not.toContain('Select preset…')
-    expect(markup).toContain('>Presets<')
-    expect(markup).not.toContain('preset-card')
+    expect(markup).not.toContain('View all')
+    expect(markup).toContain('preset-card compact')
+    expect(markup).toContain('Keep current colors')
     expect(markup).not.toContain('preset-actions-panel')
     expect(markup).not.toContain('<select')
   })
@@ -226,6 +231,21 @@ describe('renderPresetFrames', () => {
     expect(frames).toHaveLength(DEFAULT_SLASH_PARAMETERS.frameCount)
     expect(frames[0].width).toBe(64)
   })
+
+  it('keeps the active colors in applied preset previews when requested', () => {
+    const slot: PaletteSlot<typeof DEFAULT_SLASH_PARAMETERS> = {
+      id: 'slash', labelKey: 'controls.editColors', minimum: 2, maximum: 6,
+      read: (parameters) => parameters.palette,
+      write: (parameters, palette) => ({ ...parameters, palette }),
+    }
+    const palette = DEFAULT_SLASH_PARAMETERS.palette.map(() => ({ r: 12, g: 34, b: 56, a: 78 }))
+    const parameters = { ...DEFAULT_SLASH_PARAMETERS, palette }
+    let rendered: typeof DEFAULT_SLASH_PARAMETERS = parameters
+    const payload = { ...slashPresetCapability.builtIns[0].payload as Record<string, import('../shared/project/types').JsonValue>, radius: 20 }
+    renderPresetFrames(slashPresetCapability, (next) => { rendered = next; return [] }, parameters, payload, [slot], true)
+    expect(rendered.palette).toEqual(palette)
+    expect(rendered.radius).toBe(20)
+  })
 })
 
 describe('presetPreviewKey', () => {
@@ -241,6 +261,8 @@ describe('presetPreviewKey', () => {
       .not.toBe(presetPreviewKey('slash', 'cleanArc', base, 10))
     expect(presetPreviewKey('explosion', 'cleanArc', base, 10))
       .not.toBe(presetPreviewKey('slash', 'cleanArc', base, 10))
+    expect(presetPreviewKey('slash', 'cleanArc', base, 10, 'red'))
+      .not.toBe(presetPreviewKey('slash', 'cleanArc', base, 10, 'blue'))
   })
 })
 
