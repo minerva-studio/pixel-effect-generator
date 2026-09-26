@@ -82,7 +82,7 @@ export function ColorDockView<Parameters>({ rootRef, slots, parameters, activeCo
         const guide = slot.guideKeys?.map((key) => t(key)).join(' → ')
         return <div className="color-dock-row" key={slot.id}>
           <span className="color-dock-label" title={label}>{label}</span>
-          <div className="color-dock-swatches" title={guide}>
+          <div className="color-dock-swatches" title={guide} style={{ '--slot-maximum': slot.maximum } as CSSProperties}>
             {colors.map((color, index) => <button key={index} className={activeColor?.slotId === slot.id && activeColor.index === index ? 'color-dock-swatch active' : 'color-dock-swatch'} type="button" aria-label={`${label} ${index + 1}`} aria-pressed={activeColor?.slotId === slot.id && activeColor.index === index} style={{ backgroundColor: `rgba(${color.r},${color.g},${color.b},${color.a / 255})` }} onClick={() => { onActiveColor(activeColor?.slotId === slot.id && activeColor.index === index ? null : { slotId: slot.id, index }); onLibrarySlotChange(null) }} />)}
             <button className="color-dock-add" type="button" aria-label={t('controls.palette.add')} title={t('controls.palette.add')} disabled={colors.length >= slot.maximum} onClick={() => updateSlot(slot, insertColor(colors, colors.length, slot))}>＋</button>
             {active && activeColor?.slotId === slot.id ? <div className="color-dock-popover" style={{ '--swatch-index': activeColor.index } as CSSProperties}>

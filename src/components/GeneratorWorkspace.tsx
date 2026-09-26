@@ -272,7 +272,7 @@ function ControlsPanel<Parameters, Category extends string>({
     <aside className="panel controls-panel">
       <div className="panel-heading controls-heading">
         <div className="controls-heading-copy">
-          <p className="section-label">{t('workspace.generatorLabel', { index: String(module.definition.index).padStart(2, '0') })}</p>
+          <p className="section-label">{t('workspace.generatorLabel')}</p>
           <h2>{generatorName}</h2>
         </div>
         <div className="controls-heading-actions">

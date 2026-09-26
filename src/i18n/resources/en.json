@@ -204,7 +204,7 @@
     "dismiss": "Dismiss notification"
   },
   "workspace": {
-    "generatorLabel": "GENERATOR {index}",
+    "generatorLabel": "GENERATOR",
     "navLabel": "Effect generators",
     "generatorsLabel": "GENERATORS",
     "categoryTabsLabel": "{name} parameter categories",

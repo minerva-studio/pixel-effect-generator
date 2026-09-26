@@ -47,7 +47,9 @@
 .color-dock-rows { display: grid; grid-template-columns: max-content max-content max-content; align-items: center; gap: 5px 9px; }
 .color-dock-row { display: contents; }
 .color-dock-label { max-width: 9em; overflow: hidden; color: var(--muted); font-size: .75rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.color-dock-swatches { position: relative; display: flex; align-items: center; gap: 4px; }
+/* Reserve room for the slot's maximum colors (20px swatch + 4px gap each, plus the add button)
+   so applying a palette with fewer or more colors never shifts the library button or its menu. */
+.color-dock-swatches { position: relative; display: flex; align-items: center; gap: 4px; min-width: calc(var(--slot-maximum, 6) * 24px + 22px); }
 .color-dock-swatch { width: 20px; height: 20px; padding: 0; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
 .color-dock-swatch:hover,
 .color-dock-swatch.active { outline: 2px solid var(--accent); outline-offset: 1px; }

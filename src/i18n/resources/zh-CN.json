@@ -204,7 +204,7 @@
     "dismiss": "关闭通知"
   },
   "workspace": {
-    "generatorLabel": "生成器 {index}",
+    "generatorLabel": "生成器",
     "navLabel": "特效生成器",
     "generatorsLabel": "生成器",
     "categoryTabsLabel": "{name} 参数分类",

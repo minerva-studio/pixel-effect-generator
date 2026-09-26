@@ -77,6 +77,10 @@ describe('ColorDockView', () => {
     expect(open).not.toContain('Apply colors to')
   })
 
+  it('reserves swatch room for the slot maximum so the palette button never shifts', () => {
+    expect(markup(1, 6)).toContain('class="color-dock-swatches" style="--slot-maximum:6"')
+  })
+
   it('exposes the color lock through aria-pressed', () => {
     const html = markup()
     expect(html).toMatch(/class="color-dock-lock" type="button" aria-pressed="false" aria-label="Lock colors"/)
