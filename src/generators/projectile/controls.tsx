@@ -47,7 +47,7 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
   }
 
   switch (category) {
-    case 'body':
+    case 'shape':
       return (
         <div className="control-list">
           {allowedKind !== 'fireball' && <ShapeCardGrid
@@ -104,24 +104,10 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
           <PercentControl label={t('projectile.controls.wobbleAmount.label')} description={t('projectile.controls.wobbleAmount.description')} value={parameters.wobbleAmount} minimum={0} maximum={1} onChange={(value) => update('wobbleAmount', value)} />
         </div>
       )
-    case 'trail':
-      return (
-        <div className="control-list">
-          <FeatureSection label={t('projectile.controls.trailMode.label')} description={t('projectile.controls.trailMode.description')} enabled={parameters.trailEnabled && parameters.trailMode !== 'off'} status={t(parameters.trailEnabled && parameters.trailMode !== 'off' ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(enabled) => onChange(setProjectileTrailEnabled(parameters, enabled))}>
-            <SelectControl label={t('projectile.controls.trailMode.label')} description={t('projectile.controls.trailMode.description')} value={parameters.trailMode === 'off' ? (parameters.kind === 'fireball' ? 'fire' : 'energy') : parameters.trailMode} options={[
-              { value: 'fire', label: t('projectile.options.trailFire') },
-              { value: 'energy', label: t('projectile.options.trailEnergy') },
-            ]} onChange={(value) => update('trailMode', value)} />
-            <PercentControl label={t('projectile.controls.trailLength.label')} description={t('projectile.controls.trailLength.description')} value={parameters.trailLength} minimum={0} maximum={1} onChange={(value) => update('trailLength', value)} />
-            <NumberControl label={t('projectile.controls.trailWidth.label')} description={t('projectile.controls.trailWidth.description')} value={parameters.trailWidth} minimum={1} maximum={parameters.radius} unit="px" onChange={(value) => update('trailWidth', value)} />
-            <PercentControl label={t('projectile.controls.trailWave.label')} description={t('projectile.controls.trailWave.description')} value={parameters.trailWave} minimum={0} maximum={1} onChange={(value) => update('trailWave', value)} />
-            <PercentControl label={t('projectile.controls.trailBreakup.label')} description={t('projectile.controls.trailBreakup.description')} value={parameters.trailBreakup} minimum={0} maximum={1} onChange={(value) => update('trailBreakup', value)} />
-          </FeatureSection>
-        </div>
-      )
     case 'effects':
       return (
         <div className="control-list">
+          {!embeddedClassic ? <TrailSection parameters={parameters} onChange={onChange} /> : null}
           <SparkControls sparks={parameters} onChange={(sparks) => onChange({ ...parameters, ...sparks })} />
           <FeatureSection label={t('projectile.controls.afterimages.label')} description={t('projectile.controls.afterimages.description')} enabled={parameters.afterimagesEnabled} status={t(parameters.afterimagesEnabled ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(value) => update('afterimagesEnabled', value)}>
             <NumberControl label={t('projectile.controls.afterimageCount.label')} description={t('projectile.controls.afterimageCount.description')} value={parameters.afterimageCount} minimum={0} maximum={MAX_AFTERIMAGE_COUNT} onChange={(value) => update('afterimageCount', value)} />
@@ -131,6 +117,22 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
         </div>
       )
   }
+}
+
+/** Shared trail feature block for the projectile effects and fireball trail tabs. */
+export function TrailSection({ parameters, onChange }: { readonly parameters: ProjectileParameters; readonly onChange: (parameters: ProjectileParameters) => void }) {
+  const { t } = useI18n()
+  const update = <Key extends keyof ProjectileParameters>(key: Key, value: ProjectileParameters[Key]) => onChange({ ...parameters, [key]: value })
+  return <FeatureSection label={t('projectile.controls.trailMode.label')} description={t('projectile.controls.trailMode.description')} enabled={parameters.trailEnabled && parameters.trailMode !== 'off'} status={t(parameters.trailEnabled && parameters.trailMode !== 'off' ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(enabled) => onChange(setProjectileTrailEnabled(parameters, enabled))}>
+    <SelectControl label={t('projectile.controls.trailMode.label')} description={t('projectile.controls.trailMode.description')} value={parameters.trailMode === 'off' ? (parameters.kind === 'fireball' ? 'fire' : 'energy') : parameters.trailMode} options={[
+      { value: 'fire', label: t('projectile.options.trailFire') },
+      { value: 'energy', label: t('projectile.options.trailEnergy') },
+    ]} onChange={(value) => update('trailMode', value)} />
+    <PercentControl label={t('projectile.controls.trailLength.label')} description={t('projectile.controls.trailLength.description')} value={parameters.trailLength} minimum={0} maximum={1} onChange={(value) => update('trailLength', value)} />
+    <NumberControl label={t('projectile.controls.trailWidth.label')} description={t('projectile.controls.trailWidth.description')} value={parameters.trailWidth} minimum={1} maximum={parameters.radius} unit="px" onChange={(value) => update('trailWidth', value)} />
+    <PercentControl label={t('projectile.controls.trailWave.label')} description={t('projectile.controls.trailWave.description')} value={parameters.trailWave} minimum={0} maximum={1} onChange={(value) => update('trailWave', value)} />
+    <PercentControl label={t('projectile.controls.trailBreakup.label')} description={t('projectile.controls.trailBreakup.description')} value={parameters.trailBreakup} minimum={0} maximum={1} onChange={(value) => update('trailBreakup', value)} />
+  </FeatureSection>
 }
 
 /** Neutral fixed-seed parameters keep body thumbnails comparable. */

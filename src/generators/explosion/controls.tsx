@@ -53,7 +53,7 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
   }, [parameters, onChange])
 
   switch (category) {
-    case 'body':
+    case 'shape':
       return (
         <div className="control-list">
           <ShapeCardGrid
@@ -122,6 +122,7 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
           <PercentControl label={familyT('explosion.controls.formationDuration.label')} description={familyT('explosion.controls.formationDuration.description')} value={parameters.motion.formationDuration} minimum={0.1} maximum={0.8} onChange={(formationDuration) => updateMotion({ formationDuration })} />
           <PercentControl label={familyT('explosion.controls.holdDuration.label')} description={familyT('explosion.controls.holdDuration.description')} value={parameters.motion.holdDuration} minimum={0} maximum={0.5} onChange={(holdDuration) => updateMotion({ holdDuration })} />
           </>}
+          <PercentControl label={familyT('explosion.controls.dissolveStart.label')} description={familyT('explosion.controls.dissolveStart.description')} value={parameters.motion.dissolveStart} minimum={0.1} maximum={0.9} onChange={(dissolveStart) => updateMotion({ dissolveStart })} />
         </div>
       )
     case 'material': {
@@ -163,7 +164,6 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
           <SelectControl label={familyT('explosion.controls.surfaceStyle.label')} description={familyT('explosion.controls.surfaceStyle.description')} value={parameters.surface.style} options={SURFACE_OPTIONS.map((style) => ({ value: style, label: familyT(`explosion.options.${style}`) }))} onChange={(style) => onChange({ ...parameters, surface: createExplosionSurface(style as ExplosionSurfaceStyle, parameters.surface.coverage) })} />
           <PercentControl label={familyT('explosion.controls.coverage.label')} description={familyT('explosion.controls.coverage.description')} value={parameters.surface.coverage} minimum={0} maximum={1} onChange={(coverage) => onChange({ ...parameters, surface: { ...parameters.surface, coverage } })} />
           <ExplosionSurfaceAdvancedControls parameters={parameters} onChange={onChange} familyT={familyT} />
-          <PercentControl label={familyT('explosion.controls.dissolveStart.label')} description={familyT('explosion.controls.dissolveStart.description')} value={parameters.motion.dissolveStart} minimum={0.1} maximum={0.9} onChange={(dissolveStart) => updateMotion({ dissolveStart })} />
         </div>
       )
     }

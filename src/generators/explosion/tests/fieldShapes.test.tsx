@@ -136,13 +136,13 @@ describe('field explosion shapes', () => {
   })
 
   it('shows only the controls each field shape uses', () => {
-    const billow = renderControls('body', DEFAULT_EXPLOSION_PARAMETERS)
+    const billow = renderControls('shape', DEFAULT_EXPLOSION_PARAMETERS)
     expect(billow).toContain('Billow burst')
     expect(billow).toContain('Fire masses')
     expect(billow.indexOf('Billow burst')).toBeLessThan(billow.indexOf('Legacy radial'))
     for (const label of ['Front surge', 'Billows', 'Mid-life turnover', 'Sparks and debris']) expect(billow).toContain(label)
     expect(billow).not.toContain('Mass count')
-    const puff = renderControls('body', PUFF_EXPLOSION_PARAMETERS)
+    const puff = renderControls('shape', PUFF_EXPLOSION_PARAMETERS)
     for (const label of ['Mass count', 'Throw distance', 'Rise', 'Billows']) expect(puff).toContain(label)
     expect(puff).not.toContain('Front surge')
     const motion = renderControls('motion', DEFAULT_EXPLOSION_PARAMETERS)

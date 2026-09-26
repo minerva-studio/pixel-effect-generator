@@ -2,7 +2,7 @@ import { NumberControl, PercentControl, SelectControl } from '../../components/c
 import { createPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { FrameSize } from '../../shared/pixel/frame'
-import { ProjectileControls, SparkControls } from '../projectile/controls'
+import { ProjectileControls, SparkControls, TrailSection } from '../projectile/controls'
 import { MAX_CANVAS_SIZE, MAX_LOOP_CYCLES, MIN_CANVAS_SIZE, type ProjectileParameters } from '../projectile/model'
 import type { ProjectileCategory } from '../projectile/module'
 import { FeatureSection, ShapeCardGrid, type ShapeCardOption } from '../shared-effects/controls'
@@ -66,18 +66,19 @@ export function FireballControls({ category, parameters, onChange }: Props) {
         onChange={value => updateTuning('fireballBall', value)} />}
     {number('size', parameters.size, value => update('size', value), 1, maxFireballSize(parameters.canvasWidth, parameters.canvasHeight), 1, 'px')}
     {number('rotation', parameters.rotationDegrees, value => update('rotationDegrees', value), 0, 359, 1, '°')}
-    {classic && classicControls('body')}
+    {parameters.form !== 'puff' && parameters.form !== 'classic' && number('angular', tuning.fireballAngular, value => updateTuning('fireballAngular', value), 0, 1, 0.01, '%')}
+    {classic && classicControls('shape')}
   </div>
   if (category === 'motion') return <div className="control-list">
     {number('cycles', parameters.loopCycles, value => update('loopCycles', value), 1, MAX_LOOP_CYCLES, 1, '×')}
     {classic && classicControls('motion')}
     {!classic && parameters.form !== 'puff' && <>
-      {number('angular', tuning.fireballAngular, value => updateTuning('fireballAngular', value), 0, 1, 0.01, '%')}
       {number('contour', tuning.fireballContour, value => updateTuning('fireballContour', value), 0, 1, 0.01, '%')}
       {number('band', tuning.fireballBandWarp, value => updateTuning('fireballBandWarp', value), 0, 1, 0.01, '%')}
     </>}
   </div>
-  if (classic && (category === 'trail' || category === 'effects')) return classicControls(category)
+  if (classic && category === 'trail') return <div className="control-list"><TrailSection parameters={classicProjectileParameters(parameters)} onChange={updateClassic} /></div>
+  if (classic && category === 'effects') return classicControls('effects')
   if (category === 'trail') return <div className="control-list">
     {parameters.form === 'puff' ? <>
       {number('count', parameters.puff.trailCount, value => update('puff', { ...parameters.puff, trailCount: value }), 4, 18, 1)}

@@ -13,13 +13,13 @@ import { explosionPresetCapability } from './presets'
 import { explosionProjectCodec } from './project'
 import { renderExplosionFrames } from './renderer'
 
-export type ExplosionCategory = 'body' | 'motion' | 'material' | 'effects'
+export type ExplosionCategory = 'shape' | 'motion' | 'material' | 'effects'
 
 export const EXPLOSION_CATEGORIES = [
-  { id: 'body', label: 'Shape', description: 'Pick the fire shape and tune its size and outline.' },
-  { id: 'motion', label: 'Motion', description: 'Control direction, formation, hold, and the motion curve.' },
-  { id: 'material', label: 'Material', description: 'Choose the surface material and tune how it dissolves.' },
-  { id: 'effects', label: 'Effects', description: 'Toggle and tune flash core, shockwave, fire jets, and fragments.' },
+  { id: 'shape', label: 'Shape', description: 'Choose the explosion shape and tune its geometry.' },
+  { id: 'motion', label: 'Motion', description: 'Set explosion direction, formation, hold, and dissolve timing.' },
+  { id: 'material', label: 'Material', description: 'Choose the surface, coverage, volume profile, and surface texture.' },
+  { id: 'effects', label: 'Effects', description: 'Configure flash core, shockwave, flame tongues, and fragments.' },
 ] as const satisfies readonly { id: ExplosionCategory; label: string; description: string }[]
 
 /** Experimental layered explosion and implosion generator module. */

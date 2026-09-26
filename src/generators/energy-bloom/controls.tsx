@@ -48,7 +48,7 @@ export function BloomControls({ category, parameters, onChange }: BloomControlsP
   }, [parameters, onChange])
 
   switch (category) {
-    case 'body':
+    case 'shape':
       return (
         <div className="control-list">
           <ShapeCardGrid
@@ -96,6 +96,7 @@ export function BloomControls({ category, parameters, onChange }: BloomControlsP
           ]} onChange={(motionCurve) => updateMotion({ motionCurve })} />
           <PercentControl label={familyT('energyBloom.controls.formationDuration.label')} description={familyT('energyBloom.controls.formationDuration.description')} value={parameters.motion.formationDuration} minimum={0.1} maximum={0.8} onChange={(formationDuration) => updateMotion({ formationDuration })} />
           <PercentControl label={familyT('energyBloom.controls.holdDuration.label')} description={familyT('energyBloom.controls.holdDuration.description')} value={parameters.motion.holdDuration} minimum={0} maximum={0.5} onChange={(holdDuration) => updateMotion({ holdDuration })} />
+          <PercentControl label={familyT('energyBloom.controls.dissolveStart.label')} description={familyT('energyBloom.controls.dissolveStart.description')} value={parameters.motion.dissolveStart} minimum={0.1} maximum={0.9} onChange={(dissolveStart) => updateMotion({ dissolveStart })} />
         </div>
       )
     case 'material':
@@ -104,7 +105,6 @@ export function BloomControls({ category, parameters, onChange }: BloomControlsP
           <SelectControl label={familyT('energyBloom.controls.surfaceStyle.label')} description={familyT('energyBloom.controls.surfaceStyle.description')} value={parameters.surface.style} options={SURFACE_OPTIONS.map((style) => ({ value: style, label: familyT(`energyBloom.options.${style}`) }))} onChange={(style) => onChange({ ...parameters, surface: createBloomSurface(style as BloomSurfaceStyle, parameters.surface.coverage) })} />
           <PercentControl label={familyT('energyBloom.controls.coverage.label')} description={familyT('energyBloom.controls.coverage.description')} value={parameters.surface.coverage} minimum={0} maximum={1} onChange={(coverage) => onChange({ ...parameters, surface: { ...parameters.surface, coverage } })} />
           <BloomSurfaceAdvancedControls parameters={parameters} onChange={onChange} familyT={familyT} />
-          <PercentControl label={familyT('energyBloom.controls.dissolveStart.label')} description={familyT('energyBloom.controls.dissolveStart.description')} value={parameters.motion.dissolveStart} minimum={0.1} maximum={0.9} onChange={(dissolveStart) => updateMotion({ dissolveStart })} />
         </div>
       )
     case 'effects':

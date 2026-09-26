@@ -37,9 +37,9 @@
         "label": "Motion",
         "description": "Adjust flame motion."
       },
-      "details": {
-        "label": "Details",
-        "description": "Adjust flame details."
+      "material": {
+        "label": "Material",
+        "description": "Tune the flame core size, band distortion, edge breakup, and sparks."
       }
     },
     "controls": {
@@ -501,21 +501,21 @@
     "description": "Physical fire, pressure release, rolling fire masses, and retro blasts.",
     "previewTitle": "Fire burst study",
     "categories": {
-      "body": {
-        "label": "Shape",
-        "description": "Choose the explosion shape and tune its size and outline."
-      },
       "motion": {
         "label": "Motion",
-        "description": "Control direction, formation, hold, and the motion curve."
+        "description": "Set explosion direction, formation, hold, and dissolve timing."
       },
       "material": {
         "label": "Material",
-        "description": "Choose the internal structure; legacy flat presets retain their surface and dissolve controls."
+        "description": "Choose the surface, coverage, volume profile, and surface texture."
       },
       "effects": {
         "label": "Effects",
-        "description": "Toggle and tune flash core, shockwave, fire jets, and fragments."
+        "description": "Configure flash core, shockwave, flame tongues, and fragments."
+      },
+      "shape": {
+        "label": "Shape",
+        "description": "Choose the blast form and tune its geometry."
       }
     },
     "controls": {
@@ -900,21 +900,21 @@
     "description": "Petal, star, and corolla energy effects with vivid convergence.",
     "previewTitle": "Bloom study",
     "categories": {
-      "body": {
-        "label": "Shape",
-        "description": "Choose the bloom shape and tune its size and outline."
-      },
       "motion": {
         "label": "Motion",
-        "description": "Control direction, formation, hold, and the motion curve."
+        "description": "Set burst direction, formation, hold, and dissolve timing."
       },
       "material": {
         "label": "Material",
-        "description": "Choose the surface material and tune how it dissolves."
+        "description": "Choose the surface, coverage, and surface texture."
       },
       "effects": {
         "label": "Effects",
-        "description": "Toggle and tune flash core, shockwave, energy tongues, and shards."
+        "description": "Configure flash core, shockwave, energy tongues, and shards."
+      },
+      "shape": {
+        "label": "Shape",
+        "description": "Choose the bloom form and tune its geometry."
       }
     },
     "controls": {
@@ -1251,19 +1251,19 @@
     "categories": {
       "shape": {
         "label": "Shape",
-        "description": "Choose the fireball form and facing."
+        "description": "Choose the fireball form, facing, size, and flame facets."
       },
       "motion": {
         "label": "Motion",
-        "description": "Control the continuous flight loop."
+        "description": "Control loop cycles, contour and band motion, or classic pulse and wobble."
       },
       "trail": {
         "label": "Trail",
-        "description": "Tune wrapped bands and shedding fire."
+        "description": "Tune wrapped flame bands, tail breakup, and particle-mass trails."
       },
       "effects": {
         "label": "Effects",
-        "description": "Configure smoke and sparks around the fireball."
+        "description": "Configure puff smoke and flame sparks."
       }
     },
     "controls": {
@@ -1384,21 +1384,17 @@
     "description": "Seamless flight loops for fireballs and magic arrows.",
     "previewTitle": "Flight loop study",
     "categories": {
-      "body": {
-        "label": "Shape",
-        "description": "Pick the projectile body, size, and baked facing."
-      },
       "motion": {
         "label": "Motion",
         "description": "Control loop cycles, pulsing, and gentle bobbing."
       },
-      "trail": {
-        "label": "Trail",
-        "description": "Choose a fire or energy band trailing behind the body."
-      },
       "effects": {
         "label": "Effects",
-        "description": "Toggle sparks and afterimages and tune their behavior."
+        "description": "Configure the trail, sparks, and afterimages."
+      },
+      "shape": {
+        "label": "Shape",
+        "description": "Choose the projectile form, body geometry, material, and facing."
       }
     },
     "controls": {

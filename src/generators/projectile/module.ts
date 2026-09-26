@@ -15,13 +15,12 @@ import { renderProjectileFrames } from './renderer'
 import { projectilePresetCapability } from './presets'
 import { projectileProjectCodec } from './project'
 
-export type ProjectileCategory = 'body' | 'motion' | 'trail' | 'effects'
+export type ProjectileCategory = 'shape' | 'motion' | 'effects'
 
 export const PROJECTILE_CATEGORIES = [
-  { id: 'body', label: 'Shape', description: 'Pick the projectile body, size, and baked facing.' },
+  { id: 'shape', label: 'Shape', description: 'Choose the projectile form, geometry, material, and baked facing.' },
   { id: 'motion', label: 'Motion', description: 'Control loop speed, pulsing, and gentle bobbing.' },
-  { id: 'trail', label: 'Trail', description: 'Choose a fire or energy band trailing behind the body.' },
-  { id: 'effects', label: 'Effects', description: 'Toggle sparks and afterimages and tune their behavior.' },
+  { id: 'effects', label: 'Effects', description: 'Configure trail, sparks, and afterimages.' },
 ] as const satisfies readonly { id: ProjectileCategory; label: string; description: string }[]
 
 /** Projectile generator registered for navigation, workspace, and exports. */

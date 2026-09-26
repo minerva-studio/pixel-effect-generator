@@ -18,7 +18,7 @@ function renderControls(category: ExplosionCategory, locale: 'en' | 'zh-CN' = 'e
 
 describe('combustion explosion controls', () => {
   it('renders fixed-seed shape cards and shape-specific body controls', () => {
-    const body = renderControls('body', 'en', MODERN_EXPLOSION_PARAMETERS)
+    const body = renderControls('shape', 'en', MODERN_EXPLOSION_PARAMETERS)
     expect(body).toContain('Rolling fireball')
     expect(body).toContain('Shock blast')
     expect(body).not.toContain('Coming soon')
@@ -32,10 +32,10 @@ describe('combustion explosion controls', () => {
     expect(body).not.toContain('Surface material')
     expect(body).not.toContain('Volume layering')
     expect(body).not.toContain('Internal structure')
-    const retro = renderControls('body')
+    const retro = renderControls('shape')
     expect(retro).toContain('Legacy radial')
     expect(retro).not.toContain('Fire-mass expansion')
-    const shock = renderControls('body', 'en', { ...MODERN_EXPLOSION_PARAMETERS, body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'shockBlast' } })
+    const shock = renderControls('shape', 'en', { ...MODERN_EXPLOSION_PARAMETERS, body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'shockBlast' } })
     expect(shock).toContain('Shell count')
     expect(shock).toContain('Shell thickness')
     expect(shock).toContain('Shell sharpness')
@@ -43,7 +43,7 @@ describe('combustion explosion controls', () => {
     expect(shock).toContain('max="12"')
     expect(shock).toContain('max="48"')
     expect(shock).not.toContain('Fire-mass expansion')
-    const smoke = renderControls('body', 'en', { ...MODERN_EXPLOSION_PARAMETERS, body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst' } })
+    const smoke = renderControls('shape', 'en', { ...MODERN_EXPLOSION_PARAMETERS, body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst' } })
     expect(smoke).toContain('Smoke motion')
     expect(smoke).toContain('Rolling billows')
     expect(smoke).toContain('Particle dissolve')
@@ -81,11 +81,13 @@ describe('combustion explosion controls', () => {
     expect(motion).toContain('Motion curve')
     expect(motion).toContain('Formation time')
     expect(motion).toContain('Hold time')
-    expect(motion).not.toContain('Dissolve time')
+    expect(motion.indexOf('Dissolve time')).toBeGreaterThan(motion.indexOf('Hold time'))
+    const fieldMotion = renderControls('motion', 'en', DEFAULT_EXPLOSION_PARAMETERS)
+    expect(fieldMotion.indexOf('Dissolve time')).toBeGreaterThan(fieldMotion.indexOf('Field simulation fixes its formation and hold timing.'))
   })
 
   it('keeps the direction control in Motion for field and non-field shapes', () => {
-    const body = renderControls('body', 'en', DEFAULT_EXPLOSION_PARAMETERS)
+    const body = renderControls('shape', 'en', DEFAULT_EXPLOSION_PARAMETERS)
     const motion = renderControls('motion', 'en', DEFAULT_EXPLOSION_PARAMETERS)
     expect(body).not.toContain('aria-label="Direction"')
     expect(motion).toContain('aria-label="Direction"')
@@ -138,7 +140,7 @@ describe('combustion explosion controls', () => {
     expect(flat).toContain('legacy flat renderer')
     expect(flat).toContain('Convert to volume rendering')
     expect(flat).toContain('Band curvature')
-    expect(flat).toContain('Dissolve time')
+    expect(flat).not.toContain('Dissolve time')
   })
 
   it('shows dissolve settings under the retro pixel surface in Material', () => {
@@ -146,11 +148,11 @@ describe('combustion explosion controls', () => {
     expect(material).toContain('Dissolve style')
     expect(material).toContain('Circle size')
     expect(renderControls('material', 'en', MODERN_EXPLOSION_PARAMETERS)).not.toContain('Dissolve style')
-    expect(renderControls('body')).not.toContain('Dissolve style')
+    expect(renderControls('shape')).not.toContain('Dissolve style')
   })
 
   it('renders localized labels and shared preview tools', () => {
-    const body = renderControls('body', 'zh-CN')
+    const body = renderControls('shape', 'zh-CN')
     expect(body).toContain('翻滚火团')
     expect(body).toContain('冲击爆破')
     expect(body).toContain('主体形状')

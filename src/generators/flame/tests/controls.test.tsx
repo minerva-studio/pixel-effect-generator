@@ -19,13 +19,13 @@ describe('flame workspace integration', () => {
   })
   it.each(['en-US', 'zh-CN'])('renders translated controls and three animated shape cards (%s)', language => {
     vi.stubGlobal('navigator', { language })
-    const render = (category: 'shape' | 'motion' | 'details') => renderToStaticMarkup(<I18nProvider><FlameControls category={category} parameters={base} onChange={() => undefined} /></I18nProvider>)
+    const render = (category: 'shape' | 'motion' | 'material') => renderToStaticMarkup(<I18nProvider><FlameControls category={category} parameters={base} onChange={() => undefined} /></I18nProvider>)
     const shape = render('shape')
     expect(shape.match(/aria-pressed="(?:true|false)"/g)).toHaveLength(3)
     expect(shape.match(/aria-pressed="true"/g)).toHaveLength(1)
     expect(shape).toContain(language === 'zh-CN' ? '篝火' : 'Campfire')
     expect(render('motion')).toContain(language === 'zh-CN' ? '上升流速' : 'Rising flow')
-    expect(render('details')).toContain(language === 'zh-CN' ? '启用火星' : 'Enable sparks')
+    expect(render('material')).toContain(language === 'zh-CN' ? '启用火星' : 'Enable sparks')
   })
   it('registers complete capabilities and updates only its own session', () => {
     expect(flameModule.projectCodec?.generatorId).toBe('flame')

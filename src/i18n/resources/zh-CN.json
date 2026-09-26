@@ -37,9 +37,9 @@
         "label": "动态",
         "description": "调节火焰动态。"
       },
-      "details": {
-        "label": "细节",
-        "description": "调节火焰细节。"
+      "material": {
+        "label": "质感",
+        "description": "调整火焰核心、色带扭曲、边缘破碎与火星。"
       }
     },
     "controls": {
@@ -501,21 +501,21 @@
     "description": "物理火焰、压力释放、翻滚火团与复古爆炸。",
     "previewTitle": "火焰爆发研究",
     "categories": {
-      "body": {
-        "label": "形状",
-        "description": "选择爆炸形状并调整尺寸与轮廓。"
-      },
       "motion": {
         "label": "动态",
-        "description": "控制方向、成形、停留时间与运动曲线。"
+        "description": "调整爆炸方向、成形、停留与溶解时间。"
       },
       "material": {
-        "label": "材质",
-        "description": "选择内部结构；旧版平面预设继续保留表面与消散参数。"
+        "label": "质感",
+        "description": "选择表面、覆盖范围、体积轮廓与表面纹理。"
       },
       "effects": {
-        "label": "附加效果",
-        "description": "开关并调节闪核、冲击波、火舌与碎片。"
+        "label": "特效",
+        "description": "配置闪光核心、冲击波、火焰与碎片。"
+      },
+      "shape": {
+        "label": "形状",
+        "description": "选择爆炸形态并调整其几何结构。"
       }
     },
     "controls": {
@@ -900,21 +900,21 @@
     "description": "花瓣、星芒与花冠能量效果，配绚丽内聚。",
     "previewTitle": "能量绽放研究",
     "categories": {
-      "body": {
-        "label": "形状",
-        "description": "选择能量绽放形状并调整尺寸与轮廓。"
-      },
       "motion": {
         "label": "动态",
-        "description": "控制方向、成形、停留时间与运动曲线。"
+        "description": "调整爆发方向、成形、停留与溶解时间。"
       },
       "material": {
-        "label": "材质",
-        "description": "选择表面材质并调节其消散方式。"
+        "label": "质感",
+        "description": "选择表面、覆盖范围与表面纹理。"
       },
       "effects": {
-        "label": "附加效果",
-        "description": "开关并调节闪核、冲击波、能量焰舌与晶片。"
+        "label": "特效",
+        "description": "配置闪光核心、冲击波、能量焰舌与碎片。"
+      },
+      "shape": {
+        "label": "形状",
+        "description": "选择能量绽放形态并调整其几何结构。"
       }
     },
     "controls": {
@@ -1250,20 +1250,20 @@
     },
     "categories": {
       "shape": {
-        "label": "造型",
-        "description": "选择火球造型与方向。"
+        "label": "形状",
+        "description": "选择火球造型、方向、大小与火焰棱角。"
       },
       "motion": {
-        "label": "运动",
-        "description": "调整持续飞行循环。"
+        "label": "动态",
+        "description": "调整循环次数、轮廓与色带波动，或经典造型的脉冲与摇摆。"
       },
       "trail": {
-        "label": "尾焰",
-        "description": "调整裹焰火带与剥落火焰。"
+        "label": "轨迹",
+        "description": "调整裹焰色带、尾迹破碎与粒子火团尾焰。"
       },
       "effects": {
         "label": "特效",
-        "description": "配置火球周围的烟雾与火星。"
+        "description": "配置粒子烟雾与火焰火星。"
       }
     },
     "controls": {
@@ -1384,21 +1384,17 @@
     "description": "火球与魔法箭的无缝飞行循环。",
     "previewTitle": "飞行循环预览",
     "categories": {
-      "body": {
-        "label": "形状",
-        "description": "选择弹体类型、尺寸与烘焙朝向。"
-      },
       "motion": {
-        "label": "运动",
-        "description": "控制循环圈数、脉动与轻微摆动。"
-      },
-      "trail": {
-        "label": "尾迹",
-        "description": "选择弹体后方拖曳的火焰或能量带。"
+        "label": "动态",
+        "description": "调整循环次数、脉冲与轻微摇摆。"
       },
       "effects": {
         "label": "特效",
-        "description": "开关火花与残像并调节其行为。"
+        "description": "配置轨迹、火星与残影。"
+      },
+      "shape": {
+        "label": "形状",
+        "description": "选择弹体造型、主体结构、材质与朝向。"
       }
     },
     "controls": {

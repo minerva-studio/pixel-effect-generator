@@ -12,6 +12,8 @@ import { slashModule } from '../slash/module'
 import { explosionModule } from '../explosion/module'
 import { bloomModule } from '../energy-bloom/module'
 import { fireballModule } from '../fireball/module'
+import { flameModule } from '../flame/module'
+import { PROJECTILE_CATEGORIES } from '../projectile/module'
 import { slashProjectCodec } from '../slash/project'
 import type { SlashParameters } from '../slash/model'
 import { packHorizontalSheet } from '../../shared/pixel/spritesheet'
@@ -54,9 +56,9 @@ describe('generator registry', () => {
     expect(slashModule.render(slashModule.defaultParameters)).toHaveLength(8)
   })
 
-  it('registers the combustion explosion with five tabs, a billow-burst default, presets, and project support', () => {
+  it('registers the combustion explosion with four tabs, a billow-burst default, presets, and project support', () => {
     expect(explosionModule.definition.index).toBe(2)
-    expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects'])
+    expect(explosionModule.categories.map((category) => category.id)).toEqual(['shape', 'motion', 'material', 'effects'])
     expect(explosionModule.projectCodec?.generatorId).toBe('explosion')
     expect(explosionModule.projectCodec?.parse(explosionModule.projectCodec.serialize(explosionModule.defaultParameters))).toEqual(explosionModule.defaultParameters)
     expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['billowBurst', 'fireMasses', 'smokyFireMasses', 'rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
@@ -66,7 +68,7 @@ describe('generator registry', () => {
 
   it('registers the energy bloom family with independent defaults and seven presets', () => {
     expect(bloomModule.definition.index).toBe(7)
-    expect(bloomModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects'])
+    expect(bloomModule.categories.map((category) => category.id)).toEqual(['shape', 'motion', 'material', 'effects'])
     expect(bloomModule.defaultParameters.body.shape).toBe('softPetals')
     expect(bloomModule.defaultParameters.tongues.enabled).toBe(false)
     expect(bloomModule.projectCodec).toBeUndefined()
@@ -90,6 +92,9 @@ describe('generator registry', () => {
     expect(fireballModule.projectCodec?.generatorId).toBe('fireball')
     expect(fireballModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['wrapped', 'stream', 'puff', 'classic'])
     expect(fireballModule.render(fireballModule.defaultParameters)).toHaveLength(24)
+    expect(fireballModule.categories.map((category) => category.id)).toEqual(['shape', 'motion', 'trail', 'effects'])
+    expect(flameModule.categories.map((category) => category.id)).toEqual(['shape', 'motion', 'material'])
+    expect(PROJECTILE_CATEGORIES.map((category) => category.id)).toEqual(['shape', 'motion', 'effects'])
     for (const id of ['arrow', 'crystal'] as const) {
       const registration = GENERATOR_REGISTRY.get(id)
       expect(registration.projectCodec?.generatorId).toBe(id)

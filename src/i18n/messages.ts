@@ -184,21 +184,19 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
     effects: { label: 'fireball.categories.effects.label', description: 'fireball.categories.effects.description' },
   },
   arrow: {
-    body: { label: 'projectile.categories.body.label', description: 'projectile.categories.body.description' },
+    shape: { label: 'projectile.categories.shape.label', description: 'projectile.categories.shape.description' },
     motion: { label: 'projectile.categories.motion.label', description: 'projectile.categories.motion.description' },
-    trail: { label: 'projectile.categories.trail.label', description: 'projectile.categories.trail.description' },
     effects: { label: 'projectile.categories.effects.label', description: 'projectile.categories.effects.description' },
   },
   crystal: {
-    body: { label: 'projectile.categories.body.label', description: 'projectile.categories.body.description' },
+    shape: { label: 'projectile.categories.shape.label', description: 'projectile.categories.shape.description' },
     motion: { label: 'projectile.categories.motion.label', description: 'projectile.categories.motion.description' },
-    trail: { label: 'projectile.categories.trail.label', description: 'projectile.categories.trail.description' },
     effects: { label: 'projectile.categories.effects.label', description: 'projectile.categories.effects.description' },
   },
   flame: {
     shape: { label: 'flame.categories.shape.label', description: 'flame.categories.shape.description' },
     motion: { label: 'flame.categories.motion.label', description: 'flame.categories.motion.description' },
-    details: { label: 'flame.categories.details.label', description: 'flame.categories.details.description' },
+    material: { label: 'flame.categories.material.label', description: 'flame.categories.material.description' },
   },
   slash: {
     shape: { label: 'slash.categories.shape.label', description: 'slash.categories.shape.description' },
@@ -207,21 +205,20 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
     breakup: { label: 'slash.categories.breakup.label', description: 'slash.categories.breakup.description' },
   },
   explosion: {
-    body: { label: 'explosion.categories.body.label', description: 'explosion.categories.body.description' },
+    shape: { label: 'explosion.categories.shape.label', description: 'explosion.categories.shape.description' },
     motion: { label: 'explosion.categories.motion.label', description: 'explosion.categories.motion.description' },
     material: { label: 'explosion.categories.material.label', description: 'explosion.categories.material.description' },
     effects: { label: 'explosion.categories.effects.label', description: 'explosion.categories.effects.description' },
   },
   energyBloom: {
-    body: { label: 'energyBloom.categories.body.label', description: 'energyBloom.categories.body.description' },
+    shape: { label: 'energyBloom.categories.shape.label', description: 'energyBloom.categories.shape.description' },
     motion: { label: 'energyBloom.categories.motion.label', description: 'energyBloom.categories.motion.description' },
     material: { label: 'energyBloom.categories.material.label', description: 'energyBloom.categories.material.description' },
     effects: { label: 'energyBloom.categories.effects.label', description: 'energyBloom.categories.effects.description' },
   },
   projectile: {
-    body: { label: 'projectile.categories.body.label', description: 'projectile.categories.body.description' },
+    shape: { label: 'projectile.categories.shape.label', description: 'projectile.categories.shape.description' },
     motion: { label: 'projectile.categories.motion.label', description: 'projectile.categories.motion.description' },
-    trail: { label: 'projectile.categories.trail.label', description: 'projectile.categories.trail.description' },
     effects: { label: 'projectile.categories.effects.label', description: 'projectile.categories.effects.description' },
   },
 }

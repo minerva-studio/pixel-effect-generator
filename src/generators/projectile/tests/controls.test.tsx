@@ -15,7 +15,7 @@ function renderControls(category: ProjectileCategory, locale: 'en' | 'zh-CN' = '
 
 describe('projectile controls', () => {
   it('renders five body thumbnail cards with one selected identity', () => {
-    const body = renderControls('body')
+    const body = renderControls('shape')
     expect(body).toContain('Fireball')
     expect(body).toContain('Solid arrow')
     expect(body).toContain('Energy arrow')
@@ -24,7 +24,7 @@ describe('projectile controls', () => {
     expect(body.match(/aria-pressed="(?:true|false)"/g)).toHaveLength(5)
     expect(body.match(/aria-pressed="true"/g)).toHaveLength(1)
 
-    const energyArrow = renderControls('body', 'en', {
+    const energyArrow = renderControls('shape', 'en', {
       ...DEFAULT_PROJECTILE_PARAMETERS,
       kind: 'arrow',
       arrowMaterial: 'energy',
@@ -57,25 +57,26 @@ describe('projectile controls', () => {
   })
 
   it('shows only the selected body family controls', () => {
-    const fireball = renderControls('body')
+    const fireball = renderControls('shape')
     expect(fireball).toContain('Rear flame reach')
     expect(fireball).toContain('Surface mottling')
-    expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'solid' })).toContain('Arrowhead length')
-    expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'energy' })).toContain('Energy core length')
-    expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'spear' })).toContain('Crystal taper')
-    expect(renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'spear' })).toContain('Glint strength')
-    const core = renderControls('body', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'core' })
+    expect(renderControls('shape', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'solid' })).toContain('Arrowhead length')
+    expect(renderControls('shape', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow', arrowMaterial: 'energy' })).toContain('Energy core length')
+    expect(renderControls('shape', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'spear' })).toContain('Crystal taper')
+    expect(renderControls('shape', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'spear' })).toContain('Glint strength')
+    const core = renderControls('shape', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'crystal', crystalForm: 'core' })
     expect(core).toContain('Orbit radius')
     expect(core).toContain('Glint speed')
     expect(core).not.toContain('Crystal taper')
   })
 
   it('renders the trail as a foldable optional layer', () => {
-    const trail = renderControls('trail')
+    const trail = renderControls('effects')
     expect(trail).toContain('class="effect-section enabled')
     expect(trail).toContain('aria-label="Trail"')
+    expect(trail.indexOf('aria-label="Trail"')).toBeLessThan(trail.indexOf('aria-label="Sparks"'))
     expect(trail).not.toContain('Trail length')
-    const off = renderControls('trail', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, trailMode: 'off' })
+    const off = renderControls('effects', 'en', { ...DEFAULT_PROJECTILE_PARAMETERS, trailMode: 'off' })
     expect(off).toContain('class="effect-section  "')
     expect(off).toContain('Off')
   })
@@ -97,11 +98,11 @@ describe('projectile controls', () => {
   })
 
   it('renders localized labels and shared preview tools', () => {
-    const body = renderControls('body', 'zh-CN')
+    const body = renderControls('shape', 'zh-CN')
     expect(body).toContain('实体箭')
     expect(body).toContain('火球')
     expect(body).toContain('能量箭')
-    expect(renderControls('trail', 'zh-CN')).toContain('尾迹类型')
+    expect(renderControls('effects', 'zh-CN')).toContain('尾迹类型')
     expect(renderControls('effects', 'zh-CN')).toContain('火花')
     vi.stubGlobal('navigator', { language: 'en-US' })
     const tools = renderToStaticMarkup(

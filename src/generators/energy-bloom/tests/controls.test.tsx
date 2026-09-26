@@ -15,22 +15,28 @@ function renderControls(category: BloomCategory, locale: 'en' | 'zh-CN' = 'en', 
 
 describe('energy bloom controls', () => {
   it('renders the three bloom shape cards with shape-specific controls', () => {
-    const body = renderControls('body')
+    const body = renderControls('shape')
     expect(body).toContain('Soft petals')
     expect(body).toContain('Sharp starburst')
     expect(body).toContain('Layered corolla')
     expect(body).toContain('shape-card')
     expect(body).toContain('Petal count')
-    const star = renderControls('body', 'en', { ...DEFAULT_BLOOM_PARAMETERS, body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'sharpStarburst' } })
+    const star = renderControls('shape', 'en', { ...DEFAULT_BLOOM_PARAMETERS, body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'sharpStarburst' } })
     expect(star).toContain('Ray count')
     expect(star).not.toContain('Petal count')
   })
 
   it('shows the corolla layer delay only under the layered shape in Body', () => {
-    const petalBody = renderControls('body')
+    const petalBody = renderControls('shape')
     expect(petalBody).not.toContain('Layer delay')
-    const corollaBody = renderControls('body', 'en', { ...DEFAULT_BLOOM_PARAMETERS, body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'layeredCorolla' } })
+    const corollaBody = renderControls('shape', 'en', { ...DEFAULT_BLOOM_PARAMETERS, body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'layeredCorolla' } })
     expect(corollaBody).toContain('Layer delay')
+  })
+
+  it('places dissolve start after hold timing in Motion', () => {
+    const motion = renderControls('motion')
+    expect(motion.indexOf('Dissolve time')).toBeGreaterThan(motion.indexOf('Hold time'))
+    expect(renderControls('material')).not.toContain('Dissolve time')
   })
 
   it('shows dissolve settings under the pixel noise surface in Material', () => {
@@ -39,10 +45,10 @@ describe('energy bloom controls', () => {
       surface: { style: 'pixelNoise', coverage: 0.95, dissolveStyle: 'scanSweep', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
     })
     expect(material).toContain('Surface material')
-    expect(material).toContain('Dissolve time')
+    expect(material).not.toContain('Dissolve time')
     expect(material).toContain('Dissolve style')
     expect(renderControls('material')).not.toContain('Dissolve style')
-    expect(renderControls('body')).not.toContain('Dissolve style')
+    expect(renderControls('shape')).not.toContain('Dissolve style')
   })
 
   it('defaults every effect section collapsed with one title and an accessible compact switch', () => {
@@ -58,7 +64,7 @@ describe('energy bloom controls', () => {
   })
 
   it('renders localized labels and shared preview tools', () => {
-    const body = renderControls('body', 'zh-CN')
+    const body = renderControls('shape', 'zh-CN')
     expect(body).toContain('圆润花瓣')
     expect(body).toContain('锐利星芒')
     expect(renderControls('effects', 'zh-CN')).toContain('能量焰舌')

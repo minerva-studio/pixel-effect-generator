@@ -12,7 +12,7 @@ const cards = FLAME_SHAPES.map((shape) => ({ value: shape, labelKey: `flame.opti
 const categoryFields = {
   shape: ['width', 'height', 'baseWidth', 'fork', 'roughness'],
   motion: ['loopCycles', 'sway', 'flicker', 'flowSpeed', 'turbulence'],
-  details: ['coreSize', 'bandWarp', 'edgeBreakup'],
+  material: ['coreSize', 'bandWarp', 'edgeBreakup'],
 } as const
 
 /** Uses shared inputs while preserving opaque palette and shape-only selection contracts. */
@@ -27,7 +27,7 @@ export function FlameControls({ category, parameters: p, onChange }: { readonly 
   return <div className="control-list">
     {category === 'shape' && <ShapeCardGrid familyId="flame" label={t('flame.controls.shape.label')} options={cards} selected={p.shape} render={renderFlameFrames} onSelect={(shape) => onChange(selectFlameShape(p, shape as FlameShape))} />}
     {categoryFields[category].map(field)}
-    {category === 'details' && <FeatureSection label={t('flame.controls.sparksEnabled.label')} description={t('flame.controls.sparksEnabled.description')} enabled={p.sparksEnabled} status={t(p.sparksEnabled ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(sparksEnabled) => onChange({ ...p, sparksEnabled })}>
+    {category === 'material' && <FeatureSection label={t('flame.controls.sparksEnabled.label')} description={t('flame.controls.sparksEnabled.description')} enabled={p.sparksEnabled} status={t(p.sparksEnabled ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(sparksEnabled) => onChange({ ...p, sparksEnabled })}>
       {(['sparkCount', 'sparkSpread', 'sparkRise'] as const).map(field)}
     </FeatureSection>}
   </div>

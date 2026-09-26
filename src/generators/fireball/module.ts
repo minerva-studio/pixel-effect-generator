@@ -9,10 +9,10 @@ import { fitFireballPalette } from './palette'
 import { MAX_CANVAS_SIZE, MAX_FRAME_COUNT, MIN_CANVAS_SIZE, MIN_FRAME_COUNT } from '../projectile/model'
 
 const categories = [
-  { id: 'shape', label: 'Shape', description: 'Choose the fireball form and baked facing.' },
-  { id: 'motion', label: 'Motion', description: 'Control the continuous flight loop.' },
-  { id: 'trail', label: 'Trail', description: 'Tune wrapped bands and shedding fire.' },
-  { id: 'effects', label: 'Effects', description: 'Configure smoke and sparks around the fireball.' },
+  { id: 'shape', label: 'Shape', description: 'Choose the fireball form, baked facing, size, and flame facets.' },
+  { id: 'motion', label: 'Motion', description: 'Control loop cycles, contour and band motion, pulse, and wobble.' },
+  { id: 'trail', label: 'Trail', description: 'Tune wrapped flame bands, tail breakup, and particle-mass trails.' },
+  { id: 'effects', label: 'Effects', description: 'Configure puff smoke and flame sparks.' },
 ] as const satisfies readonly { id: FireballCategory; label: string; description: string }[]
 
 export const fireballModule = defineGenerator({

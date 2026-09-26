@@ -44,4 +44,13 @@ describe('fireball controls', () => {
     expect(markup).toContain('°')
     expect(markup).toContain('Sets the fireball head radius in pixels.')
   })
+
+  it('keeps shape facets in Shape and shares the projectile trail section in Classic', () => {
+    const shape = renderToStaticMarkup(<I18nProvider><FireballControls category="shape" parameters={DEFAULT_FIREBALL_PARAMETERS} onChange={() => undefined} /></I18nProvider>)
+    const motion = renderToStaticMarkup(<I18nProvider><FireballControls category="motion" parameters={DEFAULT_FIREBALL_PARAMETERS} onChange={() => undefined} /></I18nProvider>)
+    expect(shape).toContain('Shape facets')
+    expect(motion).not.toContain('Shape facets')
+    const trail = renderToStaticMarkup(<I18nProvider><FireballControls category="trail" parameters={{ ...DEFAULT_FIREBALL_PARAMETERS, form: 'classic' }} onChange={() => undefined} /></I18nProvider>)
+    expect(trail).toContain('aria-label="Trail"')
+  })
 })
