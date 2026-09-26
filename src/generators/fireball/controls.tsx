@@ -1,8 +1,6 @@
 import { NumberControl, PercentControl, SelectControl } from '../../components/controls'
-import { PaletteEditor } from '../../components/PaletteEditor'
 import { createPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
-import type { RgbColor } from '../../shared/pixel/color'
 import type { FrameSize } from '../../shared/pixel/frame'
 import { ProjectileControls, SparkControls } from '../projectile/controls'
 import { MAX_CANVAS_SIZE, MAX_LOOP_CYCLES, MIN_CANVAS_SIZE, type ProjectileParameters } from '../projectile/model'
@@ -10,10 +8,9 @@ import type { ProjectileCategory } from '../projectile/module'
 import { FeatureSection, ShapeCardGrid, type ShapeCardOption } from '../shared-effects/controls'
 import type { FireballTuning } from './canonical'
 import { DEFAULT_FIREBALL_PARAMETERS, classicFireballTuning, classicProjectileParameters, maxFireballSize, selectFireballShape, type FireballParameters } from './model'
-import { fitFireballPalette } from './palette'
 import { renderFireballFrames } from './renderer'
 
-export type FireballCategory = 'shape' | 'motion' | 'trail' | 'effects' | 'palette'
+export type FireballCategory = 'shape' | 'motion' | 'trail' | 'effects'
 type FireballControlKey = 'form' | 'size' | 'rotation' | 'cycles' | 'angular' | 'contour' | 'band' | 'breakup' | 'ribbons' | 'ball' | 'trail' | 'count' | 'length' | 'billow' | 'smoke' | 'seed'
 
 interface Props {
@@ -100,17 +97,7 @@ export function FireballControls({ category, parameters, onChange }: Props) {
     </FeatureSection>}
     <SparkControls sparks={parameters.sparks} onChange={sparks => update('sparks', sparks)} />
   </div>
-  return <div className="control-list">
-    <PaletteRows label={t('fireball.palette.warm')} colors={parameters.warmPalette} onChange={colors => update('warmPalette', colors)} />
-    <PaletteRows label={t('fireball.palette.rock')} colors={parameters.smokePalette} onChange={colors => update('smokePalette', colors)} />
-  </div>
-}
-
-function PaletteRows({ label, colors, onChange }: { label: string; colors: readonly RgbColor[]; onChange: (colors: readonly RgbColor[]) => void }) {
-  const { t } = useI18n()
-  return <PaletteEditor title={label} palette={colors} onChange={onChange} minimum={2} maximum={6}
-    bandLabel={(index) => t('fireball.palette.band', { index: index + 1 })}
-    fit={(palette, length) => fitFireballPalette(palette, length)} />
+  return <div className="control-list" />
 }
 
 export const FireballPreviewTools = createPreviewTools<FireballParameters>({ keyPrefix: 'fireball', minimumSize: MIN_CANVAS_SIZE, maximumSize: MAX_CANVAS_SIZE })

@@ -1,6 +1,5 @@
 import { PercentControl, NumberControl, SelectControl } from '../../components/controls'
 import { createPreviewTools } from '../../components/PreviewTools'
-import { PaletteEditor } from '../../components/PaletteEditor'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { FrameSize } from '../../shared/pixel/frame'
 import {
@@ -11,14 +10,10 @@ import {
 import {
   DEFAULT_PROJECTILE_PARAMETERS,
   MAX_AFTERIMAGE_COUNT,
-  MAX_BODY_PALETTE_SIZE,
   MAX_CANVAS_SIZE,
-  MAX_ENERGY_PALETTE_SIZE,
   MAX_LOOP_CYCLES,
   MAX_SPARK_COUNT,
-  MIN_BODY_PALETTE_SIZE,
   MIN_CANVAS_SIZE,
-  MIN_ENERGY_PALETTE_SIZE,
   projectileFrameLimits,
   selectProjectileShape,
   selectedProjectileShape,
@@ -133,27 +128,6 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
             <PercentControl label={t('projectile.controls.afterimageSpacing.label')} description={t('projectile.controls.afterimageSpacing.description')} value={parameters.afterimageSpacing} minimum={0} maximum={1} onChange={(value) => update('afterimageSpacing', value)} />
             <PercentControl label={t('projectile.controls.afterimageDecay.label')} description={t('projectile.controls.afterimageDecay.description')} value={parameters.afterimageDecay} minimum={0} maximum={1} onChange={(value) => update('afterimageDecay', value)} />
           </FeatureSection>
-        </div>
-      )
-    case 'palette':
-      return (
-        <div className="control-list">
-          <PaletteEditor
-            title={t('projectile.palette.bodyTitle')}
-            bandLabel={(index) => t('projectile.palette.bodyBand', { index: index + 1 })}
-            palette={parameters.bodyPalette}
-            minimum={MIN_BODY_PALETTE_SIZE}
-            maximum={MAX_BODY_PALETTE_SIZE}
-            onChange={(bodyPalette) => update('bodyPalette', bodyPalette)}
-          />
-          <PaletteEditor
-            title={t('projectile.palette.energyTitle')}
-            bandLabel={(index) => t('projectile.palette.energyBand', { index: index + 1 })}
-            palette={parameters.energyPalette}
-            minimum={MIN_ENERGY_PALETTE_SIZE}
-            maximum={MAX_ENERGY_PALETTE_SIZE}
-            onChange={(energyPalette) => update('energyPalette', energyPalette)}
-          />
         </div>
       )
   }

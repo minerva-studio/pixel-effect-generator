@@ -12,14 +12,13 @@ import {
 import { bloomPresetCapability } from './presets'
 import { renderBloomFrames } from './renderer'
 
-export type BloomCategory = 'body' | 'motion' | 'material' | 'effects' | 'palette'
+export type BloomCategory = 'body' | 'motion' | 'material' | 'effects'
 
 export const BLOOM_CATEGORIES = [
   { id: 'body', label: 'Shape', description: 'Pick the bloom shape and tune its size and outline.' },
   { id: 'motion', label: 'Motion', description: 'Control direction, formation, hold, and the motion curve.' },
   { id: 'material', label: 'Material', description: 'Choose the surface material and tune how it dissolves.' },
   { id: 'effects', label: 'Effects', description: 'Toggle and tune flash core, shockwave, energy tongues, and shards.' },
-  { id: 'palette', label: 'Palette', description: 'Order discrete colors from the bright center to the deep outer edge.' },
 ] as const satisfies readonly { id: BloomCategory; label: string; description: string }[]
 
 /** Energy bloom generator registered for navigation, workspace, and exports. */
@@ -31,6 +30,7 @@ export const bloomModule = defineGenerator({
     description: 'Petal, star, and corolla energy effects with vivid convergence.',
   },
   categories: BLOOM_CATEGORIES,
+  paletteSlots: [{ id: 'energyBloom', labelKey: 'energyBloom.palette.hotCore', guideKeys: ['energyBloom.palette.hotCore', 'energyBloom.palette.outerEdge'], minimum: 2, maximum: 6, read: (p) => p.palette, write: (p, palette) => ({ ...p, palette }) }],
   defaultParameters: DEFAULT_BLOOM_PARAMETERS,
   presetCapability: bloomPresetCapability,
   render: renderBloomFrames,

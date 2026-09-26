@@ -27,6 +27,7 @@ export const blipModule = defineGenerator({
     { id: 'core', label: 'Core', description: 'One test category.' },
     { id: 'pattern', label: 'Pattern', description: 'Another test category.' },
   ],
+  paletteSlots: [],
   defaultParameters: { intensity: 1, frameCount: 5 },
   render: (parameters) => Array.from({ length: parameters.frameCount }, () => ({
     width: 8,

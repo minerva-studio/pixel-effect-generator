@@ -40,10 +40,6 @@
       "details": {
         "label": "Details",
         "description": "Adjust flame details."
-      },
-      "palette": {
-        "label": "Palette",
-        "description": "Adjust flame palette."
       }
     },
     "controls": {
@@ -313,8 +309,11 @@
   "controls": {
     "about": "About {label}",
     "value": "{label} value",
+    "colorDock": "Generator colors",
+    "editColors": "Edit",
     "palette": {
       "alpha": "Opacity",
+      "bandLabel": "Color band {index}",
       "add": "Add color band",
       "remove": "Remove",
       "removeBand": "Remove color band {index}"
@@ -358,10 +357,6 @@
       "shape": {
         "label": "Shape",
         "description": "Define the arc silhouette, orientation, and perspective."
-      },
-      "palette": {
-        "label": "Palette",
-        "description": "Build the radial color bands from the inner edge outward."
       },
       "motion": {
         "label": "Motion",
@@ -520,10 +515,6 @@
       "effects": {
         "label": "Effects",
         "description": "Toggle and tune flash core, shockwave, fire jets, and fragments."
-      },
-      "palette": {
-        "label": "Palette",
-        "description": "Order discrete colors from the hot core to the dark edge."
       }
     },
     "controls": {
@@ -923,10 +914,6 @@
       "effects": {
         "label": "Effects",
         "description": "Toggle and tune flash core, shockwave, energy tongues, and shards."
-      },
-      "palette": {
-        "label": "Palette",
-        "description": "Order discrete colors from the bright center to the deep outer edge."
       }
     },
     "controls": {
@@ -1276,10 +1263,6 @@
       "effects": {
         "label": "Effects",
         "description": "Configure smoke and sparks around the fireball."
-      },
-      "palette": {
-        "label": "Palette",
-        "description": "Edit fire, smoke, and rock colors."
       }
     },
     "controls": {
@@ -1415,10 +1398,6 @@
       "effects": {
         "label": "Effects",
         "description": "Toggle sparks and afterimages and tune their behavior."
-      },
-      "palette": {
-        "label": "Palette",
-        "description": "Color the solid arrow body and every energy surface."
       }
     },
     "controls": {

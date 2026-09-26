@@ -13,14 +13,13 @@ import { explosionPresetCapability } from './presets'
 import { explosionProjectCodec } from './project'
 import { renderExplosionFrames } from './renderer'
 
-export type ExplosionCategory = 'body' | 'motion' | 'material' | 'effects' | 'palette'
+export type ExplosionCategory = 'body' | 'motion' | 'material' | 'effects'
 
 export const EXPLOSION_CATEGORIES = [
   { id: 'body', label: 'Shape', description: 'Pick the fire shape and tune its size and outline.' },
   { id: 'motion', label: 'Motion', description: 'Control direction, formation, hold, and the motion curve.' },
   { id: 'material', label: 'Material', description: 'Choose the surface material and tune how it dissolves.' },
   { id: 'effects', label: 'Effects', description: 'Toggle and tune flash core, shockwave, fire jets, and fragments.' },
-  { id: 'palette', label: 'Palette', description: 'Order discrete colors from the hot core to the dark edge.' },
 ] as const satisfies readonly { id: ExplosionCategory; label: string; description: string }[]
 
 /** Experimental layered explosion and implosion generator module. */
@@ -32,6 +31,7 @@ export const explosionModule = defineGenerator({
     description: 'Physical fire, pressure release, rolling fireballs, and retro blasts.',
   },
   categories: EXPLOSION_CATEGORIES,
+  paletteSlots: [{ id: 'explosion', labelKey: 'explosion.palette.hotCore', guideKeys: ['explosion.palette.hotCore', 'explosion.palette.outerEdge'], minimum: 2, maximum: 6, read: (p) => p.palette, write: (p, palette) => ({ ...p, palette }) }],
   defaultParameters: DEFAULT_EXPLOSION_PARAMETERS,
   projectCodec: explosionProjectCodec,
   presetCapability: explosionPresetCapability,

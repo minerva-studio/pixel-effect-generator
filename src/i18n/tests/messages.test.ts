@@ -130,7 +130,7 @@ describe('translation resources', () => {
     expect(categoryDisplayKeys('explosion', 'material')?.label).toBe('explosion.categories.material.label')
     expect(categoryDisplayKeys('explosion', 'effects')?.label).toBe('explosion.categories.effects.label')
     expect(generatorDisplayKeys('energyBloom')?.name).toBe('energyBloom.name')
-    expect(categoryDisplayKeys('energyBloom', 'palette')?.label).toBe('energyBloom.categories.palette.label')
+    expect(categoryDisplayKeys('energyBloom', 'palette')).toBeUndefined()
     expect(categoryDisplayKeys('energyBloom', 'material')?.label).toBe('energyBloom.categories.material.label')
     expect(translate(messagesForLocale('zh-CN'), 'projectile.categories.body.label')).toBe('形状')
     expect(translate(messagesForLocale('zh-CN'), 'fireball.categories.effects.label')).toBe('特效')

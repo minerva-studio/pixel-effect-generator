@@ -96,17 +96,6 @@ describe('projectile controls', () => {
     expect(disabled.match(/class="effect-section  "/g)).toHaveLength(2)
   })
 
-  it('renders both palette editors with alpha sliders and 8-digit hex', () => {
-    const palette = renderControls('palette')
-    expect(palette).toContain('Arrow body')
-    expect(palette).toContain('Energy palette')
-    expect(palette.match(/type="range"/g)).toHaveLength(8)
-    expect(palette).toContain('min="0"')
-    expect(palette).toContain('max="255"')
-    expect(palette).toContain('#FFFBC3FF')
-    expect(palette).toContain('Opacity')
-  })
-
   it('renders localized labels and shared preview tools', () => {
     const body = renderControls('body', 'zh-CN')
     expect(body).toContain('实体箭')

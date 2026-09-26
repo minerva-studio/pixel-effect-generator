@@ -6,15 +6,15 @@ import { flameProjectCodec } from './project'
 import { flamePresetCapability } from './presets'
 import { renderFlameFrames } from './renderer'
 
-export type FlameCategory = 'shape' | 'motion' | 'details' | 'palette'
+export type FlameCategory = 'shape' | 'motion' | 'details'
 export const flameModule = defineGenerator({
   definition: { id: 'flame', index: 4, name: 'Flame', description: 'Seamless candle, torch, and campfire loops.' },
   categories: [
     { id: 'shape', label: 'Shape', description: 'Shape and size the flame.' },
     { id: 'motion', label: 'Motion', description: 'Control periodic burning and flow.' },
     { id: 'details', label: 'Details', description: 'Tune the core, bands, and sparks.' },
-    { id: 'palette', label: 'Palette', description: 'Order opaque colors from hot core to edge.' },
   ] as const,
+  paletteSlots: [{ id: 'flame', labelKey: 'flame.palette.hotCore', minimum: 3, maximum: 6, opaque: true, read: (p) => p.palette, write: (p, palette) => ({ ...p, palette }) }],
   defaultParameters: DEFAULT_FLAME_PARAMETERS,
   projectCodec: flameProjectCodec, presetCapability: flamePresetCapability,
   render: renderFlameFrames,

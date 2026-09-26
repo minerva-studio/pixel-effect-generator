@@ -3,6 +3,7 @@ import { defineGenerator, registerGenerator } from '../registry'
 import { ProjectileControls, ProjectilePreviewTools } from './controls'
 import {
   DEFAULT_PROJECTILE_PARAMETERS,
+  MAX_BODY_PALETTE_SIZE, MAX_ENERGY_PALETTE_SIZE, MIN_BODY_PALETTE_SIZE, MIN_ENERGY_PALETTE_SIZE,
   MAX_CANVAS_SIZE,
   MAX_FRAME_COUNT,
   MIN_CANVAS_SIZE,
@@ -14,14 +15,13 @@ import { renderProjectileFrames } from './renderer'
 import { projectilePresetCapability } from './presets'
 import { projectileProjectCodec } from './project'
 
-export type ProjectileCategory = 'body' | 'motion' | 'trail' | 'effects' | 'palette'
+export type ProjectileCategory = 'body' | 'motion' | 'trail' | 'effects'
 
 export const PROJECTILE_CATEGORIES = [
   { id: 'body', label: 'Shape', description: 'Pick the projectile body, size, and baked facing.' },
   { id: 'motion', label: 'Motion', description: 'Control loop speed, pulsing, and gentle bobbing.' },
   { id: 'trail', label: 'Trail', description: 'Choose a fire or energy band trailing behind the body.' },
   { id: 'effects', label: 'Effects', description: 'Toggle sparks and afterimages and tune their behavior.' },
-  { id: 'palette', label: 'Palette', description: 'Color the solid arrow body and every energy surface.' },
 ] as const satisfies readonly { id: ProjectileCategory; label: string; description: string }[]
 
 /** Projectile generator registered for navigation, workspace, and exports. */
@@ -33,6 +33,10 @@ export const projectileModule = defineGenerator({
     description: 'Seamless flight loops for fireballs and magic arrows.',
   },
   categories: PROJECTILE_CATEGORIES,
+  paletteSlots: [
+    { id: 'body', labelKey: 'projectile.palette.bodyTitle', minimum: MIN_BODY_PALETTE_SIZE, maximum: MAX_BODY_PALETTE_SIZE, read: (p) => p.bodyPalette, write: (p, bodyPalette) => ({ ...p, bodyPalette }) },
+    { id: 'energy', labelKey: 'projectile.palette.energyTitle', minimum: MIN_ENERGY_PALETTE_SIZE, maximum: MAX_ENERGY_PALETTE_SIZE, read: (p) => p.energyPalette, write: (p, energyPalette) => ({ ...p, energyPalette }) },
+  ],
   defaultParameters: DEFAULT_PROJECTILE_PARAMETERS,
   projectCodec: projectileProjectCodec,
   presetCapability: projectilePresetCapability,

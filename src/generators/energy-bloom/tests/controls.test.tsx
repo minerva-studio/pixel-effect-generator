@@ -26,16 +26,6 @@ describe('energy bloom controls', () => {
     expect(star).not.toContain('Petal count')
   })
 
-  it('renders an alpha slider and 8-digit hex for every palette band', () => {
-    const palette = renderControls('palette')
-    expect(palette).toContain('Opacity')
-    expect(palette).toContain('type="range"')
-    expect(palette).toContain('min="0"')
-    expect(palette).toContain('max="255"')
-    expect(palette).toContain('#F9F4F8FF')
-    expect(renderControls('palette', 'zh-CN')).toContain('透明度')
-  })
-
   it('shows the corolla layer delay only under the layered shape in Body', () => {
     const petalBody = renderControls('body')
     expect(petalBody).not.toContain('Layer delay')

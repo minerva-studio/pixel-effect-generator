@@ -3,6 +3,22 @@ import type { FrameSize, PixelFrame } from '../shared/pixel/frame'
 import type { GeneratorProjectCodec, JsonValue } from '../shared/project/types'
 import type { FileOperationController } from '../components/fileOperations'
 import type { UnityExportSettingsState } from '../components/unitySettings'
+import type { RgbColor } from '../shared/pixel/color'
+import type { MessageKey } from '../i18n/messages'
+
+/** Editable color collection owned by one generator parameter path. */
+export interface PaletteSlot<Parameters> {
+  readonly id: string
+  readonly labelKey: MessageKey
+  readonly guideKeys?: readonly [MessageKey, MessageKey]
+  readonly minimum: number
+  readonly maximum: number
+  readonly opaque?: boolean
+  read(parameters: Parameters): readonly RgbColor[]
+  write(parameters: Parameters, colors: readonly RgbColor[]): Parameters
+  readonly fit?: (colors: readonly RgbColor[], length: number) => readonly RgbColor[]
+  readonly insert?: (colors: readonly RgbColor[]) => readonly RgbColor[]
+}
 
 /** Navigation metadata for one registered generator with a literal id. */
 export interface GeneratorDefinition<Id extends string> {
@@ -66,6 +82,7 @@ export class RenderedFrameSet {
 export interface GeneratorModule<Id extends string, Parameters, Category extends string> {
   readonly definition: GeneratorDefinition<Id>
   readonly categories: readonly GeneratorCategory<Category>[]
+  readonly paletteSlots: readonly PaletteSlot<Parameters>[]
   readonly defaultParameters: Parameters
   /** Preview cadence used for new and reset documents. */
   readonly defaultPreviewFps?: number

@@ -20,6 +20,7 @@ import { ExportPanel } from './ExportPanel'
 import type { FileOperationController } from './fileOperations'
 import { Preview } from './Preview'
 import { PresetBar } from './PresetBar'
+import { ColorDock } from './ColorDock'
 import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
 import type { UnityExportSettingsState } from './unitySettings'
 
@@ -173,6 +174,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           generatorName={generatorName}
           category={activeCategory}
           presetBar={presetBar}
+          colorDock={<ColorDock slots={module.paletteSlots} parameters={typedSession.parameters} onParameters={dispatchParameters} />}
           onReset={onReset}
           onParameters={dispatchParameters}
           onCategory={(nextCategory) => dispatch({ type: 'category', category: nextCategory })}
@@ -243,6 +245,7 @@ function ControlsPanel<Parameters, Category extends string>({
   generatorName,
   category,
   presetBar,
+  colorDock,
   onReset,
   onParameters,
   onCategory,
@@ -252,6 +255,7 @@ function ControlsPanel<Parameters, Category extends string>({
   readonly generatorName: string
   readonly category: { readonly id: Category; readonly label: string; readonly description: string }
   readonly presetBar?: ReactNode
+  readonly colorDock: ReactNode
   readonly onReset: () => void
   readonly onParameters: (parameters: Parameters) => void
   readonly onCategory: (category: Category) => void
@@ -267,10 +271,12 @@ function ControlsPanel<Parameters, Category extends string>({
           <h2>{t('workspace.parametersTitle', { name: generatorName })}</h2>
         </div>
         <div className="controls-heading-actions">
-          {presetBar}
           <button className="text-button" type="button" onClick={onReset}>{t('workspace.reset')}</button>
         </div>
       </div>
+
+      {presetBar}
+      {colorDock}
 
       <div className="category-tabs" role="tablist" aria-label={t('workspace.categoryTabsLabel', { name: generatorName })}>
         {module.categories.map((entry) => {

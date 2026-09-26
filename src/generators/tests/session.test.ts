@@ -166,6 +166,7 @@ function sampleModule(
       { id: 'shape', label: 'Shape', description: 'Shape controls.' },
       { id: 'breakup', label: 'Breakup', description: 'Breakup controls.' },
     ],
+    paletteSlots: [],
     defaultParameters: { value: 1, frameCount: 8 },
     render,
     readFrameCount: (parameters) => parameters.frameCount,

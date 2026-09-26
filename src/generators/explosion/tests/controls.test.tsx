@@ -75,16 +75,6 @@ describe('combustion explosion controls', () => {
     expect(markup).toContain('disabled=""')
   })
 
-  it('renders an alpha slider and 8-digit hex for every palette band', () => {
-    const palette = renderControls('palette')
-    expect(palette).toContain('Opacity')
-    expect(palette).toContain('type="range"')
-    expect(palette).toContain('min="0"')
-    expect(palette).toContain('max="255"')
-    expect(palette).toContain('#FFFBC3FF')
-    expect(renderControls('palette', 'zh-CN')).toContain('透明度')
-  })
-
   it('renders the motion tab with direction, curve, and timing controls', () => {
     const motion = renderControls('motion')
     expect(motion).toContain('Direction')

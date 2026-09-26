@@ -56,7 +56,7 @@ describe('generator registry', () => {
 
   it('registers the combustion explosion with five tabs, a billow-burst default, presets, and project support', () => {
     expect(explosionModule.definition.index).toBe(2)
-    expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
+    expect(explosionModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects'])
     expect(explosionModule.projectCodec?.generatorId).toBe('explosion')
     expect(explosionModule.projectCodec?.parse(explosionModule.projectCodec.serialize(explosionModule.defaultParameters))).toEqual(explosionModule.defaultParameters)
     expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['billowBurst', 'fireMasses', 'smokyFireMasses', 'rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
@@ -66,7 +66,7 @@ describe('generator registry', () => {
 
   it('registers the energy bloom family with independent defaults and seven presets', () => {
     expect(bloomModule.definition.index).toBe(7)
-    expect(bloomModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects', 'palette'])
+    expect(bloomModule.categories.map((category) => category.id)).toEqual(['body', 'motion', 'material', 'effects'])
     expect(bloomModule.defaultParameters.body.shape).toBe('softPetals')
     expect(bloomModule.defaultParameters.tongues.enabled).toBe(false)
     expect(bloomModule.projectCodec).toBeUndefined()
@@ -168,7 +168,7 @@ describe('dual module sessions', () => {
     expect(sheet.height).toBe(updatedParameters.canvasHeight)
   })
   it('exposes per-generator preview metadata', () => {
-    expect(slashModule.categories.map((category) => category.id)).toEqual(['shape', 'motion', 'breakup', 'fragments', 'palette'])
+    expect(slashModule.categories.map((category) => category.id)).toEqual(['shape', 'motion', 'breakup', 'fragments'])
     expect(GENERATOR_REGISTRY.get('slash').previewTitle).toBe('Sweep study')
     expect(GENERATOR_REGISTRY.get('slash').readFrameSize(GENERATOR_REGISTRY.get('slash').createSession(12))).toEqual({ width: 128, height: 128 })
     expect(dualRegistry.get('blip').previewTitle).toBe('Blip loop')

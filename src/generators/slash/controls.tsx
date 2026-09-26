@@ -1,6 +1,5 @@
 import { PercentControl, NumberControl, SelectControl, SegmentedControl } from '../../components/controls'
 import { createPreviewTools } from '../../components/PreviewTools'
-import { PaletteEditor as SharedPaletteEditor } from '../../components/PaletteEditor'
 import { useI18n } from '../../i18n/I18nProvider'
 import {
   MAX_CANVAS_SIZE,
@@ -10,7 +9,6 @@ import {
   updateFragmentMaxSize,
   updateFragmentMinSize,
 } from './model'
-import { insertPaletteColor } from './palette'
 import { MAX_SWEEP_DEGREES } from './model'
 import type { SlashCategory } from './module'
 import type { SlashParameters } from './model'
@@ -51,8 +49,6 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
           <NumberControl label={t('slash.controls.tilt.label')} description={t('slash.controls.tilt.description')} value={parameters.tiltDegrees} minimum={0} maximum={90} unit="°" onChange={(value) => update('tiltDegrees', value)} />
         </div>
       )
-    case 'palette':
-      return <SlashPaletteEditor parameters={parameters} onChange={onChange} />
     case 'motion':
       return (
         <div className="control-list">
@@ -121,11 +117,3 @@ export function SlashControls({ category, parameters, onChange }: SlashControlsP
 
 export const SlashPreviewTools = createPreviewTools<SlashParameters>({ keyPrefix: 'slash', minimumSize: MIN_CANVAS_SIZE, maximumSize: MAX_CANVAS_SIZE })
 
-/** Supplies Slash palette direction labels and its stable insertion rule. */
-function SlashPaletteEditor({ parameters, onChange }: Omit<SlashControlsProps, 'category'>) {
-  const { t } = useI18n()
-  return <SharedPaletteEditor palette={parameters.palette} onChange={(palette) => onChange({ ...parameters, palette })}
-    minimum={2} maximum={6} guide={[t('slash.palette.innerEdge'), t('slash.palette.outerEdge')]}
-    bandLabel={(index) => t('slash.palette.band', { index: index + 1 })}
-    insert={insertPaletteColor} />
-}

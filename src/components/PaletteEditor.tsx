@@ -10,7 +10,7 @@ export interface PaletteEditorProps {
   readonly opaque?: boolean
   readonly title?: string
   readonly guide?: readonly [string, string]
-  readonly bandLabel: (index: number) => string
+  readonly bandLabel?: (index: number) => string
   readonly fit?: (palette: readonly RgbColor[], length: number) => readonly RgbColor[]
   readonly insert?: (palette: readonly RgbColor[]) => readonly RgbColor[]
 }
@@ -18,6 +18,7 @@ export interface PaletteEditorProps {
 /** Edits one ordered palette with consistent add/remove and alpha controls. */
 export function PaletteEditor({ palette, onChange, minimum, maximum, opaque = false, title, guide, bandLabel, fit, insert }: PaletteEditorProps) {
   const { t } = useI18n()
+  const labelBand = bandLabel ?? ((index: number) => t('controls.palette.bandLabel', { index: index + 1 }))
   const updateColor = (index: number, value: string) => onChange(
     palette.map((color, colorIndex) => colorIndex === index ? { ...hexToRgb(value), a: color.a } : color),
   )
@@ -45,7 +46,7 @@ export function PaletteEditor({ palette, onChange, minimum, maximum, opaque = fa
         {palette.map((color, index) => (
           <div className="palette-row" key={index}>
             <span className="palette-order">{String(index + 1).padStart(2, '0')}</span>
-            <input aria-label={bandLabel(index)} type="color" value={rgbaToHex(color).slice(0, 7)} onChange={(event) => updateColor(index, event.target.value)} />
+            <input aria-label={labelBand(index)} type="color" value={rgbaToHex(color).slice(0, 7)} onChange={(event) => updateColor(index, event.target.value)} />
             {!opaque ? <label className="palette-alpha">
               <span>{t('controls.palette.alpha')}</span>
               <input aria-label={t('controls.palette.alpha')} type="range" min={0} max={255} value={color.a} onChange={(event) => updateAlpha(index, Number(event.target.value))} />

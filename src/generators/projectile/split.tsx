@@ -4,8 +4,8 @@ import { defineGenerator, registerGenerator } from '../registry'
 import type { GeneratorProjectCodec, JsonValue } from '../../shared/project/types'
 import { ProjectileControls, ProjectilePreviewTools } from './controls'
 import {
-  DEFAULT_PROJECTILE_PARAMETERS, MAX_CANVAS_SIZE, MAX_FRAME_COUNT, MIN_CANVAS_SIZE,
-  MIN_FRAME_COUNT, resizeProjectileCanvas, type ProjectileKind, type ProjectileParameters,
+  DEFAULT_PROJECTILE_PARAMETERS, MAX_BODY_PALETTE_SIZE, MAX_CANVAS_SIZE, MAX_ENERGY_PALETTE_SIZE, MAX_FRAME_COUNT, MIN_BODY_PALETTE_SIZE, MIN_CANVAS_SIZE,
+  MIN_ENERGY_PALETTE_SIZE, MIN_FRAME_COUNT, resizeProjectileCanvas, type ProjectileKind, type ProjectileParameters,
 } from './model'
 import { PROJECTILE_CATEGORIES } from './module'
 import {
@@ -49,6 +49,10 @@ export function createSplitProjectileGenerator<Id extends 'arrow' | 'crystal'>(
   const module = defineGenerator({
     definition: { id, index, name, description },
     categories: PROJECTILE_CATEGORIES,
+    paletteSlots: [
+      { id: 'body', labelKey: 'projectile.palette.bodyTitle', minimum: MIN_BODY_PALETTE_SIZE, maximum: MAX_BODY_PALETTE_SIZE, read: (p: ProjectileParameters) => p.bodyPalette, write: (p: ProjectileParameters, bodyPalette) => ({ ...p, bodyPalette }) },
+      { id: 'energy', labelKey: 'projectile.palette.energyTitle', minimum: MIN_ENERGY_PALETTE_SIZE, maximum: MAX_ENERGY_PALETTE_SIZE, read: (p: ProjectileParameters) => p.energyPalette, write: (p: ProjectileParameters, energyPalette) => ({ ...p, energyPalette }) },
+    ],
     defaultParameters,
     projectCodec,
     presetCapability,

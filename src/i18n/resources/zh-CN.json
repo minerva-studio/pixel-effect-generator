@@ -40,10 +40,6 @@
       "details": {
         "label": "细节",
         "description": "调节火焰细节。"
-      },
-      "palette": {
-        "label": "颜色",
-        "description": "调节火焰颜色。"
       }
     },
     "controls": {
@@ -313,8 +309,11 @@
   "controls": {
     "about": "关于 {label}",
     "value": "{label} 数值",
+    "colorDock": "生成器颜色",
+    "editColors": "编辑",
     "palette": {
       "alpha": "不透明度",
+      "bandLabel": "色带 {index}",
       "add": "添加色带",
       "remove": "移除",
       "removeBand": "移除第 {index} 个色带"
@@ -358,10 +357,6 @@
       "shape": {
         "label": "形状",
         "description": "定义弧线的轮廓、朝向与透视。"
-      },
-      "palette": {
-        "label": "调色板",
-        "description": "从内缘向外构建径向色带。"
       },
       "motion": {
         "label": "运动",
@@ -520,10 +515,6 @@
       "effects": {
         "label": "附加效果",
         "description": "开关并调节闪核、冲击波、火舌与碎片。"
-      },
-      "palette": {
-        "label": "颜色",
-        "description": "从白热点到暗色外缘排列离散颜色。"
       }
     },
     "controls": {
@@ -923,10 +914,6 @@
       "effects": {
         "label": "附加效果",
         "description": "开关并调节闪核、冲击波、能量焰舌与晶片。"
-      },
-      "palette": {
-        "label": "颜色",
-        "description": "从明亮中心到深邃外缘排列离散颜色。"
       }
     },
     "controls": {
@@ -1276,10 +1263,6 @@
       "effects": {
         "label": "特效",
         "description": "配置火球周围的烟雾与火星。"
-      },
-      "palette": {
-        "label": "调色板",
-        "description": "编辑火焰、烟雾与岩核颜色。"
       }
     },
     "controls": {
@@ -1415,10 +1398,6 @@
       "effects": {
         "label": "特效",
         "description": "开关火花与残像并调节其行为。"
-      },
-      "palette": {
-        "label": "颜色",
-        "description": "为实体箭身与所有能量表面配色。"
       }
     },
     "controls": {

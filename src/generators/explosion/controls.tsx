@@ -7,7 +7,6 @@ import type { FrameSize } from '../../shared/pixel/frame'
 import {
   DissolveControls,
   EffectControls,
-  FamilyPaletteEditor,
   ShapeCardGrid,
   type FamilyEffectValues,
   type FamilyTranslate,
@@ -179,8 +178,6 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
           onChange={updateEffects}
         />
       )
-    case 'palette':
-      return <FamilyPaletteEditor family="explosion" t={familyT} palette={parameters.palette} onChange={(palette) => onChange({ ...parameters, palette })} />
   }
 }
 

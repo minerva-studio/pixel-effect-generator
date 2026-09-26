@@ -49,6 +49,7 @@ export interface MessageParams {
   'controls.about': { label: string }
   'controls.value': { label: string }
   'controls.palette.removeBand': { index: number }
+  'controls.palette.bandLabel': { index: number }
   'slash.palette.band': { index: number }
   'slash.palette.removeBand': { index: number }
   'explosion.palette.band': { index: number }
@@ -181,31 +182,26 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
     motion: { label: 'fireball.categories.motion.label', description: 'fireball.categories.motion.description' },
     trail: { label: 'fireball.categories.trail.label', description: 'fireball.categories.trail.description' },
     effects: { label: 'fireball.categories.effects.label', description: 'fireball.categories.effects.description' },
-    palette: { label: 'fireball.categories.palette.label', description: 'fireball.categories.palette.description' },
   },
   arrow: {
     body: { label: 'projectile.categories.body.label', description: 'projectile.categories.body.description' },
     motion: { label: 'projectile.categories.motion.label', description: 'projectile.categories.motion.description' },
     trail: { label: 'projectile.categories.trail.label', description: 'projectile.categories.trail.description' },
     effects: { label: 'projectile.categories.effects.label', description: 'projectile.categories.effects.description' },
-    palette: { label: 'projectile.categories.palette.label', description: 'projectile.categories.palette.description' },
   },
   crystal: {
     body: { label: 'projectile.categories.body.label', description: 'projectile.categories.body.description' },
     motion: { label: 'projectile.categories.motion.label', description: 'projectile.categories.motion.description' },
     trail: { label: 'projectile.categories.trail.label', description: 'projectile.categories.trail.description' },
     effects: { label: 'projectile.categories.effects.label', description: 'projectile.categories.effects.description' },
-    palette: { label: 'projectile.categories.palette.label', description: 'projectile.categories.palette.description' },
   },
   flame: {
     shape: { label: 'flame.categories.shape.label', description: 'flame.categories.shape.description' },
     motion: { label: 'flame.categories.motion.label', description: 'flame.categories.motion.description' },
     details: { label: 'flame.categories.details.label', description: 'flame.categories.details.description' },
-    palette: { label: 'flame.categories.palette.label', description: 'flame.categories.palette.description' },
   },
   slash: {
     shape: { label: 'slash.categories.shape.label', description: 'slash.categories.shape.description' },
-    palette: { label: 'slash.categories.palette.label', description: 'slash.categories.palette.description' },
     motion: { label: 'slash.categories.motion.label', description: 'slash.categories.motion.description' },
     fragments: { label: 'slash.categories.fragments.label', description: 'slash.categories.fragments.description' },
     breakup: { label: 'slash.categories.breakup.label', description: 'slash.categories.breakup.description' },
@@ -215,21 +211,18 @@ const CATEGORY_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Cat
     motion: { label: 'explosion.categories.motion.label', description: 'explosion.categories.motion.description' },
     material: { label: 'explosion.categories.material.label', description: 'explosion.categories.material.description' },
     effects: { label: 'explosion.categories.effects.label', description: 'explosion.categories.effects.description' },
-    palette: { label: 'explosion.categories.palette.label', description: 'explosion.categories.palette.description' },
   },
   energyBloom: {
     body: { label: 'energyBloom.categories.body.label', description: 'energyBloom.categories.body.description' },
     motion: { label: 'energyBloom.categories.motion.label', description: 'energyBloom.categories.motion.description' },
     material: { label: 'energyBloom.categories.material.label', description: 'energyBloom.categories.material.description' },
     effects: { label: 'energyBloom.categories.effects.label', description: 'energyBloom.categories.effects.description' },
-    palette: { label: 'energyBloom.categories.palette.label', description: 'energyBloom.categories.palette.description' },
   },
   projectile: {
     body: { label: 'projectile.categories.body.label', description: 'projectile.categories.body.description' },
     motion: { label: 'projectile.categories.motion.label', description: 'projectile.categories.motion.description' },
     trail: { label: 'projectile.categories.trail.label', description: 'projectile.categories.trail.description' },
     effects: { label: 'projectile.categories.effects.label', description: 'projectile.categories.effects.description' },
-    palette: { label: 'projectile.categories.palette.label', description: 'projectile.categories.palette.description' },
   },
 }
 

@@ -8,7 +8,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function renderControls(category: 'shape' | 'palette' | 'motion' | 'breakup' | 'fragments', locale: 'en' | 'zh-CN' = 'en') {
+function renderControls(category: 'shape' | 'motion' | 'breakup' | 'fragments', locale: 'en' | 'zh-CN' = 'en') {
   vi.stubGlobal('navigator', locale === 'zh-CN' ? { language: 'zh-CN' } : undefined)
   return renderToStaticMarkup(
     <I18nProvider>
@@ -31,16 +31,6 @@ describe('Slash controls', () => {
     expect(en).toContain('four times the slash thickness')
     expect(zh).toContain('尖锋长度')
     expect(zh).toContain('斩击厚度的四倍')
-  })
-
-  it('renders an alpha slider and 8-digit hex for every palette band', () => {
-    const markup = renderControls('palette')
-    expect(markup).toContain('Opacity')
-    expect(markup).toContain('type="range"')
-    expect(markup).toContain('min="0"')
-    expect(markup).toContain('max="255"')
-    expect(markup).toContain('#FFFFFFFF')
-    expect(renderControls('palette', 'zh-CN')).toContain('透明度')
   })
 
   it('exposes adjacent minimum and maximum fragment size fields for every drawing mode', () => {
