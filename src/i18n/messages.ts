@@ -47,6 +47,9 @@ export interface MessageParams {
   'controls.about': { label: string }
   'controls.value': { label: string }
   'controls.palette.removeBand': { index: number }
+  'presets.updateCard': { name: string }
+  'presets.renameCard': { name: string }
+  'presets.deleteCard': { name: string }
   'controls.palette.bandLabel': { index: number }
   'slash.palette.band': { index: number }
   'slash.palette.removeBand': { index: number }

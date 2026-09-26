@@ -85,7 +85,7 @@ describe('translation resources', () => {
   })
 
   it('keeps preset labels and slash preset names available', () => {
-    expect(translate(en, 'presets.saveAs')).toBe('Save as…')
+    expect(translate(en, 'presets.saveCurrent')).toBe('Save current')
     expect(translate(en, 'slash.presets.fullCircle.name')).toBe('Full Circle')
     expect(translate(messagesForLocale('zh-CN'), 'slash.presets.fullCircle.description')).toBe('完整的 360° 环形扫击。')
     expect(translate(en, 'slash.presets.pointedStrike.name')).toBe('Pointed Strike')

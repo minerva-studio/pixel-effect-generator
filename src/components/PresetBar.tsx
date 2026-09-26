@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { GeneratorPreset, GeneratorPresetCapability, PaletteSlot } from '../generators/contract'
 import { applyPreservingColors } from '../generators/paletteSlots'
 import { runPresetMigration } from '../generators/presetMigration'
@@ -106,30 +106,23 @@ export interface PresetBarViewProps {
   readonly builtInCards: readonly PresetPreviewCard[]
   readonly customCards: readonly PresetPreviewCard[]
   readonly pickerOpen: boolean
-  readonly actionsOpen: boolean
   readonly modified: boolean
   readonly storageUnavailable: boolean
   readonly warning: boolean
   readonly error: string | null
   readonly saveOpen: boolean
   readonly saveName: string
-  readonly manageOpen: boolean
   readonly renameId: string | null
   readonly renameName: string
   readonly deleteConfirmId: string | null
-  readonly actionsPanelId: string
-  readonly actionsRef: RefObject<HTMLDivElement | null>
-  readonly actionsButtonRef: RefObject<HTMLButtonElement | null>
   readonly onSelect: (presetId: string) => void
   readonly onPickerOpen: () => void
   readonly onPickerClose: () => void
-  readonly onActionsToggle: () => void
   readonly onSaveAsOpen: () => void
   readonly onSaveNameChange: (name: string) => void
   readonly onSaveAsConfirm: () => void
   readonly onSaveAsCancel: () => void
-  readonly onUpdate: () => void
-  readonly onManageToggle: () => void
+  readonly onUpdate: (presetId: string) => void
   readonly onRenameStart: (presetId: string, name: string) => void
   readonly onRenameChange: (name: string) => void
   readonly onRenameConfirm: (presetId: string) => void
@@ -137,176 +130,63 @@ export interface PresetBarViewProps {
   readonly onDelete: (presetId: string) => void
 }
 
-/** Presentational preset controls for the parameter panel header. */
+/** Preset strip and full preset browser dialog. */
 export function PresetBarView({
-  selectedId,
-  builtInCards,
-  customCards,
-  pickerOpen,
-  actionsOpen,
-  modified,
-  storageUnavailable,
-  warning,
-  error,
-  saveOpen,
-  saveName,
-  manageOpen,
-  renameId,
-  renameName,
-  deleteConfirmId,
-  actionsPanelId,
-  actionsRef,
-  actionsButtonRef,
-  onSelect,
-  onPickerOpen,
-  onPickerClose,
-  onActionsToggle,
-  onSaveAsOpen,
-  onSaveNameChange,
-  onSaveAsConfirm,
-  onSaveAsCancel,
-  onUpdate,
-  onManageToggle,
-  onRenameStart,
-  onRenameChange,
-  onRenameConfirm,
-  onRenameCancel,
-  onDelete,
+  selectedId, builtInCards, customCards, pickerOpen, modified, storageUnavailable, warning, error,
+  saveOpen, saveName, renameId, renameName, deleteConfirmId,
+  onSelect, onPickerOpen, onPickerClose, onSaveAsOpen, onSaveNameChange, onSaveAsConfirm,
+  onSaveAsCancel, onUpdate, onRenameStart, onRenameChange, onRenameConfirm, onRenameCancel, onDelete,
 }: PresetBarViewProps) {
   const { t } = useI18n()
-  const selectedCustom = customCards.find((card) => card.id === selectedId)
+  const allCards = [...builtInCards, ...customCards]
   return (
     <>
-      <PresetStrip cards={[...builtInCards, ...customCards]} selectedId={selectedId} modified={modified} onSelect={onSelect} actions={<div className="preset-actions" ref={actionsRef}>
-        <button
-          className="project-menu-button preset-actions-toggle"
-          type="button"
-          ref={actionsButtonRef}
-          aria-expanded={actionsOpen}
-          aria-controls={actionsPanelId}
-          aria-haspopup="menu"
-          aria-label={t('presets.actionsMenu')}
-          onClick={onActionsToggle}
-        >
-          <span aria-hidden="true">⋯</span>
-        </button>
-        {actionsOpen ? (
-          <div className="preset-actions-panel" id={actionsPanelId} role="menu" aria-label={t('presets.actionsMenu')}>
-            <button className="project-menu-item" type="button" role="menuitem" onClick={onPickerOpen}>
-              {t('presets.pickerOpen')}
-            </button>
-            <button className="project-menu-item" type="button" role="menuitem" disabled={storageUnavailable} onClick={onSaveAsOpen}>
-              {t('presets.saveAs')}
-            </button>
-            <button className="project-menu-item" type="button" role="menuitem" disabled={selectedCustom === undefined || storageUnavailable} onClick={onUpdate}>
-              {t('presets.update')}
-            </button>
-            <button className="project-menu-item" type="button" role="menuitem" onClick={onManageToggle}>
-              {t('presets.manage')}
-            </button>
-            {saveOpen ? (
-              <div className="preset-save-row">
-                <input
-                  aria-label={t('presets.saveNameLabel')}
-                  value={saveName}
-                  maxLength={40}
-                  placeholder={t('presets.saveNameLabel')}
-                  onChange={(event) => onSaveNameChange(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      onSaveAsConfirm()
-                    }
-                  }}
-                />
-                <button className="secondary-button" type="button" onClick={onSaveAsConfirm}>{t('presets.saveConfirm')}</button>
-                <button className="text-button" type="button" onClick={onSaveAsCancel}>{t('presets.cancel')}</button>
-              </div>
-            ) : null}
-            {manageOpen ? (
-              <div className="preset-manage-list">
-                {customCards.length === 0 ? (
-                  <p className="preset-manage-empty">{t('presets.noCustom')}</p>
-                ) : (
-                  customCards.map((card) => (
-                    <div className="preset-manage-item" key={card.id}>
-                      {renameId === card.id ? (
-                        <>
-                          <input
-                            aria-label={t('presets.rename')}
-                            value={renameName}
-                            maxLength={40}
-                            onChange={(event) => onRenameChange(event.target.value)}
-                          />
-                          <button className="text-button" type="button" onClick={() => onRenameConfirm(card.id)}>{t('presets.confirm')}</button>
-                          <button className="text-button" type="button" onClick={onRenameCancel}>{t('presets.cancel')}</button>
-                        </>
-                      ) : (
-                        <>
-                          <span className="preset-manage-name">{card.name}</span>
-                          <button className="text-button" type="button" onClick={() => onRenameStart(card.id, card.name)}>{t('presets.rename')}</button>
-                          <button className="text-button danger" type="button" onClick={() => onDelete(card.id)}>
-                            {deleteConfirmId === card.id ? t('presets.confirmDelete') : t('presets.delete')}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : null}
-            {error ? <p className="preset-error" role="alert">{error}</p> : null}
-            {warning ? <p className="preset-warning">{t('presets.warning')}</p> : null}
-            {storageUnavailable ? <p className="preset-hint">{t('presets.storageHint')}</p> : null}
-          </div>
-        ) : null}
-        </div>} />
-
+      <PresetStrip
+        cards={allCards}
+        selectedId={selectedId}
+        modified={modified}
+        saveOpen={saveOpen}
+        saveName={saveName}
+        storageUnavailable={storageUnavailable}
+        renameId={renameId}
+        renameName={renameName}
+        deleteConfirmId={deleteConfirmId}
+        onSelect={onSelect}
+        onSaveAsOpen={onSaveAsOpen}
+        onSaveNameChange={onSaveNameChange}
+        onSaveAsConfirm={onSaveAsConfirm}
+        onSaveAsCancel={onSaveAsCancel}
+        onPickerOpen={onPickerOpen}
+        onUpdate={onUpdate}
+        onRenameStart={onRenameStart}
+        onRenameChange={onRenameChange}
+        onRenameConfirm={onRenameConfirm}
+        onRenameCancel={onRenameCancel}
+        onDelete={onDelete}
+      />
+      {error || warning || storageUnavailable ? <div className="preset-feedback">
+        {error ? <p className="preset-error" role="alert">{error}</p> : null}
+        {warning ? <p className="preset-warning">{t('presets.warning')}</p> : null}
+        {storageUnavailable ? <p className="preset-hint">{t('presets.storageHint')}</p> : null}
+      </div> : null}
       {pickerOpen ? (
         <div className="preset-dialog-backdrop" onClick={onPickerClose}>
-          <div
-            className="preset-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label={t('presets.pickerTitle')}
-            onClick={(event) => event.stopPropagation()}
-          >
+          <div className="preset-dialog" role="dialog" aria-modal="true" aria-label={t('presets.pickerTitle')} onClick={(event) => event.stopPropagation()}>
             <div className="preset-dialog-header">
               <h2 className="preset-dialog-title">{t('presets.pickerTitle')}</h2>
-              <button
-                className="preset-dialog-close"
-                type="button"
-                aria-label={t('presets.pickerClose')}
-                onClick={onPickerClose}
-              >
-                ×
-              </button>
+              <button className="preset-dialog-close" type="button" aria-label={t('presets.pickerClose')} onClick={onPickerClose}>×</button>
             </div>
             <div className="preset-groups" role="group" aria-label={t('presets.selectLabel')}>
-              {builtInCards.length > 0 ? (
-                <section className="preset-group" aria-label={t('presets.builtInGroup')}>
-                  <h3 className="preset-group-title">{t('presets.builtInGroup')}</h3>
-                  <div className="preset-card-grid">
-                    {builtInCards.map((card) => (
-                      <PresetCard key={card.id} card={card} selected={card.id === selectedId} onSelect={onSelect} />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-              {customCards.length > 0 ? (
-                <section className="preset-group" aria-label={t('presets.customGroup')}>
-                  <h3 className="preset-group-title">{t('presets.customGroup')}</h3>
-                  <div className="preset-card-grid">
-                    {customCards.map((card) => (
-                      <PresetCard key={card.id} card={card} selected={card.id === selectedId} onSelect={onSelect} />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
+              {builtInCards.length > 0 ? <section className="preset-group" aria-label={t('presets.builtInGroup')}>
+                <h3 className="preset-group-title">{t('presets.builtInGroup')}</h3>
+                <div className="preset-card-grid">{builtInCards.map((card) => <PresetCard key={card.id} card={card} selected={card.id === selectedId} onSelect={onSelect} />)}</div>
+              </section> : null}
+              {customCards.length > 0 ? <section className="preset-group" aria-label={t('presets.customGroup')}>
+                <h3 className="preset-group-title">{t('presets.customGroup')}</h3>
+                <div className="preset-card-grid">{customCards.map((card) => <PresetCard key={card.id} card={card} selected={card.id === selectedId} onSelect={onSelect} />)}</div>
+              </section> : null}
             </div>
-            <div className="preset-dialog-actions">
-              <button className="secondary-button" type="button" onClick={onPickerClose}>{t('presets.pickerCancel')}</button>
-            </div>
-            {error ? <p className="preset-error" role="alert">{error}</p> : null}
+            <div className="preset-dialog-actions"><button className="secondary-button" type="button" onClick={onPickerClose}>{t('presets.pickerCancel')}</button></div>
           </div>
         </div>
       ) : null}
@@ -314,36 +194,89 @@ export function PresetBarView({
   )
 }
 
-/** Always-visible one-line preset browser and color-preservation setting. */
-export function PresetStrip({ cards, selectedId, modified, onSelect, actions }: {
+/** Horizontally scrolling card strip; the dialog shortcut stays fixed at its end. */
+export function PresetStrip({
+  cards, selectedId, modified, saveOpen, saveName, storageUnavailable, renameId, renameName, deleteConfirmId,
+  onSelect, onSaveAsOpen, onSaveNameChange, onSaveAsConfirm, onSaveAsCancel, onPickerOpen,
+  onUpdate, onRenameStart, onRenameChange, onRenameConfirm, onRenameCancel, onDelete,
+}: {
   readonly cards: readonly PresetPreviewCard[]
   readonly selectedId: string | null
   readonly modified: boolean
+  readonly saveOpen: boolean
+  readonly saveName: string
+  readonly storageUnavailable: boolean
+  readonly renameId: string | null
+  readonly renameName: string
+  readonly deleteConfirmId: string | null
   readonly onSelect: (presetId: string) => void
-  readonly actions: ReactNode
+  readonly onSaveAsOpen: () => void
+  readonly onSaveNameChange: (name: string) => void
+  readonly onSaveAsConfirm: () => void
+  readonly onSaveAsCancel: () => void
+  readonly onPickerOpen: () => void
+  readonly onUpdate: (presetId: string) => void
+  readonly onRenameStart: (presetId: string, name: string) => void
+  readonly onRenameChange: (name: string) => void
+  readonly onRenameConfirm: (presetId: string) => void
+  readonly onRenameCancel: () => void
+  readonly onDelete: (presetId: string) => void
 }) {
   const { t } = useI18n()
   return <div className="preset-strip">
     <div className="preset-strip-cards" role="list" aria-label={t('presets.selectLabel')}>
-      {cards.map((card) => <PresetCard key={card.id} card={card} selected={card.id === selectedId} modified={card.id === selectedId && modified} compact onSelect={onSelect} />)}
+      {cards.map((card) => <PresetCard
+        key={card.id}
+        card={card}
+        selected={card.id === selectedId}
+        modified={card.id === selectedId && modified}
+        compact
+        editing={renameId === card.id}
+        renameName={renameName}
+        deleteConfirm={deleteConfirmId === card.id}
+        storageUnavailable={storageUnavailable}
+        onSelect={onSelect}
+        onUpdate={onUpdate}
+        onRenameStart={onRenameStart}
+        onRenameChange={onRenameChange}
+        onRenameConfirm={onRenameConfirm}
+        onRenameCancel={onRenameCancel}
+        onDelete={onDelete}
+      />)}
+      {saveOpen ? <div className="preset-save-card editing" role="listitem">
+        <input autoFocus aria-label={t('presets.saveNameLabel')} value={saveName} maxLength={40} placeholder={t('presets.saveNameLabel')} onChange={(event) => onSaveNameChange(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') onSaveAsConfirm() }} />
+        <button className="secondary-button" type="button" onClick={onSaveAsConfirm}>{t('presets.saveConfirm')}</button>
+        <button className="text-button" type="button" onClick={onSaveAsCancel}>{t('presets.cancel')}</button>
+      </div> : <div className="preset-save-card" role="listitem">
+        <button type="button" disabled={storageUnavailable} title={storageUnavailable ? t('presets.storageHint') : undefined} onClick={onSaveAsOpen}>
+          <span aria-hidden="true">＋</span> {t('presets.saveCurrent')}
+        </button>
+      </div>}
     </div>
-    {actions}
+    <button className="text-button preset-view-all" type="button" onClick={onPickerOpen}>{t('presets.allPresets')}</button>
   </div>
 }
 
 /** One looping preview card backed by lazily rendered preset frames. */
 const PresetCard = memo(function PresetCard({
-  card,
-  selected,
-  modified = false,
-  compact = false,
-  onSelect,
+  card, selected, modified = false, compact = false, editing = false, renameName = '', deleteConfirm = false,
+  storageUnavailable = false, onSelect, onUpdate, onRenameStart, onRenameChange, onRenameConfirm, onRenameCancel, onDelete,
 }: {
   readonly card: PresetPreviewCard
   readonly selected: boolean
   readonly modified?: boolean
   readonly compact?: boolean
+  readonly editing?: boolean
+  readonly renameName?: string
+  readonly deleteConfirm?: boolean
+  readonly storageUnavailable?: boolean
   readonly onSelect: (presetId: string) => void
+  readonly onUpdate?: (presetId: string) => void
+  readonly onRenameStart?: (presetId: string, name: string) => void
+  readonly onRenameChange?: (name: string) => void
+  readonly onRenameConfirm?: (presetId: string) => void
+  readonly onRenameCancel?: () => void
+  readonly onDelete?: (presetId: string) => void
 }) {
   const { t } = useI18n()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -379,19 +312,24 @@ const PresetCard = memo(function PresetCard({
       window.clearInterval(interval)
     }
   }, [card.buildFrames])
-  return (
-    <button
-      className={`preset-card ${compact ? 'compact' : ''} ${selected ? 'active' : ''} ${failed ? 'failed' : ''}`}
-      type="button"
-      aria-pressed={selected}
-      onClick={() => onSelect(card.id)}
-    >
+  const deleteLabel = deleteConfirm ? t('presets.confirmDelete') : t('presets.deleteCard', { name: card.name })
+  return <div className={`preset-card ${compact ? 'compact' : ''} ${selected ? 'active' : ''} ${failed ? 'failed' : ''} ${editing ? 'editing' : ''}`} role={compact ? 'listitem' : undefined}>
+    {editing ? <div className="preset-inline-edit">
+      <input autoFocus aria-label={t('presets.saveNameLabel')} value={renameName} maxLength={40} onChange={(event) => onRenameChange?.(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') onRenameConfirm?.(card.id); if (event.key === 'Escape') onRenameCancel?.() }} />
+      <button className="preset-icon-button" type="button" aria-label={t('presets.confirm')} title={t('presets.confirm')} onClick={() => onRenameConfirm?.(card.id)}>✓</button>
+      <button className="preset-icon-button" type="button" aria-label={t('presets.cancel')} title={t('presets.cancel')} onClick={onRenameCancel}>×</button>
+    </div> : <button className="preset-card-select" type="button" aria-pressed={selected} onClick={() => onSelect(card.id)}>
       <canvas ref={canvasRef} aria-hidden="true" />
       <span className="preset-card-label">{card.name}</span>
       {modified ? <small className="preset-card-modified">{t('presets.modified')}</small> : null}
       {card.description && !compact ? <small className="preset-card-description">{card.description}</small> : null}
-    </button>
-  )
+    </button>}
+    {card.custom && compact && !editing ? <div className="preset-card-actions">
+      <button className="preset-icon-button" type="button" aria-label={t('presets.updateCard', { name: card.name })} title={t('presets.updateCard', { name: card.name })} disabled={storageUnavailable} onClick={() => onUpdate?.(card.id)}>↻</button>
+      <button className="preset-icon-button" type="button" aria-label={t('presets.renameCard', { name: card.name })} title={t('presets.renameCard', { name: card.name })} disabled={storageUnavailable} onClick={() => onRenameStart?.(card.id, card.name)}>✎</button>
+      <button className="preset-icon-button danger" type="button" aria-label={deleteLabel} title={deleteLabel} disabled={storageUnavailable} onClick={() => onDelete?.(card.id)}>{deleteConfirm ? '!' : '×'}</button>
+    </div> : null}
+  </div>
 })
 
 /**
@@ -420,15 +358,10 @@ export function PresetBar<Parameters>({
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [actionsOpen, setActionsOpen] = useState(false)
-  const [manageOpen, setManageOpen] = useState(false)
   const [renameId, setRenameId] = useState<string | null>(null)
   const [renameName, setRenameName] = useState('')
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const actionsRef = useRef<HTMLDivElement | null>(null)
-  const actionsButtonRef = useRef<HTMLButtonElement | null>(null)
-  const actionsPanelId = useId()
   const parametersRef = useRef(parameters)
   parametersRef.current = parameters
   const colorSignature = preserveColors ? JSON.stringify(paletteSlots.map((slot) => slot.read(parameters))) : ''
@@ -440,31 +373,6 @@ export function PresetBar<Parameters>({
     setCustomPresets(loaded.presets)
     setWarning(loaded.warning)
   }, [generatorId, storage, capability])
-
-  useEffect(() => {
-    if (!actionsOpen) {
-      return undefined
-    }
-    const handlePointerDown = (event: PointerEvent) => {
-      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
-        setActionsOpen(false)
-      }
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setActionsOpen(false)
-        setRenameId(null)
-        setDeleteConfirmId(null)
-        actionsButtonRef.current?.focus()
-      }
-    }
-    document.addEventListener('pointerdown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [actionsOpen])
 
   useEffect(() => {
     if (!pickerOpen) {
@@ -582,11 +490,10 @@ export function PresetBar<Parameters>({
     setAppliedPayload(payload)
     setSaveOpen(false)
     setSaveName('')
-    setActionsOpen(false)
   }
 
-  const handleUpdate = () => {
-    const selected = customPresets.find((preset) => preset.id === (selectedId ?? matchingPresetId))
+  const handleUpdate = (presetId: string) => {
+    const selected = customPresets.find((preset) => preset.id === presetId)
     if (!selected) {
       return
     }
@@ -600,6 +507,7 @@ export function PresetBar<Parameters>({
     if (!writeLibrary(next.presets)) {
       return
     }
+    setSelectedId(selected.id)
     setAppliedPayload(payload)
   }
 
@@ -639,31 +547,25 @@ export function PresetBar<Parameters>({
       builtInCards={builtInCards}
       customCards={customCards}
       pickerOpen={pickerOpen}
-      actionsOpen={actionsOpen}
       modified={modified}
       storageUnavailable={storage === null}
       warning={warning}
       error={error}
       saveOpen={saveOpen}
       saveName={saveName}
-      manageOpen={manageOpen}
       renameId={renameId}
       renameName={renameName}
       deleteConfirmId={deleteConfirmId}
-      actionsPanelId={actionsPanelId}
-      actionsRef={actionsRef}
-      actionsButtonRef={actionsButtonRef}
       onSelect={handleSelect}
       onPickerOpen={() => {
         setError(null)
-        setActionsOpen(false)
         setPickerOpen(true)
       }}
       onPickerClose={() => setPickerOpen(false)}
-      onActionsToggle={() => setActionsOpen((open) => !open)}
       onSaveAsOpen={() => {
         setError(null)
-        setSaveOpen((open) => !open)
+        setSaveName('')
+        setSaveOpen(true)
       }}
       onSaveNameChange={setSaveName}
       onSaveAsConfirm={handleSaveAsConfirm}
@@ -672,8 +574,8 @@ export function PresetBar<Parameters>({
         setSaveName('')
       }}
       onUpdate={handleUpdate}
-      onManageToggle={() => setManageOpen((open) => !open)}
       onRenameStart={(presetId, name) => {
+        setError(null)
         setRenameId(presetId)
         setRenameName(name)
       }}

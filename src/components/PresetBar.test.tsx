@@ -41,30 +41,23 @@ function baseViewProps(overrides: Partial<PresetBarViewProps> = {}): PresetBarVi
     builtInCards,
     customCards: [],
     pickerOpen: false,
-    actionsOpen: false,
     modified: false,
     storageUnavailable: false,
     warning: false,
     error: null,
     saveOpen: false,
     saveName: '',
-    manageOpen: false,
     renameId: null,
     renameName: '',
     deleteConfirmId: null,
-    actionsPanelId: 'preset-actions-panel',
-    actionsRef: { current: null },
-    actionsButtonRef: { current: null },
     onSelect: () => undefined,
     onPickerOpen: () => undefined,
     onPickerClose: () => undefined,
-    onActionsToggle: () => undefined,
     onSaveAsOpen: () => undefined,
     onSaveNameChange: () => undefined,
     onSaveAsConfirm: () => undefined,
     onSaveAsCancel: () => undefined,
     onUpdate: () => undefined,
-    onManageToggle: () => undefined,
     onRenameStart: () => undefined,
     onRenameChange: () => undefined,
     onRenameConfirm: () => undefined,
@@ -75,7 +68,7 @@ function baseViewProps(overrides: Partial<PresetBarViewProps> = {}): PresetBarVi
 }
 
 function viewMarkup(props: PresetBarViewProps, locale: 'en' | 'zh-CN' = 'en'): string {
-  vi.stubGlobal('navigator', locale === 'zh-CN' ? { language: 'zh-CN' } : undefined)
+  vi.stubGlobal('navigator', { language: locale === 'zh-CN' ? 'zh-CN' : 'en-US' })
   return renderToStaticMarkup(
     <I18nProvider>
       <PresetBarView {...props} />
@@ -91,26 +84,45 @@ describe('payloadsEqual', () => {
 })
 
 describe('PresetBarView structure', () => {
-  it('renders the preset strip and compact actions without a select control', () => {
+  it('shows save-current and view-all cards without a preset actions menu', () => {
+    const markup = viewMarkup(baseViewProps())
+    expect(markup).toContain('preset-save-card')
+    expect(markup).toContain('Save current')
+    expect(markup).toContain('All ›')
+    expect(markup).not.toContain('preset-actions')
+    expect(markup.indexOf('preset-save-card')).toBeGreaterThan(markup.indexOf('preset-strip-cards'))
+  })
+
+  it('edits, updates, and deletes custom presets from their own cards', () => {
+    const markup = viewMarkup(baseViewProps({ customCards }))
+    expect(markup).toContain('aria-label="Update My Arc to current parameters"')
+    expect(markup).toContain('aria-label="Rename My Arc"')
+    expect(markup).toContain('aria-label="Delete My Arc"')
+    const renaming = viewMarkup(baseViewProps({ customCards, renameId: 'custom-1', renameName: 'Renamed Arc' }))
+    expect(renaming).toContain('aria-label="Preset name"')
+    expect(renaming).toContain('value="Renamed Arc"')
+    const deleting = viewMarkup(baseViewProps({ customCards, deleteConfirmId: 'custom-1' }))
+    expect(deleting).toContain('Confirm delete')
+  })
+
+  it('shows save validation, storage, and migration notices below the strip', () => {
+    const markup = viewMarkup(baseViewProps({ error: 'name too long', warning: true, storageUnavailable: true }))
+    const feedback = markup.indexOf('preset-feedback')
+    expect(feedback).toBeGreaterThan(markup.indexOf('preset-strip'))
+    expect(markup.slice(feedback)).toContain('name too long')
+    expect(markup.slice(feedback)).toContain('Local preset data was unreadable and was ignored.')
+    expect(markup.slice(feedback)).toContain('Custom presets need browser storage; built-in presets still work.')
+  })
+
+  it('renders the preset strip without a select control or color toggle', () => {
     const markup = viewMarkup(baseViewProps())
     expect(markup).not.toContain('<select')
     expect(markup).toContain('preset-card compact')
     expect(markup).toContain('preset-strip')
     expect(markup).not.toContain('Keep current colors')
     expect(markup).not.toContain('preset-panel')
-    expect(markup).not.toContain('View all')
-    expect(markup).toContain('preset-actions')
-    expect(markup).toContain('aria-label="More preset actions"')
-  })
-
-  it('opens the actions menu with save, update, and manage entries', () => {
-    const markup = viewMarkup(baseViewProps({ actionsOpen: true, customCards }))
-    expect(markup).toContain('preset-actions-panel')
-    expect(markup).toContain('aria-label="More preset actions"')
-    expect(markup).toContain('View all')
-    expect(markup).toContain('Save as…')
-    expect(markup).toContain('Update')
-    expect(markup).toContain('Manage')
+    expect(markup).toContain('All ›')
+    expect(markup).not.toContain('preset-actions')
   })
 
   it('shows the Modified badge on the selected preset card only when modified', () => {
@@ -120,13 +132,10 @@ describe('PresetBarView structure', () => {
     expect(modified).toContain('>Modified<')
   })
 
-  it('expands the save row and manage list inside the actions menu', () => {
-    const save = viewMarkup(baseViewProps({ actionsOpen: true, saveOpen: true }))
-    expect(save).toContain('preset-save-row')
+  it('expands the save card inline', () => {
+    const save = viewMarkup(baseViewProps({ saveOpen: true }))
+    expect(save).toContain('preset-save-card editing')
     expect(save).toContain('Save')
-    const manage = viewMarkup(baseViewProps({ actionsOpen: true, manageOpen: true, customCards }))
-    expect(manage).toContain('preset-manage-list')
-    expect(manage).toContain('My Arc')
   })
 
   it('opens the picker dialog with grouped preview cards', () => {
@@ -148,31 +157,31 @@ describe('PresetBarView structure', () => {
   })
 
   it('renders Simplified Chinese labels', () => {
-    const markup = viewMarkup(baseViewProps({ actionsOpen: true, pickerOpen: true }), 'zh-CN')
-    expect(markup).toContain('查看全部')
+    const markup = viewMarkup(baseViewProps({ pickerOpen: true }), 'zh-CN')
+    expect(markup).toContain('全部 ›')
     expect(markup).not.toContain('保留当前颜色')
     expect(markup).toContain('效果预设')
   })
 
   it('disables custom actions and explains when storage is unavailable', () => {
-    const markup = viewMarkup(baseViewProps({ actionsOpen: true, storageUnavailable: true, warning: false }))
+    const markup = viewMarkup(baseViewProps({ customCards, storageUnavailable: true, warning: false }))
     expect(markup).toContain('Custom presets need browser storage; built-in presets still work.')
-    expect((markup.match(/disabled=""/g) ?? []).length).toBe(2)
-    expect(markup).toContain('View all')
+    expect((markup.match(/disabled=""/g) ?? []).length).toBe(7)
+    expect(markup).toContain('All ›')
   })
 
-  it('shows alerts and warnings inside the actions menu', () => {
-    const error = viewMarkup(baseViewProps({ actionsOpen: true, error: 'name too long' }))
+  it('shows alerts and warnings below the strip', () => {
+    const error = viewMarkup(baseViewProps({ error: 'name too long' }))
     expect(error).toContain('role="alert"')
     expect(error).toContain('name too long')
-    const warning = viewMarkup(baseViewProps({ actionsOpen: true, warning: true }))
+    const warning = viewMarkup(baseViewProps({ warning: true }))
     expect(warning).toContain('Local preset data was unreadable and was ignored.')
   })
 })
 
 describe('PresetBar component', () => {
   it('renders compact header controls without opening panels by default', () => {
-    vi.stubGlobal('navigator', undefined)
+    vi.stubGlobal('navigator', { language: 'en-US' })
     const markup = renderToStaticMarkup(
       <I18nProvider>
         <PresetBar
@@ -188,7 +197,7 @@ describe('PresetBar component', () => {
         />
       </I18nProvider>,
     )
-    expect(markup).not.toContain('View all')
+    expect(markup).toContain('All ›')
     expect(markup).toContain('preset-card compact')
     expect(markup).not.toContain('Keep current colors')
     expect(markup).not.toContain('preset-actions-panel')
@@ -196,7 +205,7 @@ describe('PresetBar component', () => {
   })
 
   it('highlights the preset that the current parameters already match', () => {
-    vi.stubGlobal('navigator', undefined)
+    vi.stubGlobal('navigator', { language: 'en-US' })
     const preset = slashPresetCapability.builtIns[1]
     const renderBar = (parameters: typeof DEFAULT_SLASH_PARAMETERS) => renderToStaticMarkup(
       <I18nProvider>

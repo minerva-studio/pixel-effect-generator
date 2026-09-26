@@ -11,7 +11,7 @@ import { DEFAULT_UNITY_EXPORT_SETTINGS } from './unitySettings'
 import { createFileOperationLock } from './fileOperations'
 
 function workspaceMarkup(generatorId: 'slash' | 'blip', locale: 'en' | 'zh-CN' = 'en'): string {
-  vi.stubGlobal('navigator', locale === 'zh-CN' ? { language: 'zh-CN' } : undefined)
+  vi.stubGlobal('navigator', { language: locale === 'zh-CN' ? 'zh-CN' : 'en-US' })
   const generator = generatorId === 'slash' ? slashGenerator : blipGenerator
   const Workspace = generator.Workspace
   const session = generator.createSession(12)
@@ -107,13 +107,13 @@ describe('GeneratorWorkspace integration', () => {
     expect(markup).toContain('aria-label="Canvas background"')
   })
 
-  it('renders preset header controls for generators with preset capability', () => {
+  it('renders the preset strip without the former overflow menu', () => {
     const markup = workspaceMarkup('slash')
     expect(markup).not.toContain('preset-panel')
     expect(markup).not.toContain('preset-bar')
     expect(markup).toContain('preset-strip')
-    expect(markup).toContain('aria-label="More preset actions"')
-    expect(markup).toContain('preset-actions')
+    expect(markup).toContain('All ›')
+    expect(markup).not.toContain('preset-actions')
     expect(markup).not.toContain('preset-dialog')
   })
 
