@@ -65,10 +65,6 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
             render={renderExplosionFrames}
             onSelect={selectShape}
           />
-          {isFieldExplosionShape(parameters.body.shape) ? <SegmentedControl label={familyT('explosion.controls.mode.label')} description={familyT('explosion.controls.mode.description')} value={parameters.motion.mode} options={[
-            { value: 'explosion', label: familyT('explosion.options.explosion') },
-            { value: 'implosion', label: familyT('explosion.options.implosion') },
-          ]} onChange={(mode) => updateMotion({ mode })} /> : null}
           <NumberControl label={familyT('explosion.controls.radius.label')} description={familyT('explosion.controls.radius.description')} value={parameters.body.radius} minimum={2} maximum={limits.maxRadius} unit="px" onChange={(radius) => updateBody({ radius })} />
           {parameters.body.shape === 'billowBurst' ? (
             <>
@@ -114,11 +110,11 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
     case 'motion':
       return (
         <div className="control-list">
-          {isFieldExplosionShape(parameters.body.shape) ? <p className="material-mode-note">{familyT('explosion.controls.fieldMotionNote')}</p> : <>
           <SegmentedControl label={familyT('explosion.controls.mode.label')} description={familyT('explosion.controls.mode.description')} value={parameters.motion.mode} options={[
             { value: 'explosion', label: familyT('explosion.options.explosion') },
             { value: 'implosion', label: familyT('explosion.options.implosion') },
           ]} onChange={(mode) => updateMotion({ mode })} />
+          {isFieldExplosionShape(parameters.body.shape) ? <p className="material-mode-note">{familyT('explosion.controls.fieldMotionNote')}</p> : <>
           <SelectControl label={familyT('explosion.controls.motionCurve.label')} description={familyT('explosion.controls.motionCurve.description')} value={parameters.motion.motionCurve} options={[
             { value: 'crisp', label: familyT('explosion.options.crisp') },
             { value: 'balanced', label: familyT('explosion.options.balanced') },

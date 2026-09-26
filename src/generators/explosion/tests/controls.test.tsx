@@ -94,13 +94,16 @@ describe('combustion explosion controls', () => {
     expect(motion).not.toContain('Dissolve time')
   })
 
-  it('moves field-shape motion mode into Shape and explains its fixed timing', () => {
+  it('keeps the direction control in Motion for field and non-field shapes', () => {
     const body = renderControls('body', 'en', DEFAULT_EXPLOSION_PARAMETERS)
     const motion = renderControls('motion', 'en', DEFAULT_EXPLOSION_PARAMETERS)
-    expect(body).toContain('aria-label="Direction"')
-    expect(body).toContain('aria-pressed="true"')
-    expect(motion).toContain('Set explosion or implosion for this field shape on the Shape tab.')
+    expect(body).not.toContain('aria-label="Direction"')
+    expect(motion).toContain('aria-label="Direction"')
+    expect(motion).toContain('aria-pressed="true"')
+    expect(motion).toContain('Field simulation fixes its formation and hold timing.')
     expect(motion).not.toContain('Formation time')
+    const nonFieldMotion = renderControls('motion', 'en', MODERN_EXPLOSION_PARAMETERS)
+    expect(nonFieldMotion).toContain('aria-label="Direction"')
   })
 
   it('defaults every effect section collapsed with one title and an accessible compact switch', () => {

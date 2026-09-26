@@ -807,7 +807,7 @@
         "label": "Random seed",
         "description": "Unsigned 32-bit value used to reproduce the same effect."
       },
-      "fieldMotionNote": "Set explosion or implosion for this field shape on the Shape tab. Field simulation fixes its formation and hold timing."
+      "fieldMotionNote": "Field simulation fixes its formation and hold timing."
     },
     "options": {
       "billowBurst": "Billow burst",
