@@ -122,6 +122,7 @@ describe('translation resources', () => {
     expect(generatorDisplayKeys('missing')).toBeUndefined()
     expect(categoryDisplayKeys('slash', 'breakup')?.label).toBe('slash.categories.breakup.label')
     expect(categoryDisplayKeys('slash', 'missing')).toBeUndefined()
+    expect(translate(messagesForLocale('zh-CN'), 'slash.categories.motion.label')).toBe('动态')
     expect(generatorDisplayKeys('explosion')?.name).toBe('explosion.name')
     expect(categoryDisplayKeys('explosion', 'shape')?.label).toBe('explosion.categories.shape.label')
     expect(categoryDisplayKeys('explosion', 'motion')?.label).toBe('explosion.categories.motion.label')

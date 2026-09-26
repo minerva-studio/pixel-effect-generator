@@ -360,7 +360,7 @@
         "description": "定义弧线的轮廓、朝向与透视。"
       },
       "motion": {
-        "label": "运动",
+        "label": "动态",
         "description": "控制时序、拖尾长度与扫击方向。"
       },
       "fragments": {
