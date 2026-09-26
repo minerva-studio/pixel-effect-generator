@@ -497,11 +497,11 @@
     "categories": {
       "body": {
         "label": "主体",
-        "description": "选择燃烧剪影并调节主体几何。"
+        "description": "选择爆炸形状并调整尺寸与轮廓。"
       },
       "motion": {
         "label": "动态",
-        "description": "控制方向、成形、保持与运动曲线。"
+        "description": "控制方向、成形、停留时间与运动曲线。"
       },
       "material": {
         "label": "材质",
@@ -899,11 +899,11 @@
     "categories": {
       "body": {
         "label": "主体",
-        "description": "选择绽放形状，调节尺寸、轮廓与表面材质。"
+        "description": "选择能量绽放形状并调整尺寸与轮廓。"
       },
       "motion": {
         "label": "动态",
-        "description": "控制方向、成形、保持与运动曲线。"
+        "description": "控制方向、成形、停留时间与运动曲线。"
       },
       "material": {
         "label": "材质",
@@ -1232,21 +1232,158 @@
     "description": "四种造型的持续飞行火球循环。",
     "previewTitle": "火球飞行循环",
     "forms": {
-      "classic": { "label": "经典造型", "description": "传统火球与可调尾迹。" },
-      "stream": { "label": "流焰弹", "description": "连续流动的火焰轮廓。" },
-      "wrapped": { "label": "裹焰实心弹", "description": "火焰包裹球核并向后剥离。" },
-      "puff": { "label": "粒子火团", "description": "翻卷、剥落的火焰团块。" }
+      "classic": {
+        "label": "经典造型",
+        "description": "传统火球与可调尾迹。"
+      },
+      "stream": {
+        "label": "流焰弹",
+        "description": "连续流动的火焰轮廓。"
+      },
+      "wrapped": {
+        "label": "裹焰实心弹",
+        "description": "火焰包裹球核并向后剥离。"
+      },
+      "puff": {
+        "label": "粒子火团",
+        "description": "翻卷、剥落的火焰团块。"
+      }
     },
     "categories": {
-      "shape": { "label": "造型", "description": "选择火球造型与方向。" },
-      "motion": { "label": "运动", "description": "调整持续飞行循环。" },
-      "trail": { "label": "尾焰", "description": "调整裹焰火带与剥落火焰。" },
-      "effects": { "label": "材质", "description": "选择弹核与烟雾表现。" },
-      "palette": { "label": "调色板", "description": "编辑火焰、烟雾与岩核颜色。" }
+      "shape": {
+        "label": "造型",
+        "description": "选择火球造型与方向。"
+      },
+      "motion": {
+        "label": "运动",
+        "description": "调整持续飞行循环。"
+      },
+      "trail": {
+        "label": "尾焰",
+        "description": "调整裹焰火带与剥落火焰。"
+      },
+      "effects": {
+        "label": "特效",
+        "description": "配置火球周围的烟雾与火星。"
+      },
+      "palette": {
+        "label": "调色板",
+        "description": "编辑火焰、烟雾与岩核颜色。"
+      }
+    },
+    "controls": {
+      "form": {
+        "label": "造型",
+        "description": "选择火球渲染器使用的结构。"
+      },
+      "size": {
+        "label": "大小",
+        "description": "设置火球主体的像素半径。"
+      },
+      "rotation": {
+        "label": "旋转",
+        "description": "绕火球中心旋转造型。"
+      },
+      "cycles": {
+        "label": "循环次数",
+        "description": "设置动画包含的飞行循环数。"
+      },
+      "angular": {
+        "label": "形体棱角",
+        "description": "控制火焰轮廓的棱角变化。"
+      },
+      "contour": {
+        "label": "轮廓波动",
+        "description": "控制火球轮廓逐帧变化的幅度。"
+      },
+      "band": {
+        "label": "色带波动",
+        "description": "控制内部色带的变形幅度。"
+      },
+      "breakup": {
+        "label": "边缘破碎",
+        "description": "控制尾焰边缘的破碎程度。"
+      },
+      "ribbons": {
+        "label": "裹焰色带",
+        "description": "设置包裹实心核心的火焰色带数量。"
+      },
+      "ball": {
+        "label": "弹体核心",
+        "description": "选择裹焰火球核心的外观。"
+      },
+      "trail": {
+        "label": "尾部质感",
+        "description": "选择尾焰的材质表现。"
+      },
+      "count": {
+        "label": "剥落团块",
+        "description": "设置从粒子火团脱落的火焰团块数量。"
+      },
+      "length": {
+        "label": "尾迹长度",
+        "description": "控制粒子火焰尾迹的长度。"
+      },
+      "billow": {
+        "label": "表面翻卷",
+        "description": "控制粒子火团表面的翻卷幅度。"
+      },
+      "smoke": {
+        "label": "冷却成烟",
+        "description": "火焰粒子冷却时加入烟雾。"
+      },
+      "seed": {
+        "label": "随机种子",
+        "description": "控制此火球使用的确定性随机变化。"
+      }
+    },
+    "options": {
+      "hot": "炽热",
+      "molten": "铁球核心",
+      "cooling": "渐冷",
+      "flame": "纯火焰",
+      "smokeTrail": "火焰接烟雾"
+    },
+    "palette": {
+      "warm": "火焰色带",
+      "rock": "烟雾与岩核色带",
+      "band": "色带 {index}",
+      "alpha": "不透明度",
+      "remove": "移除此色带",
+      "add": "添加色带"
+    },
+    "seed": {
+      "randomize": "随机"
+    },
+    "presets": {
+      "classic": {
+        "name": "经典火球",
+        "description": "传统的投射火球造型。"
+      },
+      "wrapped": {
+        "name": "裹焰火球",
+        "description": "炽热弹核被流动火焰包裹。"
+      },
+      "stream": {
+        "name": "流焰火球",
+        "description": "连续流动的火焰弹体。"
+      },
+      "puff": {
+        "name": "粒子火团",
+        "description": "不断剥落的粒子火团。"
+      }
     }
   },
-  "arrow": { "name": "箭", "description": "实体与能量箭的飞行循环。", "previewTitle": "箭矢飞行循环" },
-  "crystal": { "name": "水晶", "description": "多面水晶投射物循环。", "previewTitle": "水晶飞行循环" },
+  "arrow": {
+    "name": "箭",
+    "description": "实体与能量箭的飞行循环。",
+    "previewTitle": "箭矢飞行循环"
+  },
+  "crystal": {
+    "name": "水晶",
+    "description": "多面水晶投射物循环。",
+    "previewTitle": "水晶飞行循环"
+  },
   "projectile": {
     "name": "弹射物",
     "description": "火球与魔法箭的无缝飞行循环。",
@@ -1294,24 +1431,78 @@
         "label": "轮廓变化",
         "description": "火球或箭矢轮廓的可复现凹凸程度。"
       },
-      "fireRearExtension": { "label": "后焰伸展", "description": "只向彗星尾根部延展火球后半部。" },
-      "fireRearTurbulence": { "label": "后缘湍动", "description": "低频动态后缘轮廓的强度。" },
-      "fireFlowSpeed": { "label": "热流速度", "description": "火球内部颜色流动的速度。" },
-      "fireMottleAmount": { "label": "表面杂色", "description": "随热流穿过火球中后部的稀疏色阶变化。" },
-      "solidHeadLength": { "label": "箭头长度", "description": "实体箭中尖锐箭头所占的长度比例。" },
-      "solidShaftWidth": { "label": "箭杆粗细", "description": "实体箭中央箭杆的厚度。" },
-      "solidFletchingSpread": { "label": "尾羽张角", "description": "实体箭后方尾羽的展开宽度。" },
-      "energyCoreLength": { "label": "能量核长度", "description": "明亮内层能量矛核的长度。" },
-      "energyShellWidth": { "label": "能量外壳", "description": "深色外层能量壳额外增加的宽度。" },
-      "energyTipSharpness": { "label": "菱形尖锐度", "description": "将菱形最宽处移向更尖锐或更宽阔的前端。" },
-      "crystalSpearTaper": { "label": "晶体尖锐度", "description": "晶体矛多面端点的尖锐程度。" },
-      "crystalSpearThickness": { "label": "晶体厚度", "description": "晶体矛横截面的厚度。" },
-      "crystalRefractionStrength": { "label": "折射层强度", "description": "晶体明暗切面之间的对比度。" },
-      "crystalGlintStrength": { "label": "扫光强度", "description": "晶体表面移动扫光的亮度与覆盖程度。" },
-      "crystalGlintSpeed": { "label": "扫光速度", "description": "表面扫光沿晶体轴线移动的速度。" },
-      "crystalCoreScale": { "label": "核心尺寸", "description": "中央晶体核心的大小。" },
-      "crystalOrbitRadius": { "label": "卫星轨道半径", "description": "卫星碎晶与晶核之间的距离。" },
-      "crystalOrbitSpeed": { "label": "卫星转速", "description": "卫星碎晶在无缝循环内的旋转速度。" },
+      "fireRearExtension": {
+        "label": "后焰伸展",
+        "description": "只向彗星尾根部延展火球后半部。"
+      },
+      "fireRearTurbulence": {
+        "label": "后缘湍动",
+        "description": "低频动态后缘轮廓的强度。"
+      },
+      "fireFlowSpeed": {
+        "label": "热流速度",
+        "description": "火球内部颜色流动的速度。"
+      },
+      "fireMottleAmount": {
+        "label": "表面杂色",
+        "description": "随热流穿过火球中后部的稀疏色阶变化。"
+      },
+      "solidHeadLength": {
+        "label": "箭头长度",
+        "description": "实体箭中尖锐箭头所占的长度比例。"
+      },
+      "solidShaftWidth": {
+        "label": "箭杆粗细",
+        "description": "实体箭中央箭杆的厚度。"
+      },
+      "solidFletchingSpread": {
+        "label": "尾羽张角",
+        "description": "实体箭后方尾羽的展开宽度。"
+      },
+      "energyCoreLength": {
+        "label": "能量核长度",
+        "description": "明亮内层能量矛核的长度。"
+      },
+      "energyShellWidth": {
+        "label": "能量外壳",
+        "description": "深色外层能量壳额外增加的宽度。"
+      },
+      "energyTipSharpness": {
+        "label": "菱形尖锐度",
+        "description": "将菱形最宽处移向更尖锐或更宽阔的前端。"
+      },
+      "crystalSpearTaper": {
+        "label": "晶体尖锐度",
+        "description": "晶体矛多面端点的尖锐程度。"
+      },
+      "crystalSpearThickness": {
+        "label": "晶体厚度",
+        "description": "晶体矛横截面的厚度。"
+      },
+      "crystalRefractionStrength": {
+        "label": "折射层强度",
+        "description": "晶体明暗切面之间的对比度。"
+      },
+      "crystalGlintStrength": {
+        "label": "扫光强度",
+        "description": "晶体表面移动扫光的亮度与覆盖程度。"
+      },
+      "crystalGlintSpeed": {
+        "label": "扫光速度",
+        "description": "表面扫光沿晶体轴线移动的速度。"
+      },
+      "crystalCoreScale": {
+        "label": "核心尺寸",
+        "description": "中央晶体核心的大小。"
+      },
+      "crystalOrbitRadius": {
+        "label": "卫星轨道半径",
+        "description": "卫星碎晶与晶核之间的距离。"
+      },
+      "crystalOrbitSpeed": {
+        "label": "卫星转速",
+        "description": "卫星碎晶在无缝循环内的旋转速度。"
+      },
       "rotation": {
         "label": "烘焙旋转",
         "description": "主体、尾迹、火花与残像一起旋转。"

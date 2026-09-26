@@ -16,8 +16,8 @@ import { renderExplosionFrames } from './renderer'
 export type ExplosionCategory = 'body' | 'motion' | 'material' | 'effects' | 'palette'
 
 export const EXPLOSION_CATEGORIES = [
-  { id: 'body', label: 'Body', description: 'Pick the fire shape and tune its size, outline, and surface material.' },
-  { id: 'motion', label: 'Motion', description: 'Control direction, formation, hold, dissolve, and the motion curve.' },
+  { id: 'body', label: 'Body', description: 'Pick the fire shape and tune its size and outline.' },
+  { id: 'motion', label: 'Motion', description: 'Control direction, formation, hold, and the motion curve.' },
   { id: 'material', label: 'Material', description: 'Choose the surface material and tune how it dissolves.' },
   { id: 'effects', label: 'Effects', description: 'Toggle and tune flash core, shockwave, fire jets, and fragments.' },
   { id: 'palette', label: 'Palette', description: 'Order discrete colors from the hot core to the dark edge.' },

@@ -4,6 +4,7 @@ import {
   en,
   generatorDisplayKeys,
   messagesForLocale,
+  presetDisplayKeys,
   translate,
   type MessageKey,
   type MessageTree,
@@ -92,6 +93,10 @@ describe('translation resources', () => {
     expect(translate(en, 'explosion.presets.retroBurst.name')).toBe('Retro Burst')
     expect(translate(en, 'energyBloom.presets.softPetals.name')).toBe('Soft Petals')
     expect(translate(messagesForLocale('zh-CN'), 'energyBloom.presets.softPetals.description')).toBe('赛璐璐色带的圆润卡通花瓣；默认关闭火舌。')
+    expect(presetDisplayKeys('arrow', 'enchantedArrow')?.name).toBe('projectile.presets.enchantedArrow.name')
+    expect(presetDisplayKeys('crystal', 'crystalCore')?.name).toBe('projectile.presets.crystalCore.name')
+    expect(presetDisplayKeys('fireball', 'wrapped')?.name).toBe('fireball.presets.wrapped.name')
+    expect(translate(messagesForLocale('zh-CN'), 'fireball.presets.wrapped.name')).toBe('裹焰火球')
   })
 
   it('falls back to English for keys missing from the current locale', () => {

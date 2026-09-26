@@ -497,7 +497,7 @@
     "categories": {
       "body": {
         "label": "Body",
-        "description": "Pick the combustion silhouette and tune its geometry."
+        "description": "Choose the explosion shape and tune its size and outline."
       },
       "motion": {
         "label": "Motion",
@@ -899,7 +899,7 @@
     "categories": {
       "body": {
         "label": "Body",
-        "description": "Pick the bloom shape and tune its size, outline, and surface material."
+        "description": "Choose the bloom shape and tune its size and outline."
       },
       "motion": {
         "label": "Motion",
@@ -1232,21 +1232,158 @@
     "description": "Continuous fireball flight loops in four forms.",
     "previewTitle": "Fireball flight loop",
     "forms": {
-      "classic": { "label": "Classic", "description": "Traditional fireball with an adjustable trail." },
-      "stream": { "label": "Flame stream", "description": "A continuous flowing fire silhouette." },
-      "wrapped": { "label": "Wrapped solid", "description": "Flames wrap the core and peel away behind it." },
-      "puff": { "label": "Particle mass", "description": "Curling and shedding clusters of fire." }
+      "classic": {
+        "label": "Classic",
+        "description": "Traditional fireball with an adjustable trail."
+      },
+      "stream": {
+        "label": "Flame stream",
+        "description": "A continuous flowing fire silhouette."
+      },
+      "wrapped": {
+        "label": "Wrapped solid",
+        "description": "Flames wrap the core and peel away behind it."
+      },
+      "puff": {
+        "label": "Particle mass",
+        "description": "Curling and shedding clusters of fire."
+      }
     },
     "categories": {
-      "shape": { "label": "Shape", "description": "Choose the fireball form and facing." },
-      "motion": { "label": "Motion", "description": "Control the continuous flight loop." },
-      "trail": { "label": "Trail", "description": "Tune wrapped bands and shedding fire." },
-      "effects": { "label": "Material", "description": "Choose the core and smoke treatment." },
-      "palette": { "label": "Palette", "description": "Edit fire, smoke, and rock colors." }
+      "shape": {
+        "label": "Shape",
+        "description": "Choose the fireball form and facing."
+      },
+      "motion": {
+        "label": "Motion",
+        "description": "Control the continuous flight loop."
+      },
+      "trail": {
+        "label": "Trail",
+        "description": "Tune wrapped bands and shedding fire."
+      },
+      "effects": {
+        "label": "Effects",
+        "description": "Configure smoke and sparks around the fireball."
+      },
+      "palette": {
+        "label": "Palette",
+        "description": "Edit fire, smoke, and rock colors."
+      }
+    },
+    "controls": {
+      "form": {
+        "label": "Form",
+        "description": "Choose the fireball construction used by the renderer."
+      },
+      "size": {
+        "label": "Size",
+        "description": "Sets the fireball head radius in pixels."
+      },
+      "rotation": {
+        "label": "Rotation",
+        "description": "Rotates the fireball around its center."
+      },
+      "cycles": {
+        "label": "Loop cycles",
+        "description": "Sets how many flight loops fit in the animation."
+      },
+      "angular": {
+        "label": "Shape facets",
+        "description": "Controls the angular distortion of the flame silhouette."
+      },
+      "contour": {
+        "label": "Contour motion",
+        "description": "Controls frame to frame motion along the fireball outline."
+      },
+      "band": {
+        "label": "Band motion",
+        "description": "Controls how strongly the internal color bands deform."
+      },
+      "breakup": {
+        "label": "Edge breakup",
+        "description": "Controls how much the trailing fire edge fragments."
+      },
+      "ribbons": {
+        "label": "Wrapping bands",
+        "description": "Sets the number of fire bands around the solid core."
+      },
+      "ball": {
+        "label": "Core",
+        "description": "Chooses the appearance of the wrapped fireball core."
+      },
+      "trail": {
+        "label": "Tail texture",
+        "description": "Chooses the material treatment of the trailing fire."
+      },
+      "count": {
+        "label": "Shedding masses",
+        "description": "Sets how many fire masses detach from the particle body."
+      },
+      "length": {
+        "label": "Tail length",
+        "description": "Controls the length of the particle fire tail."
+      },
+      "billow": {
+        "label": "Surface curl",
+        "description": "Controls the rolling motion on the particle surface."
+      },
+      "smoke": {
+        "label": "Cooling smoke",
+        "description": "Adds smoke as the fire particles cool."
+      },
+      "seed": {
+        "label": "Random seed",
+        "description": "Controls the deterministic random variation used by this fireball."
+      }
+    },
+    "options": {
+      "hot": "Hot",
+      "molten": "Iron core",
+      "cooling": "Cooling",
+      "flame": "Pure fire",
+      "smokeTrail": "Fire and smoke"
+    },
+    "palette": {
+      "warm": "Fire palette",
+      "rock": "Smoke and rock palette",
+      "band": "Color band {index}",
+      "alpha": "Opacity",
+      "remove": "Remove this color band",
+      "add": "Add color band"
+    },
+    "seed": {
+      "randomize": "Randomize"
+    },
+    "presets": {
+      "classic": {
+        "name": "Classic Fireball",
+        "description": "The original projectile fireball."
+      },
+      "wrapped": {
+        "name": "Wrapped Fireball",
+        "description": "A hot ball enclosed by moving fire."
+      },
+      "stream": {
+        "name": "Stream Fireball",
+        "description": "A streaming fire bolt."
+      },
+      "puff": {
+        "name": "Particle Fireball",
+        "description": "A shedding particle mass."
+      }
     }
   },
-  "arrow": { "name": "Arrow", "description": "Solid and energy arrow flight loops.", "previewTitle": "Arrow flight loop" },
-  "crystal": { "name": "Crystal", "description": "Faceted crystal projectile loops.", "previewTitle": "Crystal flight loop" },
+  "arrow": {
+    "name": "Arrow",
+    "description": "Solid and energy arrow flight loops.",
+    "previewTitle": "Arrow flight loop"
+  },
+  "crystal": {
+    "name": "Crystal",
+    "description": "Faceted crystal projectile loops.",
+    "previewTitle": "Crystal flight loop"
+  },
   "projectile": {
     "name": "Projectile",
     "description": "Seamless flight loops for fireballs and magic arrows.",
@@ -1294,24 +1431,78 @@
         "label": "Silhouette variation",
         "description": "Deterministic lumpiness of the fireball or arrow outline."
       },
-      "fireRearExtension": { "label": "Rear flame reach", "description": "Extends only the fireball rear toward its comet root." },
-      "fireRearTurbulence": { "label": "Rear turbulence", "description": "Strength of the animated low-frequency rear contour." },
-      "fireFlowSpeed": { "label": "Heat flow speed", "description": "Speed of the fireball's internal color circulation." },
-      "fireMottleAmount": { "label": "Surface mottling", "description": "Sparse color-band variation drifting through the fireball middle and rear." },
-      "solidHeadLength": { "label": "Arrowhead length", "description": "Portion of the solid arrow reserved for its pointed head." },
-      "solidShaftWidth": { "label": "Shaft width", "description": "Thickness of the solid arrow's central shaft." },
-      "solidFletchingSpread": { "label": "Fletching spread", "description": "Width of the solid arrow's rear feathers." },
-      "energyCoreLength": { "label": "Energy core length", "description": "Length of the bright inner spear core." },
-      "energyShellWidth": { "label": "Energy shell width", "description": "Extra width of the dark outer energy shell." },
-      "energyTipSharpness": { "label": "Energy tip sharpness", "description": "Moves the diamond's widest point toward a sharper or broader tip." },
-      "crystalSpearTaper": { "label": "Crystal taper", "description": "Sharpness of the spear's faceted ends." },
-      "crystalSpearThickness": { "label": "Crystal thickness", "description": "Cross-section thickness of the crystal spear." },
-      "crystalRefractionStrength": { "label": "Refraction strength", "description": "Contrast between the crystal's lit and shaded planes." },
-      "crystalGlintStrength": { "label": "Glint strength", "description": "Brightness and coverage of the crystal's moving surface glint." },
-      "crystalGlintSpeed": { "label": "Glint speed", "description": "Speed of the surface glint along the crystal axis." },
-      "crystalCoreScale": { "label": "Core scale", "description": "Size of the central crystal nucleus." },
-      "crystalOrbitRadius": { "label": "Orbit radius", "description": "Distance of satellite shards from the crystal core." },
-      "crystalOrbitSpeed": { "label": "Orbit speed", "description": "Satellite rotation speed within the seamless loop." },
+      "fireRearExtension": {
+        "label": "Rear flame reach",
+        "description": "Extends only the fireball rear toward its comet root."
+      },
+      "fireRearTurbulence": {
+        "label": "Rear turbulence",
+        "description": "Strength of the animated low-frequency rear contour."
+      },
+      "fireFlowSpeed": {
+        "label": "Heat flow speed",
+        "description": "Speed of the fireball's internal color circulation."
+      },
+      "fireMottleAmount": {
+        "label": "Surface mottling",
+        "description": "Sparse color-band variation drifting through the fireball middle and rear."
+      },
+      "solidHeadLength": {
+        "label": "Arrowhead length",
+        "description": "Portion of the solid arrow reserved for its pointed head."
+      },
+      "solidShaftWidth": {
+        "label": "Shaft width",
+        "description": "Thickness of the solid arrow's central shaft."
+      },
+      "solidFletchingSpread": {
+        "label": "Fletching spread",
+        "description": "Width of the solid arrow's rear feathers."
+      },
+      "energyCoreLength": {
+        "label": "Energy core length",
+        "description": "Length of the bright inner spear core."
+      },
+      "energyShellWidth": {
+        "label": "Energy shell width",
+        "description": "Extra width of the dark outer energy shell."
+      },
+      "energyTipSharpness": {
+        "label": "Energy tip sharpness",
+        "description": "Moves the diamond's widest point toward a sharper or broader tip."
+      },
+      "crystalSpearTaper": {
+        "label": "Crystal taper",
+        "description": "Sharpness of the spear's faceted ends."
+      },
+      "crystalSpearThickness": {
+        "label": "Crystal thickness",
+        "description": "Cross-section thickness of the crystal spear."
+      },
+      "crystalRefractionStrength": {
+        "label": "Refraction strength",
+        "description": "Contrast between the crystal's lit and shaded planes."
+      },
+      "crystalGlintStrength": {
+        "label": "Glint strength",
+        "description": "Brightness and coverage of the crystal's moving surface glint."
+      },
+      "crystalGlintSpeed": {
+        "label": "Glint speed",
+        "description": "Speed of the surface glint along the crystal axis."
+      },
+      "crystalCoreScale": {
+        "label": "Core scale",
+        "description": "Size of the central crystal nucleus."
+      },
+      "crystalOrbitRadius": {
+        "label": "Orbit radius",
+        "description": "Distance of satellite shards from the crystal core."
+      },
+      "crystalOrbitSpeed": {
+        "label": "Orbit speed",
+        "description": "Satellite rotation speed within the seamless loop."
+      },
       "rotation": {
         "label": "Baked rotation",
         "description": "Rotates body, trail, sparks, and afterimages together."

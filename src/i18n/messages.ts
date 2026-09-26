@@ -57,6 +57,7 @@ export interface MessageParams {
   'projectile.palette.bodyBand': { index: number }
   'projectile.palette.energyBand': { index: number }
   'projectile.palette.removeBand': { index: number }
+  'fireball.palette.band': { index: number }
   'previewTools.canvas.presetSquare': { width: number; height: number }
   'previewTools.canvas.presetHorizontal': { width: number; height: number }
   'export.fileName': { name: string; width: number; height: number; frameCount: number }
@@ -272,6 +273,20 @@ const PRESET_DISPLAY_KEYS: Readonly<Record<string, Readonly<Record<string, Prese
     energyArrow: { name: 'projectile.presets.energyArrow.name', description: 'projectile.presets.energyArrow.description' },
     crystalSpear: { name: 'projectile.presets.crystalSpear.name', description: 'projectile.presets.crystalSpear.description' },
     crystalCore: { name: 'projectile.presets.crystalCore.name', description: 'projectile.presets.crystalCore.description' },
+  },
+  arrow: {
+    enchantedArrow: { name: 'projectile.presets.enchantedArrow.name', description: 'projectile.presets.enchantedArrow.description' },
+    energyArrow: { name: 'projectile.presets.energyArrow.name', description: 'projectile.presets.energyArrow.description' },
+  },
+  crystal: {
+    crystalSpear: { name: 'projectile.presets.crystalSpear.name', description: 'projectile.presets.crystalSpear.description' },
+    crystalCore: { name: 'projectile.presets.crystalCore.name', description: 'projectile.presets.crystalCore.description' },
+  },
+  fireball: {
+    classic: { name: 'fireball.presets.classic.name', description: 'fireball.presets.classic.description' },
+    wrapped: { name: 'fireball.presets.wrapped.name', description: 'fireball.presets.wrapped.description' },
+    stream: { name: 'fireball.presets.stream.name', description: 'fireball.presets.stream.description' },
+    puff: { name: 'fireball.presets.puff.name', description: 'fireball.presets.puff.description' },
   },
 }
 

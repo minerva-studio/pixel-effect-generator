@@ -32,4 +32,13 @@ describe('fireball controls', () => {
       parameters={{ ...DEFAULT_FIREBALL_PARAMETERS, form: 'classic' }} onChange={() => undefined} /></I18nProvider>)
     expect(classic).toBe(markup)
   })
+
+  it('renders translated, descriptive fireball control hints and units', () => {
+    const markup = renderToStaticMarkup(<I18nProvider><FireballControls category="shape"
+      parameters={DEFAULT_FIREBALL_PARAMETERS} onChange={() => undefined} /></I18nProvider>)
+
+    expect(markup).toContain('px')
+    expect(markup).toContain('°')
+    expect(markup).toContain('Sets the fireball head radius in pixels.')
+  })
 })
