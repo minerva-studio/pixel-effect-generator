@@ -352,6 +352,7 @@ describe('renderExplosionFrames', () => {
     expect(maximumRadius(frames[8])).toBeGreaterThanOrEqual(maximumRadius(frames[7]))
     expect(countExactColor(frames[8], parameters.palette.at(-1)!)).toBeGreaterThan(0)
     expect(countOpaque(frames[8])).toBeGreaterThan(0)
+    expect(opaqueComponentAreas(frames[8])[0]).toBeLessThan(countOpaque(frames[8]) * 0.33)
     expect(countOpaque(frames[9])).toBe(0)
     expect(enclosedTransparentPixels(frames[8])).toBe(0)
     expect(colorCentroidY(frames[8], parameters.palette.at(-2)!)).toBeLessThan(colorCentroidY(frames[8], parameters.palette[1]))

@@ -451,10 +451,11 @@ function buildBillowingSmokePrimitives(
       rx: radius * 0.22 * growth * emberScale, ry: radius * 0.1 * growth * emberScale, angle: rotation,
     })
   }
-  addFormationBridges(primitives, cores, emberCenter, radius, growth, drift)
+  const bridgeEnd = Math.min(0.9, parameters.motion.dissolveStart + 0.26)
+  if (drift < bridgeEnd) addFormationBridges(primitives, cores, emberCenter, radius, growth, drift)
   cores.forEach((core) => {
     const coreTailStart = tailStart + hashUnit(parameters.seed, core.index, 312) * 0.05
-    const coreTail = smoothStep(clamp01((drift - coreTailStart) / Math.max(0.01, 0.86 - coreTailStart)))
+    const coreTail = smoothStep(clamp01((drift - coreTailStart) / Math.max(0.01, 0.82 - coreTailStart)))
     const coreScale = 1 - coreTail * (0.97 + hashUnit(parameters.seed, core.index, 313) * 0.02)
     primitives.push({
       kind: 'ellipse', owner: 0, depth: 2, role: 'smokeBridge', alphaOnly: true,
@@ -526,6 +527,20 @@ function buildBillowingSmokePrimitives(
     }
   })
   addBillowingTailDebris(primitives, parameters, cores, tail)
+  // Detached wisps carry the tail after the formation-only bridges retire.
+  cores.filter((core) => core.index % 2 === 0).forEach((core) => {
+    const launch = Math.min(0.85, bridgeEnd - 0.07 + hashUnit(parameters.seed, core.index, 320) * 0.04)
+    const expiry = 0.965 + hashUnit(parameters.seed, core.index, 321) * 0.02
+    if (drift <= launch || drift >= expiry) return
+    const progress = clamp01((drift - launch) / (expiry - launch))
+    const size = Math.max(0.7, radius * 0.08 * Math.sin(progress * Math.PI))
+    primitives.push({
+      kind: 'ellipse', owner: 400 + core.index, depth: 6, role: 'smokeWisp',
+      x: core.x + core.direction * radius * (0.2 + progress * 0.2),
+      y: core.y - radius * (0.12 + progress * 0.18),
+      rx: size * 1.2, ry: size * 0.8, angle: core.angle + core.direction * 0.5,
+    })
+  })
   return primitives
 }
 
