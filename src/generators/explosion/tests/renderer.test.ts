@@ -144,9 +144,30 @@ describe('renderExplosionFrames', () => {
     expect(countOpaqueRegion(middle, (x, y) => Math.hypot(x - middle.width / 2, y - middle.height / 2) > parameters.body.radius * 0.3))
       .toBeGreaterThan(countOpaqueInside(middle, parameters.body.radius * 0.3))
     expect(countExactColorOutside(middle, parameters.palette[0], parameters.body.radius * 0.3)).toBeGreaterThan(0)
-    const wedgeSpans = [18, 23, 29].map((radius) => angularSpanNear(middle, radius, 0, 0.7))
+    const wedgeSpans = [28, 32, 36].map((radius) => angularSpanNear(middle, radius, 0, 0.7))
     expect(wedgeSpans[0]).toBeGreaterThan(wedgeSpans[1])
     expect(wedgeSpans[1]).toBeGreaterThan(wedgeSpans[2])
+  })
+
+  it('breaks retreating shock plates into pieces while their total area shrinks', () => {
+    const preset = EXPLOSION_BUILTIN_PRESETS.find(({ id }) => id === 'pressureBurst')!
+    const parameters = applyExplosionPreset({ ...MODERN_EXPLOSION_PARAMETERS, frameCount: 24 }, preset.payload)
+    const frames = renderExplosionFrames(parameters)
+    const tail = frames.slice(14, 19)
+    expect(opaqueComponents(tail[2])).toBeGreaterThanOrEqual(opaqueComponents(tail[0]))
+    for (let index = 1; index < tail.length; index += 1) {
+      expect(countOpaque(tail[index])).toBeLessThan(countOpaque(tail[index - 1]))
+    }
+  })
+
+  it('keeps outward cinders in the last two visible shock frames', () => {
+    const preset = EXPLOSION_BUILTIN_PRESETS.find(({ id }) => id === 'pressureBurst')!
+    const parameters = applyExplosionPreset({ ...MODERN_EXPLOSION_PARAMETERS, frameCount: 24 }, preset.payload)
+    const frames = renderExplosionFrames(parameters)
+    for (const frame of frames.slice(-3, -1)) {
+      expect(countOpaqueRegion(frame, (x, y) => Math.hypot(x - frame.width / 2, y - frame.height / 2) > parameters.body.radius * 0.9))
+        .toBeGreaterThan(0)
+    }
   })
 
   it('renders the requested 3 to 12 separated shock wedges deterministically', () => {

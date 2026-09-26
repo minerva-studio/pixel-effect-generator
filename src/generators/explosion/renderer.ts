@@ -1,5 +1,5 @@
 import type { PixelFrame } from '../../shared/pixel/frame'
-import { clamp01, createXorshift32, hashUnit, lerp, smoothStep } from '../../shared/pixel/rng'
+import { clamp01, createXorshift32, easeOutCubic, hashUnit, lerp, smoothStep } from '../../shared/pixel/rng'
 import { renderCore } from '../shared-effects/core'
 import { dissolvePixelRejected, type DissolveOptions } from '../shared-effects/dissolve'
 import { generateFragments, renderFragments } from '../shared-effects/fragments'
@@ -340,9 +340,12 @@ function buildShockBlastPrimitives(
 ): BodyPrimitive[] {
   const radius = parameters.body.radius
   const drift = parameters.motion.mode === 'explosion' ? time : 1 - time
-  const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
+  const dissolveStart = parameters.motion.dissolveStart
+  const growth = Math.max(formationGrowth(parameters.motion.mode, parameters.motion, lifecycle), Math.sqrt(clamp01(drift / 0.12)) * 0.9)
+  const flight = easeOutCubic(clamp01(drift / dissolveStart))
+  const decay = clamp01((drift - dissolveStart) / Math.max(0.05, 0.95 - dissolveStart))
   const rotation = parameters.body.rotation / 180 * Math.PI
-  const coreRetreat = 1 - smoothStep(clamp01((drift - 0.5) / 0.34)) * 0.7
+  const coreRetreat = 1 - smoothStep(clamp01((drift - dissolveStart) / 0.2))
   const primitives: BodyPrimitive[] = [{
     kind: 'ellipse', owner: 0, depth: parameters.volume.profile === 'moltenCore' ? 4 : 0, role: 'core',
     x: 0, y: 0, rx: radius * 0.3 * growth * coreRetreat, ry: radius * 0.3 * growth * coreRetreat, angle: 0,
@@ -350,20 +353,40 @@ function buildShockBlastPrimitives(
   const plateCount = parameters.body.pressureCount
   for (let index = 0; index < plateCount; index += 1) {
     const blob = blobs[index]
-    const delay = index * 0.018 + (blob?.delay ?? 0) * 0.3
-    const plateTime = clamp01((drift - delay) / Math.max(0.01, 0.84 - delay))
-    if (plateTime <= 0 || plateTime >= 0.98) continue
+    const delay = index * 0.008 + (blob?.delay ?? 0) * 0.12
+    if (drift <= delay) continue
     const jitter = (blob?.tongueNoise ?? 0) * parameters.body.shapeIrregularity * 0.14
     const angle = rotation + index / plateCount * Math.PI * 2 + jitter
-    const radialCenter = radius * (0.25 + plateTime * 0.58) * growth
-    const thickness = Math.max(1, parameters.body.pressureWidth * growth * (1 - plateTime * 0.18))
-    const halfAngle = (Math.PI / plateCount) * (0.52 + (blob?.radiusScale ?? 1) * 0.08)
-    primitives.push({
-      kind: 'shellSector', owner: index + 1, depth: 2 + (blob?.depth ?? 1) * 0.2, role: 'shell',
-      innerRadius: Math.max(0, radialCenter - thickness * 0.5),
-      outerRadius: radialCenter + thickness * 0.5,
-      angle, halfAngle, sharpness: parameters.body.pressureSharpness,
-    })
+    const radialCenter = radius * (0.25 + flight * 0.55 + easeOutCubic(decay) * 0.2) * growth
+    const thickness = Math.max(1, parameters.body.pressureWidth * growth * (1 - decay * 0.96))
+    const halfAngle = (Math.PI / plateCount) * (0.52 + (blob?.radiusScale ?? 1) * 0.08) * (1 - decay * 0.6)
+    const pieceCount = decay > 0.05 ? 2 + (hashUnit(parameters.seed, index, 106) > 0.5 ? 1 : 0) : 1
+    for (let piece = 0; piece < pieceCount; piece += 1) {
+      const expiry = 0.82 + hashUnit(parameters.seed, index * 3 + piece, 107) * 0.13
+      if (drift >= expiry) continue
+      const pieceHalfAngle = halfAngle / pieceCount * (1 - decay * 0.38)
+      primitives.push({
+        kind: 'shellSector', owner: index + 1, depth: 2 + (blob?.depth ?? 1) * 0.2, role: 'shell',
+        innerRadius: Math.max(0, radialCenter - thickness * 0.5),
+        outerRadius: radialCenter + thickness * 0.5,
+        angle: angle + (piece * 2 + 1 - pieceCount) * halfAngle / pieceCount,
+        halfAngle: pieceHalfAngle, sharpness: parameters.body.pressureSharpness,
+      })
+    }
+    for (let spark = 0; spark < 2; spark += 1) {
+      const launch = dissolveStart + hashUnit(parameters.seed, index * 2 + spark, 108) * 0.1
+      const expiry = 0.965 + hashUnit(parameters.seed, index * 2 + spark, 109) * 0.02
+      if (drift < launch || drift >= expiry) continue
+      const progress = clamp01((drift - launch) / (expiry - launch))
+      const sparkAngle = angle + (spark - 0.5) * halfAngle * 1.2
+      const distance = radius * (0.8 + progress * 0.35)
+      const sparkRadius = Math.max(0.7, (1.7 + hashUnit(parameters.seed, index * 2 + spark, 110)) * (1 - progress * 0.65))
+      primitives.push({
+        kind: 'ellipse', owner: 30 + index * 2 + spark, depth: 4, role: 'cinder',
+        x: Math.cos(sparkAngle) * distance, y: Math.sin(sparkAngle) * distance,
+        rx: sparkRadius * (1 + (1 - progress) * 0.3), ry: sparkRadius, angle: sparkAngle,
+      })
+    }
   }
   return primitives
 }
@@ -907,8 +930,8 @@ function renderVolumeBody(
     if (front.role === 'smokeBridge') band = 0.64
     if (front.role === 'spark') band = 0.24 + front.distance * 0.32
     if (front.role === 'shell') {
-      const shellCooling = smoothStep(clamp01((lifecycle - 0.52) / 0.38))
-      band = 0.16 + front.axis * 0.42 + (1 - front.light) * 0.16 + shellCooling * 0.2
+      const shellCooling = smoothStep(clamp01((lifecycle - parameters.motion.dissolveStart) / Math.max(0.05, 0.95 - parameters.motion.dissolveStart)))
+      band = 0.16 + front.axis * 0.42 + (1 - front.light) * 0.16 + shellCooling * 0.72
     }
     if (front.role === 'cinder') {
       const cinderCooling = smoothStep(clamp01((lifecycle - 0.7) / 0.24))
@@ -936,7 +959,10 @@ function renderVolumeBody(
     const rollingMayUseDeep = parameters.body.shape === 'rollingFireball'
       && lifecycle >= 0.68
       && (front.role === 'fire' || front.role === 'core' || front.role === 'cinder')
-    const colorIndex = smokeMayUseDeep || rollingMayUseDeep
+    const shockMayUseDeep = parameters.body.shape === 'shockBlast'
+      && lifecycle >= parameters.motion.dissolveStart
+      && (front.role === 'shell' || front.role === 'cinder')
+    const colorIndex = smokeMayUseDeep || rollingMayUseDeep || shockMayUseDeep
       ? rawColorIndex
       : Math.min(parameters.palette.length - 2, rawColorIndex)
     const offset = y * width + x

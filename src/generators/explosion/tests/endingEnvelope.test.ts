@@ -24,7 +24,8 @@ describe('explosion preset ending envelope', () => {
   ] as const
   for (const presetId of legacyBodyPresetIds) {
     for (const frameCount of [10, 24]) {
-      it.fails(`${presetId} at ${frameCount} frames`, () => {
+      const check = presetId === 'pressureBurst' ? it : it.fails
+      check(`${presetId} at ${frameCount} frames`, () => {
         const areas = opaqueAreas(presetId, frameCount)
         const peak = Math.max(...areas)
         const peakIndex = areas.indexOf(peak)
