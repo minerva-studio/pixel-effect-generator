@@ -126,7 +126,7 @@ describe('translation resources', () => {
     expect(categoryDisplayKeys('explosion', 'body')?.label).toBe('explosion.categories.body.label')
     expect(categoryDisplayKeys('explosion', 'motion')?.label).toBe('explosion.categories.motion.label')
     expect(translate(messagesForLocale('zh-CN'), 'explosion.categories.body.label')).toBe('形状')
-    expect(translate(messagesForLocale('zh-CN'), 'explosion.controls.fieldMotionNote')).toContain('请在形状页设置')
+    expect(translate(messagesForLocale('zh-CN'), 'explosion.controls.fieldMotionNote')).toBe('场模拟固定成形与停留时间。')
     expect(categoryDisplayKeys('explosion', 'material')?.label).toBe('explosion.categories.material.label')
     expect(categoryDisplayKeys('explosion', 'effects')?.label).toBe('explosion.categories.effects.label')
     expect(generatorDisplayKeys('energyBloom')?.name).toBe('energyBloom.name')

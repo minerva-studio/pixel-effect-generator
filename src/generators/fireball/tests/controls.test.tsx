@@ -1,8 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../../i18n/I18nProvider'
 import { FireballControls } from '../controls'
 import { DEFAULT_FIREBALL_PARAMETERS, selectFireballShape } from '../model'
+
+beforeEach(() => vi.stubGlobal('navigator', { language: 'en-US' }))
+afterEach(() => vi.unstubAllGlobals())
 
 describe('fireball controls', () => {
   it('changes only the selected fireball form', () => {
