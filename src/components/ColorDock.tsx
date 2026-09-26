@@ -106,13 +106,15 @@ export function ColorDockView<Parameters>({ rootRef, slots, parameters, activeCo
       })}</div>
       <div className="color-dock-actions">
         <button className="color-dock-lock" type="button" aria-pressed={locked} aria-label={t('controls.lockColors')} title={t('controls.lockColorsHint')} onClick={() => onLockedChange(!locked)}><LockIcon locked={locked} /></button>
-        <button className="panel-action color-dock-library" type="button" aria-expanded={libraryOpen} onClick={() => { onLibraryOpenChange(!libraryOpen); onActiveColor(null) }}>{t('controls.paletteLibraryToggle')}</button>
+        <div className="color-dock-library-anchor">
+          <button className="panel-action color-dock-library" type="button" aria-expanded={libraryOpen} onClick={() => { onLibraryOpenChange(!libraryOpen); onActiveColor(null) }}>{t('controls.paletteLibraryToggle')}</button>
+          {libraryOpen && selectedLibrarySlot ? <div className="color-dock-library-popover">
+            {slots.length > 1 && <SegmentedControl label={t('controls.palette.targetSlot')} description={t('controls.palette.targetSlotHint')} value={selectedLibrarySlot.id} options={slots.map((slot) => ({ value: slot.id, label: t(slot.labelKey) }))} onChange={onLibrarySlotChange} />}
+            <PaletteLibraryPicker inline palette={selectedLibrarySlot.read(parameters)} onChange={(colors) => updateSlot(selectedLibrarySlot, selectedLibrarySlot.fit ? selectedLibrarySlot.fit(colors, selectedLibrarySlot.read(parameters).length) : colors)} minimum={selectedLibrarySlot.minimum} maximum={selectedLibrarySlot.maximum} opaque={selectedLibrarySlot.opaque} />
+          </div> : null}
+        </div>
       </div>
     </div>
-    {libraryOpen && selectedLibrarySlot ? <div className="color-dock-library-popover">
-      {slots.length > 1 && <SegmentedControl label={t('controls.palette.targetSlot')} description={t('controls.palette.targetSlotHint')} value={selectedLibrarySlot.id} options={slots.map((slot) => ({ value: slot.id, label: t(slot.labelKey) }))} onChange={onLibrarySlotChange} />}
-      <PaletteLibraryPicker inline palette={selectedLibrarySlot.read(parameters)} onChange={(colors) => updateSlot(selectedLibrarySlot, selectedLibrarySlot.fit ? selectedLibrarySlot.fit(colors, selectedLibrarySlot.read(parameters).length) : colors)} minimum={selectedLibrarySlot.minimum} maximum={selectedLibrarySlot.maximum} opaque={selectedLibrarySlot.opaque} />
-    </div> : null}
   </section>
 }
 
