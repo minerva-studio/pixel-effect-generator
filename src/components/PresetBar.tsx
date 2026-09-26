@@ -337,7 +337,13 @@ export function PresetStrip({ cards, selectedId, modified, preserveColors, onSel
     <div className="preset-strip-cards" role="list" aria-label={t('presets.selectLabel')}>
       {cards.map((card) => <PresetCard key={card.id} card={card} selected={card.id === selectedId} modified={card.id === selectedId && modified} compact onSelect={onSelect} />)}
     </div>
-    <label className="preset-preserve-colors"><input type="checkbox" checked={preserveColors} onChange={(event) => onPreserveColorsChange(event.target.checked)} />{t('presets.preserveColors')}</label>
+    <label className="preset-preserve-colors">
+      <span>{t('presets.preserveColors')}</span>
+      <span className="toggle-field">
+        <input type="checkbox" checked={preserveColors} onChange={(event) => onPreserveColorsChange(event.target.checked)} />
+        <span aria-hidden="true" />
+      </span>
+    </label>
     {actions}
   </div>
 }
@@ -529,6 +535,20 @@ export function PresetBar<Parameters>({
     buildFrames: buildFrames(preset.id, preset.payload),
   })), [customPresets, buildFrames])
 
+  // Until the user picks a card, highlight whichever preset the current
+  // parameters already match (for example the defaults or an opened project).
+  const matchingPresetId = useMemo(() => {
+    if (selectedId !== null) return null
+    const match = [...capability.builtIns, ...customPresets].find((preset) => {
+      try {
+        return payloadsEqual(capture, capability.capture(capability.apply(parameters, preset.payload)))
+      } catch {
+        return false
+      }
+    })
+    return match?.id ?? null
+  }, [selectedId, capability, customPresets, capture, parameters])
+
   const handleSelect = (presetId: string) => {
     const preset = capability.builtIns.find((entry) => entry.id === presetId)
       ?? customPresets.find((entry) => entry.id === presetId)
@@ -587,7 +607,7 @@ export function PresetBar<Parameters>({
   }
 
   const handleUpdate = () => {
-    const selected = customPresets.find((preset) => preset.id === selectedId)
+    const selected = customPresets.find((preset) => preset.id === (selectedId ?? matchingPresetId))
     if (!selected) {
       return
     }
@@ -636,7 +656,7 @@ export function PresetBar<Parameters>({
 
   return (
     <PresetBarView
-      selectedId={selectedId}
+      selectedId={selectedId ?? matchingPresetId}
       builtInCards={builtInCards}
       customCards={customCards}
       pickerOpen={pickerOpen}

@@ -31,7 +31,7 @@ export const explosionModule = defineGenerator({
     description: 'Physical fire, pressure release, rolling fireballs, and retro blasts.',
   },
   categories: EXPLOSION_CATEGORIES,
-  paletteSlots: [{ id: 'explosion', labelKey: 'explosion.palette.hotCore', guideKeys: ['explosion.palette.hotCore', 'explosion.palette.outerEdge'], minimum: 2, maximum: 6, read: (p) => p.palette, write: (p, palette) => ({ ...p, palette }) }],
+  paletteSlots: [{ id: 'explosion', labelKey: 'controls.palette.colors', guideKeys: ['explosion.palette.hotCore', 'explosion.palette.outerEdge'], minimum: 2, maximum: 6, read: (p) => p.palette, write: (p, palette) => ({ ...p, palette }) }],
   defaultParameters: DEFAULT_EXPLOSION_PARAMETERS,
   projectCodec: explosionProjectCodec,
   presetCapability: explosionPresetCapability,

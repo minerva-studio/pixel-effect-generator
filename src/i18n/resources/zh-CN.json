@@ -313,6 +313,7 @@
     "colorDock": "生成器颜色",
     "editColors": "编辑",
     "palette": {
+      "colors": "颜色",
       "alpha": "不透明度",
       "bandLabel": "色带 {index}",
       "add": "添加色带",

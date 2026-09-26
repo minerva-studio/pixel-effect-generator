@@ -27,7 +27,7 @@ export function ColorDockView<Parameters>({ slots, parameters, onParameters, exp
 }) {
   const { t } = useI18n()
   return <section className={`color-dock ${expanded ? 'expanded' : ''}`} aria-label={t('controls.colorDock')}>
-    <div className="color-dock-rows">{slots.map((slot) => {
+    <div className="color-dock-header"><div className="color-dock-rows">{slots.map((slot) => {
       const colors = slot.read(parameters)
       return <div className="color-dock-row" key={slot.id}>
         <span className="color-dock-label">{t(slot.labelKey)}</span>
@@ -36,10 +36,10 @@ export function ColorDockView<Parameters>({ slots, parameters, onParameters, exp
           <input aria-label={`${t(slot.labelKey)} ${activeColor.index + 1}`} type="color" value={rgbToHex(colors[activeColor.index])} onChange={(event) => onParameters(slot.write(parameters, colors.map((color, index) => index === activeColor.index ? { ...color, ...hexToColor(event.target.value) } : color)))} />
           {!slot.opaque && <label>{t('controls.palette.alpha')}<input type="range" min={0} max={255} value={colors[activeColor.index].a} onChange={(event) => onParameters(slot.write(parameters, colors.map((color, index) => index === activeColor.index ? { ...color, a: Number(event.target.value) } : color)))} /></label>}
         </div> : null}
-        <button className="text-button color-dock-edit" type="button" aria-expanded={expanded} onClick={onToggleExpanded}>{t('controls.editColors')}</button>
       </div>
     })}</div>
-    {expanded ? <div className="color-dock-editors">{slots.map((slot) => <PaletteEditor key={slot.id} title={t(slot.labelKey)} palette={slot.read(parameters)} onChange={(colors) => onParameters(slot.write(parameters, colors))} minimum={slot.minimum} maximum={slot.maximum} opaque={slot.opaque} fit={slot.fit} insert={slot.insert} guide={slot.guideKeys?.map((key) => t(key)) as readonly [string, string] | undefined} />)}</div> : null}
+    <button className="text-button color-dock-edit" type="button" aria-expanded={expanded} onClick={onToggleExpanded}>{t('controls.editColors')}</button></div>
+    {expanded ? <div className="color-dock-editors">{slots.map((slot) => <PaletteEditor key={slot.id} title={slots.length > 1 ? t(slot.labelKey) : undefined} palette={slot.read(parameters)} onChange={(colors) => onParameters(slot.write(parameters, colors))} minimum={slot.minimum} maximum={slot.maximum} opaque={slot.opaque} fit={slot.fit} insert={slot.insert} guide={slot.guideKeys?.map((key) => t(key)) as readonly [string, string] | undefined} />)}</div> : null}
   </section>
 }
 

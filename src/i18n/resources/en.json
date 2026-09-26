@@ -313,6 +313,7 @@
     "colorDock": "Generator colors",
     "editColors": "Edit",
     "palette": {
+      "colors": "Colors",
       "alpha": "Opacity",
       "bandLabel": "Color band {index}",
       "add": "Add color band",

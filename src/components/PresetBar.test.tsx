@@ -195,6 +195,29 @@ describe('PresetBar component', () => {
     expect(markup).not.toContain('preset-actions-panel')
     expect(markup).not.toContain('<select')
   })
+
+  it('highlights the preset that the current parameters already match', () => {
+    vi.stubGlobal('navigator', undefined)
+    const preset = slashPresetCapability.builtIns[1]
+    const renderBar = (parameters: typeof DEFAULT_SLASH_PARAMETERS) => renderToStaticMarkup(
+      <I18nProvider>
+        <PresetBar
+          capability={slashPresetCapability}
+          paletteSlots={[]}
+          generatorId="slash"
+          parameters={parameters}
+          render={renderSlashFrames}
+          frameSize={{ width: parameters.canvasWidth, height: parameters.canvasHeight }}
+          frameCount={parameters.frameCount}
+          onApply={vi.fn()}
+        />
+      </I18nProvider>,
+    )
+    const matching = slashPresetCapability.apply(DEFAULT_SLASH_PARAMETERS, preset.payload)
+    expect(renderBar(matching).match(/aria-pressed="true"/g)).toHaveLength(1)
+    expect(renderBar(matching)).toMatch(new RegExp(`aria-pressed="true"[^>]*>.*?${preset.name}`))
+    expect(renderBar({ ...matching, radius: matching.radius - 1 })).not.toContain('aria-pressed="true"')
+  })
 })
 
 describe('renderPresetFrames', () => {

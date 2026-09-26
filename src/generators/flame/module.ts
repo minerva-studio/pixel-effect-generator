@@ -14,7 +14,7 @@ export const flameModule = defineGenerator({
     { id: 'motion', label: 'Motion', description: 'Control periodic burning and flow.' },
     { id: 'material', label: 'Material', description: 'Tune the flame core, band distortion, edge breakup, and sparks.' },
   ] as const,
-  paletteSlots: [{ id: 'flame', labelKey: 'flame.palette.hotCore', minimum: 3, maximum: 6, opaque: true, read: (p) => p.palette, write: (p, palette) => ({ ...p, palette }) }],
+  paletteSlots: [{ id: 'flame', labelKey: 'controls.palette.colors', guideKeys: ['flame.palette.hotCore', 'flame.palette.outerEdge'], minimum: 3, maximum: 6, opaque: true, read: (p) => p.palette, write: (p, palette) => ({ ...p, palette }) }],
   defaultParameters: DEFAULT_FLAME_PARAMETERS,
   projectCodec: flameProjectCodec, presetCapability: flamePresetCapability,
   render: renderFlameFrames,

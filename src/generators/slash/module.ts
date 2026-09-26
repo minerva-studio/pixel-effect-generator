@@ -25,7 +25,7 @@ export const slashModule = defineGenerator({
     description: 'Animated weapon trails and sweeping attack arcs.',
   },
   categories: SLASH_CATEGORIES,
-  paletteSlots: [{ id: 'slash', labelKey: 'slash.palette.innerEdge', guideKeys: ['slash.palette.innerEdge', 'slash.palette.outerEdge'], minimum: 2, maximum: 6, read: (p: SlashParameters) => p.palette, write: (p: SlashParameters, palette) => ({ ...p, palette }), insert: insertPaletteColor }],
+  paletteSlots: [{ id: 'slash', labelKey: 'controls.palette.colors', guideKeys: ['slash.palette.innerEdge', 'slash.palette.outerEdge'], minimum: 2, maximum: 6, read: (p: SlashParameters) => p.palette, write: (p: SlashParameters, palette) => ({ ...p, palette }), insert: insertPaletteColor }],
   defaultParameters: DEFAULT_SLASH_PARAMETERS,
   projectCodec: slashProjectCodec,
   presetCapability: slashPresetCapability,
