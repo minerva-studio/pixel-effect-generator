@@ -28,7 +28,7 @@ describe('explosion preset ending envelope', () => {
         const areas = opaqueAreas(presetId, frameCount)
         const peak = Math.max(...areas)
         const peakIndex = areas.indexOf(peak)
-        const lastVisible = areas.findLast((area) => area > 0) ?? 0
+        const lastVisible = areas.slice().reverse().find((area) => area > 0) ?? 0
         const largestDrop = Math.max(...areas.slice(1).map((area, index) => areas[index] - area))
         expect(peak).toBeGreaterThan(0)
         expect(peakIndex / (frameCount - 1), `${presetId} peak frame`).toBeGreaterThanOrEqual(0.45)
