@@ -18,7 +18,7 @@ export function renderFireballFrame(parameters: FireballParameters, cycleTime: n
   if (parameters.form === 'classic') {
     const classic = classicProjectileParameters(parameters)
     const frontReach = Math.max(classic.radius * 0.8, classic.bodyLength / 2)
-    const rearReach = classic.trailMode === 'off' ? frontReach * (1 + classic.fireRearExtension * 0.45)
+    const rearReach = !classic.trailEnabled || classic.trailMode === 'off' ? frontReach * (1 + classic.fireRearExtension * 0.45)
       : frontReach * (1 + classic.fireRearExtension * 0.45) * 0.58 + classic.trailLength * classic.radius * 5
     const forwardOffset = Math.max(0, (rearReach - frontReach) / 2)
     return renderProjectileFrame(classic, cycleTime, forwardOffset)

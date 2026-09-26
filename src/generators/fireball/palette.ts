@@ -1,5 +1,13 @@
 import type { RgbColor } from '../../shared/pixel/color'
 
+/** Maps a legacy renderer slot to the nearest slot in an editable palette. */
+export function sampleFireballPalette(palette: readonly RgbColor[], slot: number, legacySlotCount: number): RgbColor {
+  if (palette.length === 0 || legacySlotCount < 1) throw new RangeError('A fireball palette needs at least one color.')
+  const sourcePosition = Math.min(legacySlotCount - 1, Math.max(0, slot)) / Math.max(1, legacySlotCount - 1)
+  const index = Math.round(sourcePosition * (palette.length - 1))
+  return palette[index]
+}
+
 /** Fits an existing ordered color ramp to the fireball renderer's fixed band count. */
 export function fitFireballPalette(source: readonly RgbColor[], count: number): RgbColor[] {
   if (source.length < 2 || count < 2) throw new RangeError('A palette needs at least two colors.')

@@ -108,11 +108,13 @@ export function selectExplosionShape(parameters: ExplosionParameters, shape: Exp
   const surface = isFieldExplosionShape(shape) && parameters.surface.style !== 'burningLayers'
     ? createExplosionSurface('burningLayers', parameters.surface.coverage)
     : parameters.surface
+  const maxTongues = explosionShapeCount(shape, parameters.body.lobeCount, parameters.body.pressureCount)
   return {
     ...parameters,
     body: { ...parameters.body, shape },
     volume: normalizeExplosionVolume(shape, parameters.volume),
     surface,
+    tongues: parameters.tongues.count > maxTongues ? { ...parameters.tongues, count: maxTongues } : parameters.tongues,
   }
 }
 

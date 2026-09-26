@@ -25,6 +25,18 @@ describe('combustion explosion parameter model', () => {
     expect(selected.volume).toEqual({ enabled: false, profile: 'hardShell' })
   })
 
+  it('clamps shape-dependent tongue counts when selecting another shape', () => {
+    const base = {
+      ...DEFAULT_EXPLOSION_PARAMETERS,
+      body: { ...DEFAULT_EXPLOSION_PARAMETERS.body, shape: 'rollingFireball' as const, lobeCount: 9 },
+      tongues: { ...DEFAULT_EXPLOSION_PARAMETERS.tongues, count: 9 },
+    }
+    const selected = selectExplosionShape(base, 'billowBurst')
+
+    expect(selected.tongues.count).toBe(6)
+    expect(() => assertValidExplosionParameters(selected)).not.toThrow()
+  })
+
   it('defaults to the classic retro radial look while modern defaults stay billowing', () => {
     expect(LEGACY_EXPLOSION_PARAMETERS.body.shape).toBe('legacyRadial')
     expect(LEGACY_EXPLOSION_PARAMETERS.surface.style).toBe('retroPixel')

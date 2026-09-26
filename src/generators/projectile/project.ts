@@ -93,6 +93,7 @@ export function serializeProjectileParameters(parameters: ProjectileParameters):
     pulseAmount: parameters.pulseAmount,
     wobbleAmount: parameters.wobbleAmount,
     trailMode: parameters.trailMode,
+    trailEnabled: parameters.trailEnabled,
     trailLength: parameters.trailLength,
     trailWidth: parameters.trailWidth,
     trailWave: parameters.trailWave,
@@ -124,6 +125,7 @@ export function parseProjectileParameters(value: unknown): ProjectileParameters 
   const canvasWidth = readInteger(value, 'canvasWidth', MIN_CANVAS_SIZE, MAX_CANVAS_SIZE)
   const canvasHeight = readInteger(value, 'canvasHeight', MIN_CANVAS_SIZE, MAX_CANVAS_SIZE)
   const limits = projectileFrameLimits({ width: canvasWidth, height: canvasHeight })
+  const trailMode = readEnum(value, 'trailMode', ['off', 'fire', 'energy'])
   const parameters: ProjectileParameters = {
     canvasWidth,
     canvasHeight,
@@ -159,7 +161,8 @@ export function parseProjectileParameters(value: unknown): ProjectileParameters 
     loopCycles: readInteger(value, 'loopCycles', 1, MAX_LOOP_CYCLES),
     pulseAmount: readNumber(value, 'pulseAmount', 0, 1),
     wobbleAmount: readNumber(value, 'wobbleAmount', 0, 1),
-    trailMode: readEnum(value, 'trailMode', ['off', 'fire', 'energy']),
+    trailMode,
+    trailEnabled: value.trailEnabled === undefined ? trailMode !== 'off' : readBoolean(value, 'trailEnabled'),
     trailLength: readNumber(value, 'trailLength', 0, 1),
     trailWidth: readInteger(value, 'trailWidth', 1, limits.maxRadius),
     trailWave: readNumber(value, 'trailWave', 0, 1),

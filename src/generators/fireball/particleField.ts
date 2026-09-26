@@ -2,6 +2,7 @@ import type { PixelFrame } from '../../shared/pixel/frame'
 import type { RgbColor } from '../../shared/pixel/color'
 import { builtinPalette } from '../../shared/palette/library'
 import { clamp01, hashUnit, smoothStep } from '../../shared/pixel/rng'
+import { sampleFireballPalette } from './palette'
 import { REFERENCE_VIEW, toReference, toTarget, type FireballView } from './view'
 
 /**
@@ -108,7 +109,7 @@ function resolve(field: Field, threshold: number, smoke: boolean, span = 0.9, pa
     const h = temp * interior ** 0.55
     let color: RgbColor
     if (smoke && temp < 0.22) {
-      color = smokeRamp[3 + Math.min(2, Math.floor((1 - interior) * 3))]
+      color = sampleFireballPalette(smokeRamp, 3 + Math.min(2, Math.floor((1 - interior) * 3)), 6)
     } else {
       color = fire[Math.min(fire.length - 1, Math.max(0, Math.floor((1 - h) * fire.length)))]
     }

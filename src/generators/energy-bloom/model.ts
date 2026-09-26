@@ -66,7 +66,12 @@ export interface BloomParameters {
 
 /** Applies a body-card choice while preserving palette, motion, surface, and effects. */
 export function selectBloomShape(parameters: BloomParameters, shape: BloomShape): BloomParameters {
-  return { ...parameters, body: { ...parameters.body, shape } }
+  const body = { ...parameters.body, shape }
+  const maxTongues = bloomShapeCount(body)
+  const tongues = parameters.tongues.count > maxTongues
+    ? { ...parameters.tongues, count: maxTongues }
+    : parameters.tongues
+  return { ...parameters, body, tongues }
 }
 
 /** Size-dependent limits re-exported for the shared effect controls. */

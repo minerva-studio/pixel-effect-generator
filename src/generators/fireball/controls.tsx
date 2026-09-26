@@ -28,7 +28,7 @@ const SHAPE_THUMBNAIL_BASE: FireballParameters = {
   seed: 1337,
   sparks: { ...DEFAULT_FIREBALL_PARAMETERS.sparks, sparksEnabled: false },
   puff: { ...DEFAULT_FIREBALL_PARAMETERS.puff, smoke: false },
-  classic: { ...DEFAULT_FIREBALL_PARAMETERS.classic, trailMode: 'off', sparksEnabled: false, afterimagesEnabled: false },
+  classic: { ...DEFAULT_FIREBALL_PARAMETERS.classic, trailEnabled: false, sparksEnabled: false, afterimagesEnabled: false },
 }
 
 const FORM_CARDS: readonly ShapeCardOption<FireballParameters>[] = (

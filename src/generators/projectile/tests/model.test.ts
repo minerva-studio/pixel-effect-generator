@@ -6,6 +6,7 @@ import {
   MAX_SPARK_COUNT,
   PROJECTILE_FRAME_SIZE,
   assertValidProjectileParameters,
+  setProjectileTrailEnabled,
   projectileFrameLimits,
   resizeProjectileCanvas,
   type ProjectileParameters,
@@ -29,6 +30,16 @@ describe('projectile model', () => {
     expect(projectileFrameLimits({ width: 64, height: 64 }).maxBodyLength).toBe(60)
     expect(projectileFrameLimits({ width: 32, height: 64 }).maxRadius).toBe(16)
     expect(projectileFrameLimits({ width: 16, height: 16 }).maxRadius).toBe(8)
+  })
+
+  it('preserves the selected trail type when disabling and re-enabling it', () => {
+    const selected = { ...DEFAULT_PROJECTILE_PARAMETERS, kind: 'arrow' as const, trailMode: 'fire' as const }
+    const disabled = setProjectileTrailEnabled(selected, false)
+    const enabled = setProjectileTrailEnabled(disabled, true)
+
+    expect(disabled).toMatchObject({ trailMode: 'fire', trailEnabled: false })
+    expect(enabled).toMatchObject({ trailMode: 'fire', trailEnabled: true })
+    expect(() => assertValidProjectileParameters(enabled)).not.toThrow()
   })
 
   it('rejects invalid enums, ranges, booleans, and palettes', () => {

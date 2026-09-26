@@ -3,6 +3,7 @@ import type { RgbColor } from '../../shared/pixel/color'
 import { builtinPalette } from '../../shared/palette/library'
 import { clamp01, hashUnit, smoothStep } from '../../shared/pixel/rng'
 import { REFERENCE_VIEW, targetBounds, toReference, type FireballView } from './view'
+import { sampleFireballPalette } from './palette'
 
 const TAU = Math.PI * 2
 
@@ -237,12 +238,13 @@ function plasmaBall(time: number, seed: number, tuning: FireballTuning, palette:
         if (d < nearest) { second = nearest; nearest = d } else if (d < second) second = d
       }
       const glow = 0.5 + 0.5 * Math.sin(phase + offset)
-      if ((second - nearest) * scale < 1.1) paint(s.frame, index, warm[glow > 0.5 ? 1 : 2])
-      else paint(s.frame, index, smoke[light > 0.45 ? 3 : light > 0 ? 4 : 5])
+      if ((second - nearest) * scale < 1.1) paint(s.frame, index, sampleFireballPalette(warm, glow > 0.5 ? 1 : 2, 5))
+      else paint(s.frame, index, sampleFireballPalette(smoke, light > 0.45 ? 3 : light > 0 ? 4 : 5, 6))
     } else if (solid[index]) {
-      paint(s.frame, index, warm[foreground[index] > 0.6 ? 1 : 2])
+      paint(s.frame, index, sampleFireballPalette(warm, foreground[index] > 0.6 ? 1 : 2, 5))
     } else if (trail === 'smoke' && tails[index] > 0.6) {
-      paint(s.frame, index, smoke[Math.min(5, 2 + Math.floor((1 - clamp01(heats[index] * 1.6)) * 4))])
+      const slot = Math.min(5, 2 + Math.floor((1 - clamp01(heats[index] * 1.6)) * 4))
+      paint(s.frame, index, sampleFireballPalette(smoke, slot, 6))
     } else paint(s.frame, index, warm[band(heats[index])])
   }
   return s.frame
@@ -337,8 +339,8 @@ function fireball(time: number, seed: number, tuning: FireballTuning, version: F
     if (trail === 'smoke' && downstream > 0.57) {
       const smokeHeat = clamp01(energy * 2 + fireballBandWarp * 0.38 * bandFlow
         * (0.4 + 0.6 * downstream))
-      const band = rim ? smoke.length - 1 : Math.min(5, 2 + Math.floor((1 - smokeHeat) * 4))
-      paint(s.frame, index, smoke[band])
+      const band = rim ? 5 : Math.min(5, 2 + Math.floor((1 - smokeHeat) * 4))
+      paint(s.frame, index, sampleFireballPalette(smoke, band, 6))
     } else {
       const band = rim ? outline : Math.min(warm.length - 1, Math.floor((1 - s.heat[index]) * warm.length))
       paint(s.frame, index, warm[band])

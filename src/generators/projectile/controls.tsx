@@ -22,6 +22,7 @@ import {
   projectileFrameLimits,
   selectProjectileShape,
   selectedProjectileShape,
+  setProjectileTrailEnabled,
   type ProjectileParameters,
   type ProjectileShape,
   type SparkSettings,
@@ -111,7 +112,7 @@ export function ProjectileControls({ category, parameters, onChange, allowedKind
     case 'trail':
       return (
         <div className="control-list">
-          <FeatureSection label={t('projectile.controls.trailMode.label')} description={t('projectile.controls.trailMode.description')} enabled={parameters.trailMode !== 'off'} status={t(parameters.trailMode === 'off' ? 'controls.feature.disabled' : 'controls.feature.enabled')} onChangeEnabled={(enabled) => update('trailMode', enabled ? (parameters.kind === 'fireball' ? 'fire' : 'energy') : 'off')}>
+          <FeatureSection label={t('projectile.controls.trailMode.label')} description={t('projectile.controls.trailMode.description')} enabled={parameters.trailEnabled && parameters.trailMode !== 'off'} status={t(parameters.trailEnabled && parameters.trailMode !== 'off' ? 'controls.feature.enabled' : 'controls.feature.disabled')} onChangeEnabled={(enabled) => onChange(setProjectileTrailEnabled(parameters, enabled))}>
             <SelectControl label={t('projectile.controls.trailMode.label')} description={t('projectile.controls.trailMode.description')} value={parameters.trailMode === 'off' ? (parameters.kind === 'fireball' ? 'fire' : 'energy') : parameters.trailMode} options={[
               { value: 'fire', label: t('projectile.options.trailFire') },
               { value: 'energy', label: t('projectile.options.trailEnergy') },
@@ -163,6 +164,7 @@ const BODY_THUMBNAIL_BASE: ProjectileParameters = {
   ...DEFAULT_PROJECTILE_PARAMETERS,
   seed: 1337,
   trailMode: 'off',
+  trailEnabled: false,
   sparksEnabled: false,
   afterimagesEnabled: false,
 }

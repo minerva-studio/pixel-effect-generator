@@ -44,6 +44,12 @@ describe('projectile project codec', () => {
     expect(parsed.bodyPalette.every((color) => color.a === 255)).toBe(true)
   })
 
+  it('migrates legacy off trails into a disabled, re-enableable trail setting', () => {
+    const json: Record<string, unknown> = { ...serializeProjectileParameters(DEFAULT_PROJECTILE_PARAMETERS) as Record<string, unknown>, trailMode: 'off' }
+    delete json.trailEnabled
+    expect(parseProjectileParameters(json)).toMatchObject({ trailMode: 'off', trailEnabled: false })
+  })
+
   it('fails when every required field is missing or invalid', () => {
     const json = serializeProjectileParameters(DEFAULT_PROJECTILE_PARAMETERS) as Record<string, unknown>
     const optionalLegacyFields = new Set([
@@ -52,6 +58,7 @@ describe('projectile project codec', () => {
       'energyCoreLength', 'energyShellWidth', 'energyTipSharpness',
       'crystalSpearTaper', 'crystalSpearThickness', 'crystalRefractionStrength', 'crystalGlintStrength', 'crystalGlintSpeed',
       'crystalCoreScale', 'crystalOrbitRadius', 'crystalOrbitSpeed',
+      'trailEnabled',
     ])
     for (const key of Object.keys(json).filter((key) => !optionalLegacyFields.has(key))) {
       const { [key]: _removed, ...rest } = json

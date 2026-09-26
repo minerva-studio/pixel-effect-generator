@@ -82,6 +82,12 @@ describe('projectile built-in presets', () => {
     expect(parseProjectilePresetPayload(legacy)).toMatchObject({ crystalForm: 'spear', crystalOrbitSpeed: 1 })
   })
 
+  it('migrates legacy off presets while retaining an explicit trail selection', () => {
+    const payload: Record<string, unknown> = { ...captureProjectilePreset(DEFAULT_PROJECTILE_PARAMETERS) as Record<string, unknown>, trailMode: 'off' }
+    delete payload.trailEnabled
+    expect(parseProjectilePresetPayload(payload)).toMatchObject({ trailMode: 'off', trailEnabled: false })
+  })
+
   it('capture/apply round-trips to pixel-identical frames', () => {
     const source = {
       ...DEFAULT_PROJECTILE_PARAMETERS,

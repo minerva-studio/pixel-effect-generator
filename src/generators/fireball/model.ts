@@ -13,7 +13,7 @@ export type FireballForm = 'classic' | 'stream' | 'wrapped' | 'puff'
 export type ClassicFireballTuning = Pick<ProjectileParameters,
   'bodyLength' | 'silhouetteVariation' | 'fireRearExtension' | 'fireRearTurbulence' |
   'fireFlowSpeed' | 'fireMottleAmount' | 'pulseAmount' | 'wobbleAmount' |
-  'trailMode' | 'trailLength' | 'trailWidth' | 'trailWave' | 'trailBreakup' |
+  'trailMode' | 'trailEnabled' | 'trailLength' | 'trailWidth' | 'trailWave' | 'trailBreakup' |
   'sparksEnabled' | 'sparkCount' | 'sparkSpread' | 'sparkSpacing' | 'sparkFade' |
   'afterimagesEnabled' | 'afterimageCount' | 'afterimageSpacing' | 'afterimageDecay'>
 
@@ -21,12 +21,12 @@ export type ClassicFireballTuning = Pick<ProjectileParameters,
 export function classicFireballTuning(projectile: ClassicFireballTuning): ClassicFireballTuning {
   const { bodyLength, silhouetteVariation, fireRearExtension, fireRearTurbulence,
     fireFlowSpeed, fireMottleAmount, pulseAmount, wobbleAmount,
-    trailMode, trailLength, trailWidth, trailWave, trailBreakup,
+    trailMode, trailEnabled, trailLength, trailWidth, trailWave, trailBreakup,
     sparksEnabled, sparkCount, sparkSpread, sparkSpacing, sparkFade,
     afterimagesEnabled, afterimageCount, afterimageSpacing, afterimageDecay } = projectile
   return { bodyLength, silhouetteVariation, fireRearExtension, fireRearTurbulence,
     fireFlowSpeed, fireMottleAmount, pulseAmount, wobbleAmount,
-    trailMode, trailLength, trailWidth, trailWave, trailBreakup,
+    trailMode, trailEnabled: trailEnabled ?? trailMode !== 'off', trailLength, trailWidth, trailWave, trailBreakup,
     sparksEnabled, sparkCount, sparkSpread, sparkSpacing, sparkFade,
     afterimagesEnabled, afterimageCount, afterimageSpacing, afterimageDecay }
 }

@@ -32,7 +32,7 @@ export function renderProjectileFrame(parameters: ProjectileParameters, cycleTim
   const rearX = -bodyLength / 2
 
   drawAfterimages(pixels, width, height, parameters, centerX, centerY, cosine, sine, wrappedTime, phase)
-  if (parameters.trailMode !== 'off' && parameters.trailLength > 0) {
+  if (parameters.trailEnabled && parameters.trailMode !== 'off' && parameters.trailLength > 0) {
     if (parameters.kind === 'fireball' && parameters.trailMode === 'fire') {
       drawFireballCometTrail(pixels, width, height, parameters, centerX, centerY, cosine, sine, wrappedTime, phase, bodyRadius, bodyLength)
     } else {
@@ -320,7 +320,7 @@ function drawSparks(
   cycleTime: number,
   phase: number,
 ): void {
-  const trailDistance = parameters.trailMode === 'off'
+  const trailDistance = !parameters.trailEnabled || parameters.trailMode === 'off'
     ? parameters.radius * (2 + parameters.sparkSpacing * 3)
     : Math.max(parameters.radius * 2, parameters.trailLength * parameters.radius * 5)
   for (const spark of sparkParticles(parameters, parameters.seed, parameters.loopCycles, parameters.radius, rearX, trailDistance, cycleTime, phase)) {

@@ -57,6 +57,7 @@ export interface ProjectileParameters {
   readonly pulseAmount: number
   readonly wobbleAmount: number
   readonly trailMode: TrailMode
+  readonly trailEnabled: boolean
   readonly trailLength: number
   readonly trailWidth: number
   readonly trailWave: number
@@ -203,6 +204,7 @@ export const DEFAULT_PROJECTILE_PARAMETERS: ProjectileParameters = {
   pulseAmount: 0.18,
   wobbleAmount: 0.08,
   trailMode: 'fire',
+  trailEnabled: true,
   trailLength: 0.72,
   trailWidth: 12,
   trailWave: 0.24,
@@ -222,6 +224,14 @@ export const DEFAULT_PROJECTILE_PARAMETERS: ProjectileParameters = {
 
 /** Trailing spark settings; the fireball's other forms borrow them from the classic body. */
 export type SparkSettings = Pick<ProjectileParameters, 'sparksEnabled' | 'sparkCount' | 'sparkSpread' | 'sparkSpacing' | 'sparkFade'>
+
+/** Changes trail visibility while retaining its selected material for later re-enabling. */
+export function setProjectileTrailEnabled(parameters: ProjectileParameters, enabled: boolean): ProjectileParameters {
+  const trailMode = enabled && parameters.trailMode === 'off'
+    ? parameters.kind === 'fireball' ? 'fire' : 'energy'
+    : parameters.trailMode
+  return { ...parameters, trailMode, trailEnabled: enabled }
+}
 
 export function assertValidSparkSettings(sparks: SparkSettings): void {
   if (typeof sparks.sparksEnabled !== 'boolean') throw new RangeError('sparksEnabled must be a boolean.')
@@ -275,6 +285,7 @@ export function assertValidProjectileParameters(parameters: ProjectileParameters
   if (parameters.trailMode !== 'off' && parameters.trailMode !== 'fire' && parameters.trailMode !== 'energy') {
     throw new RangeError('trailMode is invalid.')
   }
+  if (typeof parameters.trailEnabled !== 'boolean') throw new RangeError('trailEnabled must be a boolean.')
   assertInRange(parameters.trailLength, 0, 1, 'trailLength')
   assertInRange(parameters.trailWidth, 1, parameters.radius, 'trailWidth')
   assertInRange(parameters.trailWave, 0, 1, 'trailWave')

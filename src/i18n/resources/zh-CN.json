@@ -807,7 +807,7 @@
         "label": "随机种子",
         "description": "用于精确复现同一效果的无符号 32 位数值。"
       },
-      "fieldMotionNote": "场形在此调整爆发或内聚模式；其成形与停留时间由场模拟固定。"
+      "fieldMotionNote": "场形的爆发或内聚模式请在形状页设置；其成形与停留时间由场模拟固定。"
     },
     "options": {
       "billowBurst": "翻卷火团",

@@ -21,6 +21,18 @@ describe('energy bloom parameter model', () => {
     expect(selected.fragments).toBe(base.fragments)
   })
 
+  it('clamps shape-dependent tongue counts when selecting another shape', () => {
+    const base = {
+      ...DEFAULT_BLOOM_PARAMETERS,
+      body: { ...DEFAULT_BLOOM_PARAMETERS.body, shape: 'sharpStarburst' as const, rayCount: 16 },
+      tongues: { ...DEFAULT_BLOOM_PARAMETERS.tongues, count: 16 },
+    }
+    const selected = selectBloomShape(base, 'softPetals')
+
+    expect(selected.tongues.count).toBe(7)
+    expect(() => assertValidBloomParameters(selected)).not.toThrow()
+  })
+
   it('defaults to soft petals with tongues disabled', () => {
     expect(DEFAULT_BLOOM_PARAMETERS.body.shape).toBe('softPetals')
     expect(DEFAULT_BLOOM_PARAMETERS.tongues.enabled).toBe(false)

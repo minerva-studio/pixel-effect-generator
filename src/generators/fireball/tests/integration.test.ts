@@ -59,6 +59,21 @@ describe('standalone fireball', () => {
     expect(renderFireballFrame({ ...parameters, loopCycles: 2 }, 1 / 4)).toEqual(renderFireballFrame(parameters, 1 / 2))
   })
 
+  it('renders every form with two-color warm and smoke palettes', () => {
+    const parameters = {
+      ...DEFAULT_FIREBALL_PARAMETERS,
+      warmPalette: DEFAULT_FIREBALL_PARAMETERS.warmPalette.slice(0, 2),
+      smokePalette: DEFAULT_FIREBALL_PARAMETERS.smokePalette.slice(0, 2),
+      stream: { ...DEFAULT_FIREBALL_PARAMETERS.stream, fireballTrail: 'smoke' as const },
+      wrapped: { ...DEFAULT_FIREBALL_PARAMETERS.wrapped, fireballTrail: 'smoke' as const },
+      puff: { ...DEFAULT_FIREBALL_PARAMETERS.puff, smoke: true },
+    }
+
+    for (const form of ['stream', 'wrapped', 'puff', 'classic'] as const) {
+      expect(() => renderFireballFrame({ ...parameters, form }, 0.4)).not.toThrow()
+    }
+  })
+
   it('round-trips all form settings in its own project codec', () => {
     const parameters = { ...DEFAULT_FIREBALL_PARAMETERS, wrapped: { ...DEFAULT_FIREBALL_PARAMETERS.wrapped, fireballBall: 'molten' as const } }
     const serialized = serializeProjectDocument(fireballProjectCodec, parameters, 20, { pixelsPerUnit: 16, guid: null })
@@ -69,6 +84,13 @@ describe('standalone fireball', () => {
       expect(reopened.project.project.parameters).toEqual(parameters)
       expect(reopened.project.fps).toBe(20)
     }
+  })
+
+  it('migrates classic trail visibility when opening older documents', () => {
+    const serialized = JSON.parse(JSON.stringify(DEFAULT_FIREBALL_PARAMETERS)) as Record<string, unknown> & { classic: Record<string, unknown> }
+    delete serialized.classic.trailEnabled
+    const parsed = fireballProjectCodec.parse(serialized) as typeof DEFAULT_FIREBALL_PARAMETERS
+    expect(parsed.classic.trailEnabled).toBe(parsed.classic.trailMode !== 'off')
   })
 
   it('keeps the wrapped silhouette inside resized and rotated canvases', () => {

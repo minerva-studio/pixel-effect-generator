@@ -80,6 +80,7 @@ export function parseProjectilePresetPayload(value: unknown): ProjectilePresetFi
       throw new RangeError(`Missing preset field: ${key}`)
     }
   }
+  const trailMode = readEnum(value, 'trailMode', ['off', 'fire', 'energy'])
   return {
     seed: readInteger(value, 'seed', 0, 0xffffffff),
     kind: readEnum(value, 'kind', ['fireball', 'arrow', 'crystal']),
@@ -110,7 +111,8 @@ export function parseProjectilePresetPayload(value: unknown): ProjectilePresetFi
     loopCycles: readInteger(value, 'loopCycles', 1, MAX_LOOP_CYCLES),
     pulseAmount: readNumber(value, 'pulseAmount', 0, 1),
     wobbleAmount: readNumber(value, 'wobbleAmount', 0, 1),
-    trailMode: readEnum(value, 'trailMode', ['off', 'fire', 'energy']),
+    trailMode,
+    trailEnabled: value.trailEnabled === undefined ? trailMode !== 'off' : readBoolean(value, 'trailEnabled'),
     trailLength: readNumber(value, 'trailLength', 0, 1),
     trailWidth: readInteger(value, 'trailWidth', 1, MAX_PRESET_TRAIL_WIDTH),
     trailWave: readNumber(value, 'trailWave', 0, 1),
