@@ -275,6 +275,26 @@
     gap: 14px;
 }
 
+.document-type-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0 8px;
+}
+
+.document-type-divider::before,
+.document-type-divider::after {
+    flex: 1;
+    content: '';
+    border-top: 1px solid var(--border);
+}
+
+.document-type-hint {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: .75rem;
+}
+
 .document-type-card {
     display: flex;
     flex-direction: column;

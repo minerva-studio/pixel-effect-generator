@@ -28,6 +28,7 @@ export const bloomModule = defineGenerator({
     index: 7,
     name: 'Energy Bloom',
     description: 'Petal, star, and corolla energy effects with vivid convergence.',
+    stage: 'experimental',
   },
   categories: BLOOM_CATEGORIES,
   paletteSlots: [{ id: 'energyBloom', labelKey: 'controls.palette.colors', guideKeys: ['energyBloom.palette.hotCore', 'energyBloom.palette.outerEdge'], minimum: 2, maximum: 6, read: (p) => p.palette, write: (p, palette) => ({ ...p, palette }) }],

@@ -61,6 +61,22 @@ export function NewDocumentDialog({ open, busy, onClose, onCreate }: {
     if (open) dialog.current?.showModal()
     else dialog.current?.close()
   }, [open])
+  const registrations = open ? GENERATOR_REGISTRY.registrations : []
+  const stable = registrations.filter((generator) => generator.stage === 'stable')
+  const experimental = registrations.filter((generator) => generator.stage === 'experimental')
+  const renderGeneratorCard = (generator: RegisteredGenerator<string>) => {
+    const keys = generatorDisplayKeys(generator.id)!
+    return <button type="button" className="document-type-card" key={generator.id} disabled={busy || pending}
+      onClick={async () => {
+        setPending(true)
+        try { if (await onCreate(generator.id)) onClose() }
+        finally { setPending(false) }
+      }}>
+      <GeneratorThumbnail generator={generator} />
+      <strong>{t(keys.name)}</strong><span>{t(keys.description)}</span>
+      <small>{t('workbench.create')} <span aria-hidden="true">↗</span></small>
+    </button>
+  }
   return <dialog ref={dialog} className="new-document-dialog" aria-labelledby="new-document-title"
     onCancel={(event) => { event.preventDefault(); if (!pending) onClose() }}
     onClick={(event) => { if (event.target === event.currentTarget && !pending) onClose() }}>
@@ -68,21 +84,12 @@ export function NewDocumentDialog({ open, busy, onClose, onCreate }: {
       <div><p className="section-label">PIXEL EFFECT GENERATOR</p><h2 id="new-document-title">{t('workbench.newTitle')}</h2><p>{t('workbench.newDescription')}</p></div>
       <button type="button" className="icon-button" disabled={pending} aria-label={t('workbench.close')} onClick={onClose}>×</button>
     </header>
-    <div className="document-type-grid">
-      {open && GENERATOR_REGISTRY.registrations.map((generator) => {
-        const keys = generatorDisplayKeys(generator.id)!
-        return <button type="button" className="document-type-card" key={generator.id} disabled={busy || pending}
-          onClick={async () => {
-            setPending(true)
-            try { if (await onCreate(generator.id)) onClose() }
-            finally { setPending(false) }
-          }}>
-          <GeneratorThumbnail generator={generator} />
-          <strong>{t(keys.name)}</strong><span>{t(keys.description)}</span>
-          <small>{t('workbench.create')} <span aria-hidden="true">↗</span></small>
-        </button>
-      })}
-    </div>
+    <div className="document-type-grid">{stable.map(renderGeneratorCard)}</div>
+    {experimental.length > 0 && <>
+      <div className="document-type-divider" role="separator" aria-label={t('workbench.experimentalGroup')}><span className="section-label">{t('workbench.experimentalGroup')}</span></div>
+      <p className="document-type-hint">{t('workbench.experimentalHint')}</p>
+      <div className="document-type-grid">{experimental.map(renderGeneratorCard)}</div>
+    </>}
   </dialog>
 }
 

@@ -26,6 +26,8 @@ export interface GeneratorDefinition<Id extends string> {
   readonly index: number
   readonly name: string
   readonly description: string
+  /** Omitted stage defaults to stable when the module is registered. */
+  readonly stage?: 'stable' | 'experimental'
 }
 
 /** One parameter category shown as a tab inside a generator's controls panel. */
@@ -163,6 +165,7 @@ export interface RegisteredGenerator<Id extends string> {
   readonly index: number
   readonly name: string
   readonly description: string
+  readonly stage: 'stable' | 'experimental'
   readonly previewTitle: string
   readonly defaultPreviewFps: number
   /** Opaque project codec; undefined for generators without project support. */

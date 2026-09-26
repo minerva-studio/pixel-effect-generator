@@ -21,6 +21,15 @@ import { packHorizontalSheet } from '../../shared/pixel/spritesheet'
 const dualRegistry = createGeneratorRegistry([blipGenerator, GENERATOR_REGISTRY.get('slash')] as const)
 
 describe('generator registry', () => {
+  it('exposes stable and experimental stages in registrations and definitions', () => {
+    const expected = {
+      slash: 'stable', explosion: 'stable', fireball: 'stable', flame: 'stable',
+      arrow: 'experimental', crystal: 'experimental', energyBloom: 'experimental',
+    }
+    expect(Object.fromEntries(GENERATOR_REGISTRY.registrations.map(({ id, stage }) => [id, stage]))).toEqual(expected)
+    expect(Object.fromEntries(GENERATOR_REGISTRY.definitions.map(({ id, stage }) => [id, stage]))).toEqual(expected)
+  })
+
   it('registers the slash project codec on its module', () => {
     expect(slashModule.projectCodec).toBe(slashProjectCodec)
   })

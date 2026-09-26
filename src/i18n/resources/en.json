@@ -5,6 +5,8 @@
     "noProjectSave": "This effect supports image and animation export, but not project files yet.",
     "newTitle": "Create a new effect",
     "newDescription": "Choose a document type. Each effect has its own editor and parameters.",
+    "experimentalGroup": "Experimental",
+    "experimentalHint": "Still being refined; parameters and results may change.",
     "new": "New",
     "create": "Create effect",
     "close": "Close",

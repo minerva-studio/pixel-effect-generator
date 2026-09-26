@@ -47,7 +47,7 @@ export function createSplitProjectileGenerator<Id extends 'arrow' | 'crystal'>(
     },
   }
   const module = defineGenerator({
-    definition: { id, index, name, description },
+    definition: { id, index, name, description, stage: 'experimental' },
     categories: PROJECTILE_CATEGORIES,
     paletteSlots: [
       { id: 'body', labelKey: 'projectile.palette.bodyTitle', minimum: MIN_BODY_PALETTE_SIZE, maximum: MAX_BODY_PALETTE_SIZE, read: (p: ProjectileParameters) => p.bodyPalette, write: (p: ProjectileParameters, bodyPalette) => ({ ...p, bodyPalette }) },
