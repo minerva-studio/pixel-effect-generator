@@ -13,10 +13,11 @@ interface PaletteLibraryPickerProps {
   readonly minimum: number
   readonly maximum: number
   readonly opaque?: boolean
+  readonly inline?: boolean
 }
 
 /** Shared, locally persisted color library for every generator palette slot. */
-export function PaletteLibraryPicker({ palette, onChange, minimum, maximum, opaque = false }: PaletteLibraryPickerProps) {
+export function PaletteLibraryPicker({ palette, onChange, minimum, maximum, opaque = false, inline = false }: PaletteLibraryPickerProps) {
   const { t } = useI18n()
   const [custom, setCustom] = useState<StoredPalette[]>([])
   const [warning, setWarning] = useState(false)
@@ -83,10 +84,7 @@ export function PaletteLibraryPicker({ palette, onChange, minimum, maximum, opaq
   const builtins = (Object.keys(PALETTE_COLORS) as BuiltinPaletteId[]).filter((id) => compatible(PALETTE_COLORS[id]))
   const saved = custom.filter((entry) => compatible(entry.colors))
 
-  return (
-    <details className="palette-library" onToggle={(event) => { if (event.currentTarget.open) refresh() }}>
-      <summary>{t('paletteLibrary.title')}</summary>
-      <div className="palette-library-content">
+  const content = <div className="palette-library-content">
         <p className="panel-note">{t('paletteLibrary.applyHint')}</p>
         <div className="palette-library-group">
           <span className="palette-library-heading">{t('paletteLibrary.builtIn')}</span>
@@ -127,8 +125,9 @@ export function PaletteLibraryPicker({ palette, onChange, minimum, maximum, opaq
         {warning && <p className="panel-note" role="status">{t('paletteLibrary.warning')}</p>}
         {error && <p className="palette-library-error" role="alert">{error}</p>}
       </div>
-    </details>
-  )
+  return inline
+    ? <div className="palette-library inline">{content}</div>
+    : <details className="palette-library" onToggle={(event) => { if (event.currentTarget.open) refresh() }}><summary>{t('paletteLibrary.title')}</summary>{content}</details>
 }
 
 function PaletteSwatches({ colors }: { readonly colors: readonly RgbColor[] }) {

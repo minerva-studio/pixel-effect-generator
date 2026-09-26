@@ -307,6 +307,7 @@
     "value": "{label} value",
     "colorDock": "Generator colors",
     "editColors": "Edit",
+    "paletteLibraryToggle": "Palette library ▾",
     "lockColors": "Lock colors",
     "lockColorsHint": "Lock colors: keep current colors when applying a preset",
     "palette": {
@@ -315,7 +316,12 @@
       "bandLabel": "Color band {index}",
       "add": "Add color band",
       "remove": "Remove",
-      "removeBand": "Remove color band {index}"
+      "removeBand": "Remove color band {index}",
+      "hex": "HEX",
+      "moveEarlier": "Move color earlier",
+      "moveLater": "Move color later",
+      "targetSlot": "Apply colors to",
+      "targetSlotHint": "Choose which color group receives the selected palette"
     },
     "feature": {
       "enabled": "On",

@@ -307,6 +307,7 @@
     "value": "{label} 数值",
     "colorDock": "生成器颜色",
     "editColors": "编辑",
+    "paletteLibraryToggle": "色库 ▾",
     "lockColors": "锁定颜色",
     "lockColorsHint": "锁定颜色：应用预设时保持当前颜色",
     "palette": {
@@ -315,7 +316,12 @@
       "bandLabel": "色带 {index}",
       "add": "添加色带",
       "remove": "移除",
-      "removeBand": "移除第 {index} 个色带"
+      "removeBand": "移除第 {index} 个色带",
+      "hex": "HEX",
+      "moveEarlier": "向前移动颜色",
+      "moveLater": "向后移动颜色",
+      "targetSlot": "应用到颜色组",
+      "targetSlotHint": "选择应用所选调色板的颜色组"
     },
     "feature": {
       "enabled": "开启",

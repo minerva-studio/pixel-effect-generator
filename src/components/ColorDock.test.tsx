@@ -1,42 +1,75 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ColorDock, ColorDockView } from './ColorDock'
+import type { PaletteSlot } from '../generators/contract'
 import { I18nProvider } from '../i18n/I18nProvider'
-import '../generators/registry'
-import { slashModule } from '../generators/slash/module'
-import { projectileModule } from '../generators/projectile/module'
+import type { RgbColor } from '../shared/pixel/color'
+import { ColorDockView } from './ColorDock'
 
-afterEach(() => vi.unstubAllGlobals())
+const colors: readonly RgbColor[] = [
+  { r: 10, g: 20, b: 30, a: 255 },
+  { r: 80, g: 90, b: 100, a: 160 },
+]
 
-describe('ColorDock', () => {
-  it('shows one compact row for a single-slot generator', () => {
-    vi.stubGlobal('navigator', { language: 'en-US' })
-    const markup = renderToStaticMarkup(<I18nProvider><ColorDock slots={slashModule.paletteSlots} parameters={slashModule.defaultParameters} onParameters={() => undefined} locked={false} onLockedChange={() => undefined} /></I18nProvider>)
-    expect(markup.match(/class="color-dock-row"/g)).toHaveLength(1)
-    expect(markup.match(/class="color-dock-swatch"/g)).toHaveLength(slashModule.paletteSlots[0].read(slashModule.defaultParameters).length)
-    expect(markup).toContain('aria-label="Generator colors"')
+function makeSlot(id: string, max = 4): PaletteSlot<{ palettes: Record<string, readonly RgbColor[]> }> {
+  return {
+    id,
+    labelKey: 'controls.colorDock',
+    minimum: 2,
+    maximum: max,
+    read: (parameters) => parameters.palettes[id],
+    write: (parameters, palette) => ({ ...parameters, palettes: { ...parameters.palettes, [id]: palette } }),
+  }
+}
+
+function markup(slotCount = 1, max = 4, activeColor: { slotId: string; index: number } | null = null) {
+  const slots = Array.from({ length: slotCount }, (_, index) => makeSlot(`slot-${index}`, max))
+  const parameters = { palettes: Object.fromEntries(slots.map((slot) => [slot.id, colors])) }
+  return renderToStaticMarkup(<I18nProvider><ColorDockView
+    slots={slots}
+    parameters={parameters}
+    activeColor={activeColor}
+    onActiveColor={() => undefined}
+    libraryOpen={false}
+    onLibraryOpenChange={() => undefined}
+    librarySlotId={slots[0].id}
+    onLibrarySlotChange={() => undefined}
+    onParameters={() => undefined}
+    updateSlot={() => undefined}
+    locked={false}
+    onLockedChange={() => undefined}
+  /></I18nProvider>)
+}
+
+describe('ColorDockView', () => {
+  beforeEach(() => vi.stubGlobal('navigator', { language: 'en-US' }))
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('renders each palette slot and all its swatches', () => {
+    const html = markup(2)
+    expect(html.match(/class="color-dock-row"/g)).toHaveLength(2)
+    expect(html.match(/class="color-dock-swatch(?: active)?"/g)).toHaveLength(4)
   })
 
-  it('shows two compact rows for a multi-slot generator', () => {
-    vi.stubGlobal('navigator', { language: 'en-US' })
-    const markup = renderToStaticMarkup(<I18nProvider><ColorDock slots={projectileModule.paletteSlots} parameters={projectileModule.defaultParameters} onParameters={() => undefined} locked={false} onLockedChange={() => undefined} /></I18nProvider>)
-    expect(markup.match(/class="color-dock-row"/g)).toHaveLength(2)
-    expect(markup.match(/class="color-dock-swatch"/g)).toHaveLength(projectileModule.paletteSlots.reduce((count, slot) => count + slot.read(projectileModule.defaultParameters).length, 0))
+  it('disables adding colors when a slot reaches its maximum', () => {
+    const html = markup(1, 2)
+    expect(html).toMatch(/class="color-dock-add"[^>]*disabled=""/)
   })
 
-  it('renders one full palette editor per slot when expanded', () => {
-    vi.stubGlobal('navigator', { language: 'en-US' })
-    const markup = renderToStaticMarkup(<I18nProvider><ColorDockView slots={projectileModule.paletteSlots} parameters={projectileModule.defaultParameters} onParameters={() => undefined} expanded activeColor={null} onActiveColor={() => undefined} onToggleExpanded={() => undefined} locked={false} onLockedChange={() => undefined} /></I18nProvider>)
-    expect(markup).toContain('class="color-dock expanded"')
-    expect(markup.match(/class="palette-editor"/g)).toHaveLength(2)
-    expect(markup.match(/class="color-dock-row"/g)).toHaveLength(2)
+  it('disables moving past either boundary and removing at the minimum', () => {
+    const html = markup(1, 4, { slotId: 'slot-0', index: 0 })
+    expect(html).toMatch(/aria-label="Move color earlier" disabled=""/)
+    expect(html).not.toMatch(/aria-label="Move color later" disabled=""/)
+    expect(html).toMatch(/aria-label="Remove" disabled=""/)
   })
 
-  it('exposes the color lock as a pressed state', () => {
-    vi.stubGlobal('navigator', { language: 'en-US' })
-    const markup = renderToStaticMarkup(<I18nProvider><ColorDockView slots={slashModule.paletteSlots} parameters={slashModule.defaultParameters} onParameters={() => undefined} expanded={false} activeColor={null} onActiveColor={() => undefined} onToggleExpanded={() => undefined} locked onLockedChange={() => undefined} /></I18nProvider>)
-    expect(markup).toContain('aria-pressed="true"')
-    expect(markup).toContain('Lock colors: keep current colors when applying a preset')
-    expect(markup).toContain('color-dock locked')
+  it('disables moving right from the final swatch', () => {
+    const html = markup(1, 4, { slotId: 'slot-0', index: 1 })
+    expect(html).not.toMatch(/aria-label="Move color earlier" disabled=""/)
+    expect(html).toMatch(/aria-label="Move color later" disabled=""/)
+  })
+
+  it('exposes the color lock through aria-pressed', () => {
+    const html = markup()
+    expect(html).toMatch(/class="color-dock-lock" type="button" aria-pressed="false" aria-label="Lock colors"/)
   })
 })

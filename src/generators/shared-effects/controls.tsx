@@ -1,10 +1,8 @@
 import { memo, useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { drawFrame } from '../../components/export'
 import { PercentControl, NumberControl, SelectControl  } from '../../components/controls'
-import { PaletteEditor } from '../../components/PaletteEditor'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
-import type { RgbColor } from '../../shared/pixel/color'
 import type { PixelFrame } from '../../shared/pixel/frame'
 import {
   MAX_FRAGMENT_SIZE,
@@ -27,7 +25,6 @@ export interface DissolvePatch {
   readonly dissolveDensity: number
   readonly dissolveSpeed: number
 }
-
 /** Family-bound translation helper used by shared effect sections. */
 export type FamilyTranslate = (suffix: string, params?: Readonly<Record<string, string | number>>) => string
 
@@ -381,18 +378,4 @@ export function ShapeCardGrid<Parameters>({
       ))}
     </div>
   )
-}
-
-/** Adapts family-specific palette guidance to the common palette editor. */
-export function FamilyPaletteEditor({ family, t, palette, onChange, minimumColors = 2, opaque = false }: {
-  readonly family: string
-  readonly t: FamilyTranslate
-  readonly palette: readonly RgbColor[]
-  readonly onChange: (palette: readonly RgbColor[]) => void
-  readonly minimumColors?: number
-  readonly opaque?: boolean
-}) {
-  return <PaletteEditor palette={palette} onChange={onChange} minimum={minimumColors} maximum={6} opaque={opaque}
-    guide={[t(`${family}.palette.hotCore`), t(`${family}.palette.outerEdge`)]}
-    bandLabel={(index) => t(`${family}.palette.band`, { index: index + 1 })} />
 }

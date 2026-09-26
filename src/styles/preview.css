@@ -742,7 +742,3 @@
 .preview-panel .color-dock {
   padding: 2px 0;
 }
-
-.preview-panel .color-dock-editors {
-  max-height: min(280px, 32vh);
-}
