@@ -271,7 +271,7 @@ function ControlsPanel<Parameters, Category extends string>({
           <h2>{generatorName}</h2>
         </div>
         <div className="controls-heading-actions">
-          <button className="text-button" type="button" onClick={onReset}>{t('workspace.reset')}</button>
+          <button className="panel-action" type="button" onClick={onReset}>{t('workspace.reset')}</button>
         </div>
       </div>
 

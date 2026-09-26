@@ -249,11 +249,12 @@ export function PresetStrip({
         <button className="text-button" type="button" onClick={onSaveAsCancel}>{t('presets.cancel')}</button>
       </div> : <div className="preset-save-card" role="listitem">
         <button type="button" disabled={storageUnavailable} title={storageUnavailable ? t('presets.storageHint') : undefined} onClick={onSaveAsOpen}>
-          <span aria-hidden="true">＋</span> {t('presets.saveCurrent')}
+          <span className="preset-save-icon" aria-hidden="true">＋</span>
+          <span className="preset-card-label">{t('presets.saveCurrent')}</span>
         </button>
       </div>}
     </div>
-    <button className="text-button preset-view-all" type="button" onClick={onPickerOpen}>{t('presets.allPresets')}</button>
+    <button className="panel-action preset-view-all" type="button" onClick={onPickerOpen}>{t('presets.allPresets')}</button>
   </div>
 }
 
