@@ -122,10 +122,9 @@ describe('GeneratorWorkspace integration', () => {
     expect(markup).toContain('画布与随机种子')
   })
 
-  it('keeps the color dock in the preview controls and shortens the parameter heading', () => {
+  it('keeps the color dock in the preview controls and labels the generator above its name', () => {
     const markup = workspaceMarkup('slash')
-    expect(markup).toContain('<h2>Slash</h2>')
-    expect(markup).not.toContain('GENERATOR 01')
+    expect(markup).toContain('<p class="section-label">GENERATOR 01</p><h2>Slash</h2>')
     expect(markup).not.toContain('Slash parameters')
     expect(markup.indexOf('class="preview-settings"')).toBeLessThan(markup.indexOf('class="color-dock'))
     expect(markup.indexOf('class="color-dock')).toBeLessThan(markup.indexOf('class="canvas-settings"'))

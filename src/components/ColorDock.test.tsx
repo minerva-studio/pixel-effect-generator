@@ -21,7 +21,7 @@ function makeSlot(id: string, max = 4): PaletteSlot<{ palettes: Record<string, r
   }
 }
 
-function markup(slotCount = 1, max = 4, activeColor: { slotId: string; index: number } | null = null) {
+function markup(slotCount = 1, max = 4, activeColor: { slotId: string; index: number } | null = null, librarySlotId: string | null = null) {
   const slots = Array.from({ length: slotCount }, (_, index) => makeSlot(`slot-${index}`, max))
   const parameters = { palettes: Object.fromEntries(slots.map((slot) => [slot.id, colors])) }
   return renderToStaticMarkup(<I18nProvider><ColorDockView
@@ -29,9 +29,7 @@ function markup(slotCount = 1, max = 4, activeColor: { slotId: string; index: nu
     parameters={parameters}
     activeColor={activeColor}
     onActiveColor={() => undefined}
-    libraryOpen={false}
-    onLibraryOpenChange={() => undefined}
-    librarySlotId={slots[0].id}
+    librarySlotId={librarySlotId}
     onLibrarySlotChange={() => undefined}
     onParameters={() => undefined}
     updateSlot={() => undefined}
@@ -66,6 +64,17 @@ describe('ColorDockView', () => {
     const html = markup(1, 4, { slotId: 'slot-0', index: 1 })
     expect(html).not.toMatch(/aria-label="Move color earlier" disabled=""/)
     expect(html).toMatch(/aria-label="Move color later" disabled=""/)
+  })
+
+  it('gives every slot its own palette menu button and opens only that menu', () => {
+    const closed = markup(2)
+    expect(closed.match(/class="panel-action color-dock-library"/g)).toHaveLength(2)
+    expect(closed).not.toContain('class="palette-menu"')
+    const open = markup(2, 4, null, 'slot-1')
+    expect(open.match(/class="palette-menu"/g)).toHaveLength(1)
+    expect(open.match(/aria-expanded="true"/g)).toHaveLength(1)
+    expect(open).toContain('Save current as…')
+    expect(open).not.toContain('Apply colors to')
   })
 
   it('exposes the color lock through aria-pressed', () => {

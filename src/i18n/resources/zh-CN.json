@@ -204,6 +204,7 @@
     "dismiss": "关闭通知"
   },
   "workspace": {
+    "generatorLabel": "生成器 {index}",
     "navLabel": "特效生成器",
     "generatorsLabel": "生成器",
     "categoryTabsLabel": "{name} 参数分类",
@@ -279,8 +280,8 @@
     "custom": "我的色卡",
     "noCustom": "暂无适用的自存色卡。",
     "name": "色卡名称",
-    "save": "保存当前颜色",
-    "update": "更新颜色",
+    "saveAs": "将当前配色存为…",
+    "overwrite": "用当前颜色覆盖",
     "rename": "重命名",
     "delete": "删除",
     "confirmDelete": "确认删除",
@@ -307,7 +308,7 @@
     "value": "{label} 数值",
     "colorDock": "生成器颜色",
     "editColors": "编辑",
-    "paletteLibraryToggle": "色库 ▾",
+    "paletteLibraryToggle": "色库",
     "lockColors": "锁定颜色",
     "lockColorsHint": "锁定颜色：应用预设时保持当前颜色",
     "palette": {
@@ -319,9 +320,7 @@
       "removeBand": "移除第 {index} 个色带",
       "hex": "HEX",
       "moveEarlier": "向前移动颜色",
-      "moveLater": "向后移动颜色",
-      "targetSlot": "应用到颜色组",
-      "targetSlotHint": "选择应用所选调色板的颜色组"
+      "moveLater": "向后移动颜色"
     },
     "feature": {
       "enabled": "开启",

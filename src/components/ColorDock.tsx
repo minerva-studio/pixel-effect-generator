@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { PaletteSlot } from '../generators/contract'
 import { useI18n } from '../i18n/I18nProvider'
 import { rgbaToHex, type RgbColor } from '../shared/pixel/color'
-import { PaletteLibraryPicker } from './PaletteLibraryPicker'
-import { SegmentedControl } from './controls'
+import { PaletteMenu } from './PaletteMenu'
 import { insertColor, moveColor, removeColor, setColorAlpha, setColorHex } from './paletteOps'
 
 interface ActiveColor { readonly slotId: string; readonly index: number }
@@ -18,20 +17,19 @@ export function ColorDock<Parameters>({ slots, parameters, onParameters, locked,
 }) {
   const rootRef = useRef<HTMLElement>(null)
   const [activeColor, setActiveColor] = useState<ActiveColor | null>(null)
-  const [libraryOpen, setLibraryOpen] = useState(false)
-  const [librarySlotId, setLibrarySlotId] = useState(slots[0]?.id ?? '')
+  const [librarySlotId, setLibrarySlotId] = useState<string | null>(null)
 
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
         setActiveColor(null)
-        setLibraryOpen(false)
+        setLibrarySlotId(null)
       }
     }
     const closeEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setActiveColor(null)
-        setLibraryOpen(false)
+        setLibrarySlotId(null)
       }
     }
     document.addEventListener('pointerdown', closeOutside)
@@ -49,8 +47,6 @@ export function ColorDock<Parameters>({ slots, parameters, onParameters, locked,
     parameters={parameters}
     activeColor={activeColor}
     onActiveColor={setActiveColor}
-    libraryOpen={libraryOpen}
-    onLibraryOpenChange={setLibraryOpen}
     librarySlotId={librarySlotId}
     onLibrarySlotChange={setLibrarySlotId}
     onParameters={onParameters}
@@ -61,16 +57,15 @@ export function ColorDock<Parameters>({ slots, parameters, onParameters, locked,
 }
 
 /** @internal Presentational dock view so swatch boundaries stay directly testable. */
-export function ColorDockView<Parameters>({ rootRef, slots, parameters, activeColor, onActiveColor, libraryOpen, onLibraryOpenChange, librarySlotId, onLibrarySlotChange, onParameters, updateSlot, locked, onLockedChange }: {
+export function ColorDockView<Parameters>({ rootRef, slots, parameters, activeColor, onActiveColor, librarySlotId, onLibrarySlotChange, onParameters, updateSlot, locked, onLockedChange }: {
   readonly rootRef?: React.RefObject<HTMLElement | null>
   readonly slots: readonly PaletteSlot<Parameters>[]
   readonly parameters: Parameters
   readonly activeColor: ActiveColor | null
   readonly onActiveColor: (active: ActiveColor | null) => void
-  readonly libraryOpen: boolean
-  readonly onLibraryOpenChange: (open: boolean) => void
-  readonly librarySlotId: string
-  readonly onLibrarySlotChange: (slotId: string) => void
+  /** Slot whose palette menu is open, or null when every menu is closed. */
+  readonly librarySlotId: string | null
+  readonly onLibrarySlotChange: (slotId: string | null) => void
   readonly onParameters: (parameters: Parameters) => void
   readonly updateSlot: (slot: PaletteSlot<Parameters>, colors: readonly RgbColor[]) => void
   readonly locked: boolean
@@ -78,7 +73,6 @@ export function ColorDockView<Parameters>({ rootRef, slots, parameters, activeCo
 }) {
   const { t } = useI18n()
   const className = ['color-dock', locked && 'locked'].filter(Boolean).join(' ')
-  const selectedLibrarySlot = slots.find((slot) => slot.id === librarySlotId) ?? slots[0]
   return <section ref={rootRef} className={className} aria-label={t('controls.colorDock')}>
     <div className="color-dock-header">
       <div className="color-dock-rows">{slots.map((slot) => {
@@ -89,7 +83,7 @@ export function ColorDockView<Parameters>({ rootRef, slots, parameters, activeCo
         return <div className="color-dock-row" key={slot.id}>
           <span className="color-dock-label" title={label}>{label}</span>
           <div className="color-dock-swatches" title={guide}>
-            {colors.map((color, index) => <button key={index} className={activeColor?.slotId === slot.id && activeColor.index === index ? 'color-dock-swatch active' : 'color-dock-swatch'} type="button" aria-label={`${label} ${index + 1}`} aria-pressed={activeColor?.slotId === slot.id && activeColor.index === index} style={{ backgroundColor: `rgba(${color.r},${color.g},${color.b},${color.a / 255})` }} onClick={() => onActiveColor(activeColor?.slotId === slot.id && activeColor.index === index ? null : { slotId: slot.id, index })} />)}
+            {colors.map((color, index) => <button key={index} className={activeColor?.slotId === slot.id && activeColor.index === index ? 'color-dock-swatch active' : 'color-dock-swatch'} type="button" aria-label={`${label} ${index + 1}`} aria-pressed={activeColor?.slotId === slot.id && activeColor.index === index} style={{ backgroundColor: `rgba(${color.r},${color.g},${color.b},${color.a / 255})` }} onClick={() => { onActiveColor(activeColor?.slotId === slot.id && activeColor.index === index ? null : { slotId: slot.id, index }); onLibrarySlotChange(null) }} />)}
             <button className="color-dock-add" type="button" aria-label={t('controls.palette.add')} title={t('controls.palette.add')} disabled={colors.length >= slot.maximum} onClick={() => updateSlot(slot, insertColor(colors, colors.length, slot))}>＋</button>
             {active && activeColor?.slotId === slot.id ? <div className="color-dock-popover" style={{ '--swatch-index': activeColor.index } as CSSProperties}>
               <input aria-label={`${label} ${activeColor.index + 1}`} type="color" value={rgbaToHex(active).slice(0, 7)} onChange={(event) => updateSlot(slot, setColorHex(colors, activeColor.index, event.target.value))} />
@@ -102,17 +96,14 @@ export function ColorDockView<Parameters>({ rootRef, slots, parameters, activeCo
               </div>
             </div> : null}
           </div>
+          <div className="color-dock-library-anchor">
+            <button className="panel-action color-dock-library" type="button" aria-haspopup="menu" aria-expanded={librarySlotId === slot.id} title={t('paletteLibrary.applyHint')} onClick={() => { onLibrarySlotChange(librarySlotId === slot.id ? null : slot.id); onActiveColor(null) }}>{t('controls.paletteLibraryToggle')}</button>
+            {librarySlotId === slot.id ? <PaletteMenu palette={colors} minimum={slot.minimum} maximum={slot.maximum} opaque={slot.opaque} onApply={(next) => updateSlot(slot, slot.fit ? slot.fit(next, colors.length) : next)} /> : null}
+          </div>
         </div>
       })}</div>
       <div className="color-dock-actions">
         <button className="color-dock-lock" type="button" aria-pressed={locked} aria-label={t('controls.lockColors')} title={t('controls.lockColorsHint')} onClick={() => onLockedChange(!locked)}><LockIcon locked={locked} /></button>
-        <div className="color-dock-library-anchor">
-          <button className="panel-action color-dock-library" type="button" aria-expanded={libraryOpen} onClick={() => { onLibraryOpenChange(!libraryOpen); onActiveColor(null) }}>{t('controls.paletteLibraryToggle')}</button>
-          {libraryOpen && selectedLibrarySlot ? <div className="color-dock-library-popover">
-            {slots.length > 1 && <SegmentedControl label={t('controls.palette.targetSlot')} description={t('controls.palette.targetSlotHint')} value={selectedLibrarySlot.id} options={slots.map((slot) => ({ value: slot.id, label: t(slot.labelKey) }))} onChange={onLibrarySlotChange} />}
-            <PaletteLibraryPicker inline palette={selectedLibrarySlot.read(parameters)} onChange={(colors) => updateSlot(selectedLibrarySlot, selectedLibrarySlot.fit ? selectedLibrarySlot.fit(colors, selectedLibrarySlot.read(parameters).length) : colors)} minimum={selectedLibrarySlot.minimum} maximum={selectedLibrarySlot.maximum} opaque={selectedLibrarySlot.opaque} />
-          </div> : null}
-        </div>
       </div>
     </div>
   </section>

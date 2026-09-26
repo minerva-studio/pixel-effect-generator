@@ -204,6 +204,7 @@
     "dismiss": "Dismiss notification"
   },
   "workspace": {
+    "generatorLabel": "GENERATOR {index}",
     "navLabel": "Effect generators",
     "generatorsLabel": "GENERATORS",
     "categoryTabsLabel": "{name} parameter categories",
@@ -279,8 +280,8 @@
     "custom": "My palettes",
     "noCustom": "No compatible saved palettes yet.",
     "name": "Palette name",
-    "save": "Save current colors",
-    "update": "Update colors",
+    "saveAs": "Save current as…",
+    "overwrite": "Overwrite with current colors",
     "rename": "Rename",
     "delete": "Delete",
     "confirmDelete": "Confirm delete",
@@ -307,7 +308,7 @@
     "value": "{label} value",
     "colorDock": "Generator colors",
     "editColors": "Edit",
-    "paletteLibraryToggle": "Palette library ▾",
+    "paletteLibraryToggle": "Palettes",
     "lockColors": "Lock colors",
     "lockColorsHint": "Lock colors: keep current colors when applying a preset",
     "palette": {
@@ -319,9 +320,7 @@
       "removeBand": "Remove color band {index}",
       "hex": "HEX",
       "moveEarlier": "Move color earlier",
-      "moveLater": "Move color later",
-      "targetSlot": "Apply colors to",
-      "targetSlotHint": "Choose which color group receives the selected palette"
+      "moveLater": "Move color later"
     },
     "feature": {
       "enabled": "On",
