@@ -17,14 +17,13 @@ function opaqueAreas(presetId: string, frameCount: number): number[] {
 }
 
 describe('explosion preset ending envelope', () => {
-  // The two field shapes have their own lifecycle and are unaffected by this legacy-body pass.
-  const legacyBodyPresetIds = [
-    'rollingFireball', 'moltenCoreFireball', 'smokeBurst',
-    'particleSmokeBurst', 'pressureBurst', 'retroBurst',
-  ] as const
-  for (const presetId of legacyBodyPresetIds) {
+  for (const { id: presetId } of EXPLOSION_BUILTIN_PRESETS) {
     for (const frameCount of [10, 24]) {
-      const check = ['pressureBurst', 'rollingFireball', 'moltenCoreFireball'].includes(presetId) ? it : it.fails
+      // Field simulations already wind down smoothly at 24 frames, but their 10-frame
+      // sampling still exceeds the per-frame drop limit; Retro keeps its byte-stable baseline.
+      const knownGap = presetId === 'retroBurst'
+        || (frameCount === 10 && ['billowBurst', 'fireMasses', 'smokyFireMasses'].includes(presetId))
+      const check = knownGap ? it.fails : it
       check(`${presetId} at ${frameCount} frames`, () => {
         const areas = opaqueAreas(presetId, frameCount)
         const peak = Math.max(...areas)

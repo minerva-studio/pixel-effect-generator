@@ -438,7 +438,8 @@ function buildBillowingSmokePrimitives(
   })
   const cores = createSmokeCoreDescriptors(parameters, blobs, drift, growth, rotate)
   const emberCenter = rotate(0, 0)
-  const tail = smoothStep(clamp01((drift - 0.64) / 0.3))
+  const tailStart = Math.max(0.1, parameters.motion.dissolveStart - 0.04)
+  const tail = smoothStep(clamp01((drift - tailStart) / Math.max(0.05, 0.94 - tailStart)))
   const emberScale = (1 - 0.4 * drift) * (1 - tail * 0.92)
   const primitives: BodyPrimitive[] = []
   if (emberScale > 0.12) {
@@ -451,9 +452,9 @@ function buildBillowingSmokePrimitives(
   }
   addFormationBridges(primitives, cores, emberCenter, radius, growth, drift)
   cores.forEach((core) => {
-    const tailStart = 0.62 + hashUnit(parameters.seed, core.index, 312) * 0.07
-    const coreTail = smoothStep(clamp01((drift - tailStart) / Math.max(0.01, 0.93 - tailStart)))
-    const coreScale = 1 - coreTail * (0.7 + hashUnit(parameters.seed, core.index, 313) * 0.12)
+    const coreTailStart = tailStart + hashUnit(parameters.seed, core.index, 312) * 0.05
+    const coreTail = smoothStep(clamp01((drift - coreTailStart) / Math.max(0.01, 0.86 - coreTailStart)))
+    const coreScale = 1 - coreTail * (0.97 + hashUnit(parameters.seed, core.index, 313) * 0.02)
     primitives.push({
       kind: 'ellipse', owner: 0, depth: 2, role: 'smokeBridge', alphaOnly: true,
       x: core.x, y: core.y, rx: core.rx * 0.72 * coreScale, ry: core.ry * 0.68 * coreScale, angle: core.angle,
@@ -511,12 +512,14 @@ function buildBillowingSmokePrimitives(
     if ((core.index + parameters.seed) % 2 === 0) {
       const spawn = 0.57 + hashUnit(parameters.seed, core.index, 241) * 0.12
       const wispTime = clamp01((core.motion - spawn) / Math.max(0.01, 1 - spawn))
-      if (wispTime <= 0) return
-      const size = radius * (0.055 + hashUnit(parameters.seed, core.index, 242) * 0.035) * (1 - wispTime * 0.28) * (1 - coreTail * 0.38)
+      const expiry = 0.86 + hashUnit(parameters.seed, core.index, 243) * 0.12
+      if (wispTime <= 0 || drift >= expiry) return
+      const wispEnding = smoothStep(clamp01((drift - 0.82) / 0.16))
+      const size = radius * (0.055 + hashUnit(parameters.seed, core.index, 242) * 0.035) * (1 - wispTime * 0.28) * (1 - coreTail * 0.38) * (1 - wispEnding * 0.95)
      primitives.push({
         kind: 'ellipse', owner: 70 + core.index, depth: 5, role: 'smokeWisp',
         x: core.x + core.direction * radius * (0.14 + 0.24 * wispTime),
-        y: core.y - radius * (0.08 + 0.18 * wispTime),
+        y: core.y - radius * (0.08 + 0.18 * wispTime + wispEnding * 0.08),
         rx: size * 1.25, ry: size * 0.8, angle: core.angle + core.direction * 0.65,
       })
     }
@@ -541,7 +544,8 @@ function addBillowingTailDebris(
   outerCores.forEach((core, debrisIndex) => {
     const spawn = 0.08 + hashUnit(parameters.seed, core.index, 314) * 0.28
     const age = clamp01((tail - spawn) / Math.max(0.01, 1 - spawn))
-    if (age <= 0 || age >= 0.98) return
+    const expiry = 0.93 + hashUnit(parameters.seed, core.index, 319) * 0.07
+    if (age <= 0 || age >= expiry) return
     const radialLength = Math.max(1, Math.hypot(core.x, core.y))
     const radialX = core.x / radialLength
     const radialY = core.y / radialLength
@@ -552,7 +556,7 @@ function addBillowingTailDebris(
     const curl = Math.sin(age * Math.PI) * radius * (0.025 + hashUnit(parameters.seed, core.index, 317) * 0.04)
     const x = core.x + radialX * travel + tangentX * curl
     const y = core.y + radialY * travel + tangentY * curl - radius * 0.055 * age
-    const size = radius * (0.045 + hashUnit(parameters.seed, core.index, 318) * 0.025) * (1 - age * 0.62)
+    const size = radius * (0.045 + hashUnit(parameters.seed, core.index, 318) * 0.025) * (1 - age * 0.95)
     const owner = 300 + core.index
     if (debrisIndex % 2 === 0) {
       const angle = Math.atan2(radialY, radialX) + tangentSign * 0.28
@@ -588,14 +592,16 @@ function buildParticulateSmokePrimitives(
     y: x * Math.sin(rotation) + y * Math.cos(rotation),
   })
   const cores = createSmokeCoreDescriptors(parameters, blobs, drift, growth, rotate)
-  const breakup = clamp01((drift - 0.3) / 0.52)
+  const breakupStart = Math.max(0.25, parameters.motion.dissolveStart - 0.11)
+  const breakup = clamp01((drift - breakupStart) / Math.max(0.05, 0.92 - breakupStart))
   const bodyScale = 1 - smoothStep(breakup) * 0.9
+  const tailFade = smoothStep(clamp01((drift - 0.82) / 0.16))
   const emberCenter = rotate(0, 0)
   const primitives: BodyPrimitive[] = [{
     // Keep the particulate mother-cloud ember behind every visible smoke layer as well.
     kind: 'ellipse', owner: 0, depth: 2.5, role: 'ember',
     x: emberCenter.x, y: emberCenter.y,
-    rx: radius * 0.22 * growth * (1 - drift * 0.72), ry: radius * 0.1 * growth * (1 - drift * 0.72), angle: rotation,
+    rx: radius * 0.22 * growth * (1 - drift * 0.72) * (1 - tailFade), ry: radius * 0.1 * growth * (1 - drift * 0.72) * (1 - tailFade), angle: rotation,
   }]
   if (drift < 0.76) addFormationBridges(primitives, cores, emberCenter, radius, growth, drift)
   cores.forEach((core) => {
@@ -615,7 +621,7 @@ function buildParticulateSmokePrimitives(
       const x = core.x + Math.cos(angle) * travel + Math.cos(angle + Math.PI / 2) * arc
       const y = core.y + Math.sin(angle) * travel + Math.sin(angle + Math.PI / 2) * arc - radius * 0.12 * particleTime
       const baseSize = 2 + Math.floor(hashUnit(parameters.seed, core.index, 267 + particleIndex) * 4)
-      const size = baseSize * (1 - smoothStep(clamp01((particleTime - 0.56) / 0.44)) * 0.62)
+      const size = baseSize * (1 - smoothStep(clamp01((particleTime - 0.56) / 0.44)) * 0.62) * (1 - tailFade * 0.9)
       const particleRole: BodyPrimitiveRole = particleTime > 0.58 ? 'smokeParticleDark' : 'smokeParticle'
       if (particleIndex === 0) {
         primitives.push({
@@ -642,7 +648,7 @@ function buildParticulateSmokePrimitives(
         const childTravel = radius * (0.04 + 0.12 * childTime) * (0.72 + hashUnit(parameters.seed, particleIndex, 287 + childIndex) * 0.4)
         const childX = x + Math.cos(childAngle) * childTravel
         const childY = y + Math.sin(childAngle) * childTravel - radius * 0.045 * childTime
-        const childSize = Math.max(1, baseSize * (0.34 + hashUnit(parameters.seed, core.index, 291 + childIndex) * 0.18) * (1 - childTime * 0.62))
+        const childSize = Math.max(0.7, baseSize * (0.34 + hashUnit(parameters.seed, core.index, 291 + childIndex) * 0.18) * (1 - childTime * 0.62) * (1 - tailFade * 0.9))
         const childOwner = 200 + core.index * 12 + particleIndex * 3 + childIndex
         const childRole: BodyPrimitiveRole = childTime > 0.42 ? 'smokeParticleDark' : 'smokeParticle'
         if (childIndex === 0) {

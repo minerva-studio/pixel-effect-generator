@@ -170,6 +170,16 @@ describe('renderExplosionFrames', () => {
     }
   })
 
+  it('lets dissolve start move the legacy-body burnout without changing other parameters', () => {
+    for (const presetId of ['pressureBurst', 'rollingFireball', 'smokeBurst', 'particleSmokeBurst']) {
+      const preset = EXPLOSION_BUILTIN_PRESETS.find(({ id }) => id === presetId)!
+      const parameters = applyExplosionPreset({ ...MODERN_EXPLOSION_PARAMETERS, frameCount: 24 }, preset.payload)
+      const earlier = renderExplosionFrames({ ...parameters, motion: { ...parameters.motion, dissolveStart: 0.5 } })[17]
+      const later = renderExplosionFrames({ ...parameters, motion: { ...parameters.motion, dissolveStart: 0.72 } })[17]
+      expect(countOpaque(earlier), `${presetId} should recede sooner`).toBeLessThan(countOpaque(later))
+    }
+  })
+
   it('renders the requested 3 to 12 separated shock wedges deterministically', () => {
     for (const pressureCount of [3, 5, 12]) {
       const parameters = quietParameters({
