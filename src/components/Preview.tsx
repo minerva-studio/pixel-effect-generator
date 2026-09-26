@@ -24,6 +24,7 @@ interface PreviewProps {
   readonly zoom: PreviewZoom
   readonly onZoomChange: (zoom: PreviewZoom) => void
   readonly tools?: ReactNode
+  readonly colors?: ReactNode
 }
 
 /**
@@ -49,6 +50,7 @@ export function Preview({
   zoom,
   onZoomChange,
   tools,
+  colors,
 }: PreviewProps) {
   const { t } = useI18n()
   const [background, setBackground] = useState('checker')
@@ -173,6 +175,7 @@ export function Preview({
           </label>
           <strong>{t('preview.fpsPreview', { fps: previewFps })}</strong>
         </div>
+        {colors}
         {tools ? <details className="canvas-settings"><summary>{t('workbench.canvasSettings')}</summary><div className="preview-tools" aria-label={t('preview.generatorTools')}>{tools}</div></details> : null}
       </div>
     </section>

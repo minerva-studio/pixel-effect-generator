@@ -60,7 +60,6 @@ export function renderPresetFrames<Parameters>(
 
 /** Cache of rendered preview frame sets keyed by generator, preset, and canvas. */
 const presetFrameCache = new Map<string, readonly PixelFrame[]>()
-const PRESERVE_COLORS_STORAGE_KEY = 'pixel-effect-generator:preserve-preset-colors'
 
 /** Stable cache key for one preset preview on a specific canvas. */
 export function presetPreviewKey(
@@ -81,10 +80,6 @@ function clearPresetFrameCache(generatorId: string): void {
   }
 }
 
-function readPreserveColors(): boolean {
-  try { return typeof window !== 'undefined' && window.localStorage.getItem(PRESERVE_COLORS_STORAGE_KEY) === 'true' } catch { return false }
-}
-
 /** One normalized preset entry rendered as a preview card. */
 export interface PresetPreviewCard {
   readonly id: string
@@ -97,6 +92,7 @@ export interface PresetPreviewCard {
 interface PresetBarProps<Parameters> {
   readonly capability: GeneratorPresetCapability<Parameters>
   readonly paletteSlots: readonly PaletteSlot<Parameters>[]
+  readonly preserveColors: boolean
   readonly generatorId: string
   readonly parameters: Parameters
   readonly render: (parameters: Parameters) => readonly PixelFrame[]
@@ -112,7 +108,6 @@ export interface PresetBarViewProps {
   readonly pickerOpen: boolean
   readonly actionsOpen: boolean
   readonly modified: boolean
-  readonly preserveColors: boolean
   readonly storageUnavailable: boolean
   readonly warning: boolean
   readonly error: string | null
@@ -126,7 +121,6 @@ export interface PresetBarViewProps {
   readonly actionsRef: RefObject<HTMLDivElement | null>
   readonly actionsButtonRef: RefObject<HTMLButtonElement | null>
   readonly onSelect: (presetId: string) => void
-  readonly onPreserveColorsChange: (preserve: boolean) => void
   readonly onPickerOpen: () => void
   readonly onPickerClose: () => void
   readonly onActionsToggle: () => void
@@ -151,7 +145,6 @@ export function PresetBarView({
   pickerOpen,
   actionsOpen,
   modified,
-  preserveColors,
   storageUnavailable,
   warning,
   error,
@@ -165,7 +158,6 @@ export function PresetBarView({
   actionsRef,
   actionsButtonRef,
   onSelect,
-  onPreserveColorsChange,
   onPickerOpen,
   onPickerClose,
   onActionsToggle,
@@ -185,7 +177,7 @@ export function PresetBarView({
   const selectedCustom = customCards.find((card) => card.id === selectedId)
   return (
     <>
-      <PresetStrip cards={[...builtInCards, ...customCards]} selectedId={selectedId} modified={modified} preserveColors={preserveColors} onSelect={onSelect} onPreserveColorsChange={onPreserveColorsChange} actions={<div className="preset-actions" ref={actionsRef}>
+      <PresetStrip cards={[...builtInCards, ...customCards]} selectedId={selectedId} modified={modified} onSelect={onSelect} actions={<div className="preset-actions" ref={actionsRef}>
         <button
           className="project-menu-button preset-actions-toggle"
           type="button"
@@ -323,13 +315,11 @@ export function PresetBarView({
 }
 
 /** Always-visible one-line preset browser and color-preservation setting. */
-export function PresetStrip({ cards, selectedId, modified, preserveColors, onSelect, onPreserveColorsChange, actions }: {
+export function PresetStrip({ cards, selectedId, modified, onSelect, actions }: {
   readonly cards: readonly PresetPreviewCard[]
   readonly selectedId: string | null
   readonly modified: boolean
-  readonly preserveColors: boolean
   readonly onSelect: (presetId: string) => void
-  readonly onPreserveColorsChange: (preserve: boolean) => void
   readonly actions: ReactNode
 }) {
   const { t } = useI18n()
@@ -337,13 +327,6 @@ export function PresetStrip({ cards, selectedId, modified, preserveColors, onSel
     <div className="preset-strip-cards" role="list" aria-label={t('presets.selectLabel')}>
       {cards.map((card) => <PresetCard key={card.id} card={card} selected={card.id === selectedId} modified={card.id === selectedId && modified} compact onSelect={onSelect} />)}
     </div>
-    <label className="preset-preserve-colors">
-      <span>{t('presets.preserveColors')}</span>
-      <span className="toggle-field">
-        <input type="checkbox" checked={preserveColors} onChange={(event) => onPreserveColorsChange(event.target.checked)} />
-        <span aria-hidden="true" />
-      </span>
-    </label>
     {actions}
   </div>
 }
@@ -420,6 +403,7 @@ const PresetCard = memo(function PresetCard({
 export function PresetBar<Parameters>({
   capability,
   paletteSlots,
+  preserveColors,
   generatorId,
   parameters,
   render,
@@ -431,7 +415,6 @@ export function PresetBar<Parameters>({
   const [storage] = useState<PresetStorage | null>(() => browserPresetStorage())
   const [customPresets, setCustomPresets] = useState<readonly StoredPreset[]>([])
   const [warning, setWarning] = useState(false)
-  const [preserveColors, setPreserveColors] = useState(readPreserveColors)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [appliedPayload, setAppliedPayload] = useState<JsonValue | undefined>(undefined)
   const [saveOpen, setSaveOpen] = useState(false)
@@ -449,10 +432,6 @@ export function PresetBar<Parameters>({
   const parametersRef = useRef(parameters)
   parametersRef.current = parameters
   const colorSignature = preserveColors ? JSON.stringify(paletteSlots.map((slot) => slot.read(parameters))) : ''
-
-  useEffect(() => {
-    try { window.localStorage.setItem(PRESERVE_COLORS_STORAGE_KEY, preserveColors ? 'true' : 'false') } catch { /* Storage is optional. */ }
-  }, [preserveColors])
 
   useEffect(() => {
     runPresetMigration(generatorId, storage)
@@ -662,7 +641,6 @@ export function PresetBar<Parameters>({
       pickerOpen={pickerOpen}
       actionsOpen={actionsOpen}
       modified={modified}
-      preserveColors={preserveColors}
       storageUnavailable={storage === null}
       warning={warning}
       error={error}
@@ -676,7 +654,6 @@ export function PresetBar<Parameters>({
       actionsRef={actionsRef}
       actionsButtonRef={actionsButtonRef}
       onSelect={handleSelect}
-      onPreserveColorsChange={setPreserveColors}
       onPickerOpen={() => {
         setError(null)
         setActionsOpen(false)

@@ -33,8 +33,6 @@ export interface MessageParams {
   'flame.palette.band': { index: number }
   'flame.palette.removeBand': { index: number }
   'app.status': { width: number; height: number }
-  'workspace.generatorSectionLabel': { index: string; name: string }
-  'workspace.parametersTitle': { name: string }
   'workspace.categoryTabsLabel': { name: string }
   'workspace.categoryControls': { label: string }
   'workspace.exportDimensions': { width: number; height: number }

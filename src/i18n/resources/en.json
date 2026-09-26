@@ -206,8 +206,6 @@
   "workspace": {
     "navLabel": "Effect generators",
     "generatorsLabel": "GENERATORS",
-    "generatorSectionLabel": "GENERATOR {index} · {name}",
-    "parametersTitle": "{name} parameters",
     "reset": "Reset",
     "categoryTabsLabel": "{name} parameter categories",
     "categoryControls": "{label} controls",
@@ -312,6 +310,8 @@
     "value": "{label} value",
     "colorDock": "Generator colors",
     "editColors": "Edit",
+    "lockColors": "Lock colors",
+    "lockColorsHint": "Lock colors: keep current colors when applying a preset",
     "palette": {
       "colors": "Colors",
       "alpha": "Opacity",

@@ -5,18 +5,20 @@ import { useI18n } from '../i18n/I18nProvider'
 import { rgbToHex } from '../shared/pixel/color'
 
 /** Persistent compact access to every editable generator color slot. */
-export function ColorDock<Parameters>({ slots, parameters, onParameters }: {
+export function ColorDock<Parameters>({ slots, parameters, onParameters, locked, onLockedChange }: {
   readonly slots: readonly PaletteSlot<Parameters>[]
   readonly parameters: Parameters
   readonly onParameters: (parameters: Parameters) => void
+  readonly locked: boolean
+  readonly onLockedChange: (locked: boolean) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [activeColor, setActiveColor] = useState<{ readonly slotId: string; readonly index: number } | null>(null)
-  return <ColorDockView slots={slots} parameters={parameters} onParameters={onParameters} expanded={expanded} activeColor={activeColor} onActiveColor={setActiveColor} onToggleExpanded={() => { setExpanded(!expanded); setActiveColor(null) }} />
+  return <ColorDockView slots={slots} parameters={parameters} onParameters={onParameters} expanded={expanded} activeColor={activeColor} onActiveColor={setActiveColor} onToggleExpanded={() => { setExpanded(!expanded); setActiveColor(null) }} locked={locked} onLockedChange={onLockedChange} />
 }
 
 /** @internal Presentational dock view so collapsed and expanded layouts stay directly testable. */
-export function ColorDockView<Parameters>({ slots, parameters, onParameters, expanded, activeColor, onActiveColor, onToggleExpanded }: {
+export function ColorDockView<Parameters>({ slots, parameters, onParameters, expanded, activeColor, onActiveColor, onToggleExpanded, locked, onLockedChange }: {
   readonly slots: readonly PaletteSlot<Parameters>[]
   readonly parameters: Parameters
   readonly onParameters: (parameters: Parameters) => void
@@ -24,9 +26,12 @@ export function ColorDockView<Parameters>({ slots, parameters, onParameters, exp
   readonly activeColor: { readonly slotId: string; readonly index: number } | null
   readonly onActiveColor: (active: { readonly slotId: string; readonly index: number } | null) => void
   readonly onToggleExpanded: () => void
+  readonly locked: boolean
+  readonly onLockedChange: (locked: boolean) => void
 }) {
   const { t } = useI18n()
-  return <section className={`color-dock ${expanded ? 'expanded' : ''}`} aria-label={t('controls.colorDock')}>
+  const className = ['color-dock', expanded && 'expanded', locked && 'locked'].filter(Boolean).join(' ')
+  return <section className={className} aria-label={t('controls.colorDock')}>
     <div className="color-dock-header"><div className="color-dock-rows">{slots.map((slot) => {
       const colors = slot.read(parameters)
       return <div className="color-dock-row" key={slot.id}>
@@ -38,7 +43,12 @@ export function ColorDockView<Parameters>({ slots, parameters, onParameters, exp
         </div> : null}
       </div>
     })}</div>
-    <button className="text-button color-dock-edit" type="button" aria-expanded={expanded} onClick={onToggleExpanded}>{t('controls.editColors')}</button></div>
+    <div className="color-dock-actions">
+      <button className="text-button color-dock-lock" type="button" aria-pressed={locked} title={t('controls.lockColorsHint')} onClick={() => onLockedChange(!locked)}>
+        <span aria-hidden="true">{locked ? '🔒' : '🔓'}</span> {t('controls.lockColors')}
+      </button>
+      <button className="text-button color-dock-edit" type="button" aria-expanded={expanded} onClick={onToggleExpanded}>{t('controls.editColors')}</button>
+    </div></div>
     {expanded ? <div className="color-dock-editors">{slots.map((slot) => <PaletteEditor key={slot.id} title={slots.length > 1 ? t(slot.labelKey) : undefined} palette={slot.read(parameters)} onChange={(colors) => onParameters(slot.write(parameters, colors))} minimum={slot.minimum} maximum={slot.maximum} opaque={slot.opaque} fit={slot.fit} insert={slot.insert} guide={slot.guideKeys?.map((key) => t(key)) as readonly [string, string] | undefined} />)}</div> : null}
   </section>
 }

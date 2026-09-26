@@ -206,8 +206,6 @@
   "workspace": {
     "navLabel": "特效生成器",
     "generatorsLabel": "生成器",
-    "generatorSectionLabel": "生成器 {index} · {name}",
-    "parametersTitle": "{name} 参数",
     "reset": "重置",
     "categoryTabsLabel": "{name} 参数分类",
     "categoryControls": "{label} 控件",
@@ -312,6 +310,8 @@
     "value": "{label} 数值",
     "colorDock": "生成器颜色",
     "editColors": "编辑",
+    "lockColors": "锁定颜色",
+    "lockColorsHint": "锁定颜色：应用预设时保持当前颜色",
     "palette": {
       "colors": "颜色",
       "alpha": "不透明度",

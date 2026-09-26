@@ -21,6 +21,7 @@ import type { FileOperationController } from './fileOperations'
 import { Preview } from './Preview'
 import { PresetBar } from './PresetBar'
 import { ColorDock } from './ColorDock'
+import { usePreserveColors } from './preserveColors'
 import type { ParsedProjectImport, ProjectBridge, ProjectImportResult } from './projectBridge'
 import type { UnityExportSettingsState } from './unitySettings'
 
@@ -88,6 +89,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
     onCloseDesktopExport,
   }: RegisteredWorkspaceProps) => {
     const { t, locale } = useI18n()
+    const [preserveColors, setPreserveColors] = usePreserveColors()
     const [previewZoom, setPreviewZoom] = useState<PreviewZoom>('fit')
     const [split, setSplit] = useState(40)
     const workspaceRef = useRef<HTMLElement>(null)
@@ -152,6 +154,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
       <PresetBar
         capability={module.presetCapability}
         paletteSlots={module.paletteSlots}
+        preserveColors={preserveColors}
         generatorId={module.definition.id}
         parameters={typedSession.parameters}
         render={module.render}
@@ -175,7 +178,6 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           generatorName={generatorName}
           category={activeCategory}
           presetBar={presetBar}
-          colorDock={<ColorDock slots={module.paletteSlots} parameters={typedSession.parameters} onParameters={dispatchParameters} />}
           onReset={onReset}
           onParameters={dispatchParameters}
           onCategory={(nextCategory) => dispatch({ type: 'category', category: nextCategory })}
@@ -212,6 +214,7 @@ export function createGeneratorWorkspace<Id extends string, Parameters, Category
           onFrameCount={(frameCount) => dispatchParameters(
             module.writeFrameCount(typedSession.parameters, frameCount),
           )}
+          colors={<ColorDock slots={module.paletteSlots} parameters={typedSession.parameters} onParameters={dispatchParameters} locked={preserveColors} onLockedChange={setPreserveColors} />}
           tools={PreviewTools ? (
             <PreviewTools parameters={typedSession.parameters} onChange={dispatchParameters} onResize={onResize} />
           ) : undefined}
@@ -246,7 +249,6 @@ function ControlsPanel<Parameters, Category extends string>({
   generatorName,
   category,
   presetBar,
-  colorDock,
   onReset,
   onParameters,
   onCategory,
@@ -256,20 +258,17 @@ function ControlsPanel<Parameters, Category extends string>({
   readonly generatorName: string
   readonly category: { readonly id: Category; readonly label: string; readonly description: string }
   readonly presetBar?: ReactNode
-  readonly colorDock: ReactNode
   readonly onReset: () => void
   readonly onParameters: (parameters: Parameters) => void
   readonly onCategory: (category: Category) => void
 }) {
   const { t, locale } = useI18n()
   const Controls = module.Controls
-  const sectionName = locale === 'en' ? generatorName.toUpperCase() : generatorName
   return (
     <aside className="panel controls-panel">
       <div className="panel-heading controls-heading">
         <div className="controls-heading-copy">
-          <p className="section-label">{t('workspace.generatorSectionLabel', { index: String(module.definition.index).padStart(2, '0'), name: sectionName })}</p>
-          <h2>{t('workspace.parametersTitle', { name: generatorName })}</h2>
+          <h2>{generatorName}</h2>
         </div>
         <div className="controls-heading-actions">
           <button className="text-button" type="button" onClick={onReset}>{t('workspace.reset')}</button>
@@ -277,8 +276,6 @@ function ControlsPanel<Parameters, Category extends string>({
       </div>
 
       {presetBar}
-      {colorDock}
-
       <div className="category-tabs" role="tablist" aria-label={t('workspace.categoryTabsLabel', { name: generatorName })}>
         {module.categories.map((entry) => {
           const entryKeys = categoryDisplayKeys(module.definition.id, entry.id)

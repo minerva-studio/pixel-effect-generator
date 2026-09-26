@@ -43,7 +43,6 @@ function baseViewProps(overrides: Partial<PresetBarViewProps> = {}): PresetBarVi
     pickerOpen: false,
     actionsOpen: false,
     modified: false,
-    preserveColors: false,
     storageUnavailable: false,
     warning: false,
     error: null,
@@ -57,7 +56,6 @@ function baseViewProps(overrides: Partial<PresetBarViewProps> = {}): PresetBarVi
     actionsRef: { current: null },
     actionsButtonRef: { current: null },
     onSelect: () => undefined,
-    onPreserveColorsChange: () => undefined,
     onPickerOpen: () => undefined,
     onPickerClose: () => undefined,
     onActionsToggle: () => undefined,
@@ -98,7 +96,7 @@ describe('PresetBarView structure', () => {
     expect(markup).not.toContain('<select')
     expect(markup).toContain('preset-card compact')
     expect(markup).toContain('preset-strip')
-    expect(markup).toContain('Keep current colors')
+    expect(markup).not.toContain('Keep current colors')
     expect(markup).not.toContain('preset-panel')
     expect(markup).not.toContain('View all')
     expect(markup).toContain('preset-actions')
@@ -152,7 +150,7 @@ describe('PresetBarView structure', () => {
   it('renders Simplified Chinese labels', () => {
     const markup = viewMarkup(baseViewProps({ actionsOpen: true, pickerOpen: true }), 'zh-CN')
     expect(markup).toContain('查看全部')
-    expect(markup).toContain('保留当前颜色')
+    expect(markup).not.toContain('保留当前颜色')
     expect(markup).toContain('效果预设')
   })
 
@@ -180,6 +178,7 @@ describe('PresetBar component', () => {
         <PresetBar
           capability={slashPresetCapability}
           paletteSlots={[]}
+          preserveColors={false}
           generatorId="slash"
           parameters={DEFAULT_SLASH_PARAMETERS}
           render={renderSlashFrames}
@@ -191,7 +190,7 @@ describe('PresetBar component', () => {
     )
     expect(markup).not.toContain('View all')
     expect(markup).toContain('preset-card compact')
-    expect(markup).toContain('Keep current colors')
+    expect(markup).not.toContain('Keep current colors')
     expect(markup).not.toContain('preset-actions-panel')
     expect(markup).not.toContain('<select')
   })
@@ -204,6 +203,7 @@ describe('PresetBar component', () => {
         <PresetBar
           capability={slashPresetCapability}
           paletteSlots={[]}
+          preserveColors={false}
           generatorId="slash"
           parameters={parameters}
           render={renderSlashFrames}
