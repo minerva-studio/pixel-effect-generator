@@ -350,10 +350,11 @@ function buildShockBlastPrimitives(
   const decay = clamp01((drift - dissolveStart) / Math.max(0.05, 0.95 - dissolveStart))
   const rotation = parameters.body.rotation / 180 * Math.PI
   const coreRetreat = 1 - smoothStep(clamp01((drift - dissolveStart) / 0.2))
-  const primitives: BodyPrimitive[] = [{
+  const primitives: BodyPrimitive[] = []
+  if (coreRetreat > 0) primitives.push({
     kind: 'ellipse', owner: 0, depth: parameters.volume.profile === 'moltenCore' ? 4 : 0, role: 'core',
     x: 0, y: 0, rx: radius * 0.3 * growth * coreRetreat, ry: radius * 0.3 * growth * coreRetreat, angle: 0,
-  }]
+  })
   const plateCount = parameters.body.pressureCount
   for (let index = 0; index < plateCount; index += 1) {
     const blob = blobs[index]

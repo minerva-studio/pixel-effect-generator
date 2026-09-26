@@ -167,6 +167,7 @@ describe('renderExplosionFrames', () => {
     for (const frame of frames.slice(-3, -1)) {
       expect(countOpaqueRegion(frame, (x, y) => Math.hypot(x - frame.width / 2, y - frame.height / 2) > parameters.body.radius * 0.9))
         .toBeGreaterThan(0)
+      expect(countOpaqueInside(frame, 6), 'the old central flash must finish before the cinders').toBe(0)
     }
   })
 
