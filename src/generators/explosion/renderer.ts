@@ -335,6 +335,15 @@ function buildRollingFireballPrimitives(
   return primitives
 }
 
+const SHOCK_LAUNCH_RADIUS = 0.25
+const SHOCK_EXIT_RADIUS = 1.05
+const SHOCK_DRAG = 2.2
+
+/** Quintic ease with zero velocity and acceleration at both ends. */
+function smootherStep(value: number): number {
+  return value * value * value * (value * (value * 6 - 15) + 10)
+}
+
 /** Builds separated short radial shell plates pushed outward by one central flash. */
 function buildShockBlastPrimitives(
   parameters: ExplosionParameters,
@@ -364,12 +373,18 @@ function buildShockBlastPrimitives(
     const exit = 0.92 + hashUnit(parameters.seed, index, 107) * 0.06
     const life = clamp01((drift - delay) / Math.max(0.05, exit - delay))
     if (life >= 1) continue
-    // One continuous trajectory: fast launch that decelerates but never stops, so the front never stalls.
-    const travel = 0.25 + 0.55 * (1 - (1 - life) ** 2) + 0.25 * life
-    const outerEdge = radius * travel * growth + parameters.body.pressureWidth * growth * 0.5
-    // After dissolve start the trailing edge catches up with the front, thinning the plate into a 1px rim.
-    const fade = clamp01((drift - dissolveStart) / Math.max(0.05, exit - dissolveStart))
-    const thickness = Math.max(1, parameters.body.pressureWidth * growth * (1 - fade) ** 1.4)
+    // A drag-slowed blast front: launched at full speed, velocity decays exponentially and never
+    // reaches zero, so speed, acceleration, and jerk all change monotonically with no kinks.
+    const front = radius * (SHOCK_LAUNCH_RADIUS + (SHOCK_EXIT_RADIUS - SHOCK_LAUNCH_RADIUS)
+      * (1 - Math.exp(-SHOCK_DRAG * life)) / (1 - Math.exp(-SHOCK_DRAG)))
+    // Thickness swells in and thins out through C2-smooth envelopes. The plate emerges from the
+    // core while it swells; after dissolve start its trailing edge catches up with the front,
+    // leaving a 1px rim that exits on its own.
+    const width = parameters.body.pressureWidth
+    const swell = smootherStep(clamp01(life / 0.12))
+    const outerEdge = front + width * 0.5 * swell
+    const fade = clamp01((drift - dissolveStart) / Math.max(0.05, (exit - dissolveStart) * 1.1))
+    const thickness = Math.max(1, width * swell * (1 - smootherStep(fade)))
     const halfAngle = (Math.PI / plateCount) * (0.52 + (blob?.radiusScale ?? 1) * 0.08)
     primitives.push({
       kind: 'shellSector', owner: index + 1, depth: 2 + (blob?.depth ?? 1) * 0.2, role: 'shell',

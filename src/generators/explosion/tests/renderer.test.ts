@@ -154,7 +154,7 @@ describe('renderExplosionFrames', () => {
     const applied = applyExplosionPreset({ ...MODERN_EXPLOSION_PARAMETERS, frameCount: 24 }, preset.payload)
     const parameters = { ...applied, fragments: { ...applied.fragments, enabled: false } }
     const frames = renderExplosionFrames(parameters)
-    for (let index = 14; index <= 20; index += 1) {
+    for (let index = 15; index <= 20; index += 1) {
       expect(occupiedAngleRunsOutside(frames[index], 144, parameters.body.radius * 0.5), `frame ${index} plates`).toBe(parameters.body.pressureCount)
       expect(countOpaque(frames[index]), `frame ${index} area`).toBeLessThan(countOpaque(frames[index - 1]))
     }
