@@ -852,7 +852,7 @@
       "rollingFireball": "Overlapping fire masses roll outward as one connected explosion.",
       "shockBlast": "A bright core drives separated short shell plates through angular gaps.",
       "smokeBurst": "A low broad smoke mass expands around hot embers.",
-      "legacyRadial": "The original dense radial pixel explosion."
+      "legacyRadial": "Dense radial pixels with a leading ring that thins and breaks away."
     },
     "effects": {
       "enabled": "On",
@@ -898,7 +898,7 @@
       },
       "retroBurst": {
         "name": "Retro Burst",
-        "description": "The original radial ring with dense per-pixel noise."
+        "description": "A leading ring breaks apart as radial pixels cool into embers."
       },
       "moltenCoreFireball": {
         "name": "Molten Core Fireball",

@@ -105,8 +105,32 @@ export interface ExplosionParameters {
   readonly fragments: SharedFragmentParameters
 }
 
-/** Changes only the selected shape and the volume/surface dependencies required to validate it. */
+/**
+ * First selection of retro radial loads the Retro Burst effect layers while
+ * retaining palette, seed, canvas, frame count, direction, radius, and rotation.
+ * Re-selecting the active shape keeps subsequent edits.
+ */
 export function selectExplosionShape(parameters: ExplosionParameters, shape: ExplosionShape): ExplosionParameters {
+  if (shape === 'legacyRadial' && parameters.body.shape !== shape) {
+    const retro = RETRO_EXPLOSION_PARAMETERS
+    const limits = explosionFrameLimits({ width: parameters.canvasWidth, height: parameters.canvasHeight })
+    const scale = parameters.body.radius / retro.body.radius
+    return {
+      ...parameters,
+      body: { ...parameters.body, shape, shapeIrregularity: retro.body.shapeIrregularity, pressureWidth: retro.body.pressureWidth },
+      volume: retro.volume,
+      surface: retro.surface,
+      motion: { ...retro.motion, mode: parameters.motion.mode },
+      core: { ...retro.core, radius: clampInteger(retro.core.radius * scale, 0, limits.maxRadius) },
+      shockwave: retro.shockwave,
+      tongues: retro.tongues,
+      fragments: {
+        ...retro.fragments,
+        travelDistance: clampInteger(retro.fragments.travelDistance * scale, 0, limits.maxFragmentDistance),
+        tangentialDrift: clampInteger(retro.fragments.tangentialDrift * scale, 0, limits.maxTangentialDrift),
+      },
+    }
+  }
   const surface = isFieldExplosionShape(shape) && parameters.surface.style !== 'burningLayers'
     ? createExplosionSurface('burningLayers', parameters.surface.coverage)
     : parameters.surface
@@ -331,6 +355,15 @@ export const LEGACY_EXPLOSION_PARAMETERS: ExplosionParameters = {
   },
   tongues: { enabled: false, count: 1, length: 0, width: 1, curvature: 0, variation: 0 },
   fragments: { enabled: true, count: 30, minSize: 1, maxSize: 3, travelDistance: 30, tangentialDrift: 9, lifetime: 0.68 },
+}
+
+/** Built-in Retro Burst profile, also used when first selecting the retro radial shape. */
+export const RETRO_EXPLOSION_PARAMETERS: ExplosionParameters = {
+  ...LEGACY_EXPLOSION_PARAMETERS,
+  palette: builtinPalette('retroBurst'),
+  body: { ...LEGACY_EXPLOSION_PARAMETERS.body, pressureWidth: 6 },
+  surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1.1, dissolveCooling: 0.8 },
+  shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, endRadiusScale: 1.4, duration: 0.7, fade: 1 },
 }
 
 /** Default: one billowing burst whose outline and thermal bands share a single expanding field. */
