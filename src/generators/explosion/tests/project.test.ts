@@ -54,4 +54,19 @@ describe('explosion project codec', () => {
       renderExplosionFrames(original).map(({ pixels }) => Array.from(pixels)),
     )
   })
+
+  it('fills the burst interval for older rolling-fireball projects', () => {
+    const json = serializeExplosionParameters(MODERN_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const { burstStagger: _old, ...body } = json.body as Record<string, unknown>
+    const parsed = parseExplosionParameters({ ...json, body })
+    expect(parsed.body.burstStagger).toBe(0.45)
+    expect(() => parseExplosionParameters({ ...json, body: { ...body, burstStagger: 1.1 } })).toThrow(RangeError)
+  })
+
+  it('upgrades older flat rolling fireballs to the layered renderer', () => {
+    const json = serializeExplosionParameters(MODERN_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const parsed = parseExplosionParameters({ ...json, volume: { enabled: false, profile: 'hardShell' } })
+    expect(parsed.volume.enabled).toBe(true)
+    expect(renderExplosionFrames(parsed).some(({ pixels }) => pixels.some((value, index) => index % 4 === 3 && value > 0))).toBe(true)
+  })
 })

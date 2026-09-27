@@ -56,6 +56,8 @@ export interface ExplosionBodyParameters {
   readonly shapeIrregularity: number
   readonly churnAmount: number
   readonly lobeCount: number
+  /** Spreads rolling fireball births across the first 60% of their lifecycle. */
+  readonly burstStagger?: number
   readonly pressureWidth: number
   readonly pressureCount: number
   readonly pressureSharpness: number
@@ -88,6 +90,8 @@ export const FIELD_BODY_DEFAULTS = {
   throwDistance: 0.6,
   buoyancy: 0.5,
 } as const satisfies Partial<ExplosionBodyParameters>
+
+export const DEFAULT_ROLLING_BURST_STAGGER = 0.45
 
 export interface ExplosionParameters {
   readonly palette: readonly RgbColor[]
@@ -178,7 +182,7 @@ export function normalizeExplosionVolume(
   const profiles = explosionVolumeProfiles(shape)
   if (profiles.length === 0) return { enabled: false, profile: 'hardShell' }
   return {
-    enabled: volume.enabled,
+    enabled: shape === 'rollingFireball' ? true : volume.enabled,
     profile: profiles.includes(volume.profile) ? volume.profile : profiles[0],
   }
 }
@@ -249,9 +253,10 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
     shape: 'rollingFireball',
     radius: 42,
     rotation: 0,
-    shapeIrregularity: 0.22,
+    shapeIrregularity: 0.65,
     churnAmount: 0.72,
-    lobeCount: 5,
+    lobeCount: 6,
+    burstStagger: 0.48,
     pressureWidth: 24,
     pressureCount: 5,
     pressureSharpness: 0.8,
@@ -387,6 +392,7 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   assertInRange(parameters.body.shapeIrregularity, 0, 1, 'body.shapeIrregularity')
   assertInRange(parameters.body.churnAmount, 0, 1, 'body.churnAmount')
   assertInRange(parameters.body.lobeCount, 3, 9, 'body.lobeCount')
+  if (parameters.body.burstStagger !== undefined) assertInRange(parameters.body.burstStagger, 0, 1, 'body.burstStagger')
   if (!Number.isInteger(parameters.body.lobeCount)) throw new RangeError('body.lobeCount must be an integer.')
   assertInRange(parameters.body.pressureWidth, 1, 48, 'body.pressureWidth')
   assertInRange(parameters.body.pressureCount, 3, 12, 'body.pressureCount')

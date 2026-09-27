@@ -49,6 +49,14 @@ describe('combustion explosion built-in presets', () => {
     }) as Record<string, unknown>).body).toMatchObject({ pressureCount: 5 })
   })
 
+  it('defaults a missing rolling burst interval without changing the preset schema', () => {
+    const payload = captureExplosionPreset(MODERN_EXPLOSION_PARAMETERS) as Record<string, unknown>
+    const { burstStagger: _interval, ...legacyBody } = payload.body as Record<string, unknown>
+    const parsed = parseExplosionPresetPayload({ ...payload, body: legacyBody })
+    expect(parsed.body.burstStagger).toBe(0.45)
+    expect(() => parseExplosionPresetPayload({ ...payload, body: { ...legacyBody, burstStagger: -0.1 } })).toThrow(RangeError)
+  })
+
   it('defaults missing V5 smoke fields and writes them on the next V7 capture', () => {
     const payload = captureExplosionPreset(MODERN_EXPLOSION_PARAMETERS) as Record<string, unknown>
     const { smokeCount: _smokeCount, smokeMotion: _smokeMotion, ...legacyBody } = payload.body as Record<string, unknown>

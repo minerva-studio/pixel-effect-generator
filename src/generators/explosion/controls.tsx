@@ -15,6 +15,8 @@ import {
 import type { ExplosionCategory } from './module'
 import {
   DEFAULT_EXPLOSION_PARAMETERS,
+  DEFAULT_ROLLING_BURST_STAGGER,
+  MODERN_EXPLOSION_PARAMETERS,
   MAX_CANVAS_SIZE,
   MIN_CANVAS_SIZE,
   createExplosionSurface,
@@ -85,6 +87,7 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
             <>
               <NumberControl label={familyT('explosion.controls.lobeCount.label')} description={familyT('explosion.controls.lobeCount.description')} value={parameters.body.lobeCount} minimum={3} maximum={9} onChange={(lobeCount) => updateBody({ lobeCount })} />
               <PercentControl label={familyT('explosion.controls.churnAmount.label')} description={familyT('explosion.controls.churnAmount.description')} value={parameters.body.churnAmount} minimum={0} maximum={1} onChange={(churnAmount) => updateBody({ churnAmount })} />
+              <PercentControl label={familyT('explosion.controls.burstStagger.label')} description={familyT('explosion.controls.burstStagger.description')} value={parameters.body.burstStagger ?? DEFAULT_ROLLING_BURST_STAGGER} minimum={0} maximum={1} onChange={(burstStagger) => updateBody({ burstStagger })} />
             </>
           ) : null}
           {parameters.body.shape === 'shockBlast' ? (
@@ -238,11 +241,19 @@ const SHAPE_THUMBNAIL_BASE: ExplosionParameters = {
   fragments: { ...DEFAULT_EXPLOSION_PARAMETERS.fragments, enabled: false },
 }
 
+const ROLLING_SHAPE_THUMBNAIL_BASE: ExplosionParameters = {
+  ...SHAPE_THUMBNAIL_BASE,
+  body: MODERN_EXPLOSION_PARAMETERS.body,
+  volume: MODERN_EXPLOSION_PARAMETERS.volume,
+  surface: MODERN_EXPLOSION_PARAMETERS.surface,
+  motion: MODERN_EXPLOSION_PARAMETERS.motion,
+}
+
 const SHAPE_CARD_OPTIONS: readonly ShapeCardOption<ExplosionParameters>[] = [
   { value: 'billowBurst', labelKey: 'explosion.options.billowBurst', descriptionKey: 'explosion.shapeDescriptions.billowBurst', buildParameters: () => selectExplosionShape(SHAPE_THUMBNAIL_BASE, 'billowBurst') },
   { value: 'puffCluster', labelKey: 'explosion.options.puffCluster', descriptionKey: 'explosion.shapeDescriptions.puffCluster', buildParameters: () => selectExplosionShape(SHAPE_THUMBNAIL_BASE, 'puffCluster') },
   { value: 'legacyRadial', labelKey: 'explosion.options.legacyRadial', descriptionKey: 'explosion.shapeDescriptions.legacyRadial', buildParameters: () => selectExplosionShape(SHAPE_THUMBNAIL_BASE, 'legacyRadial') },
-  { value: 'rollingFireball', labelKey: 'explosion.options.rollingFireball', descriptionKey: 'explosion.shapeDescriptions.rollingFireball', buildParameters: () => selectExplosionShape(SHAPE_THUMBNAIL_BASE, 'rollingFireball') },
+  { value: 'rollingFireball', labelKey: 'explosion.options.rollingFireball', descriptionKey: 'explosion.shapeDescriptions.rollingFireball', buildParameters: () => ROLLING_SHAPE_THUMBNAIL_BASE },
   { value: 'smokeBurst', labelKey: 'explosion.options.smokeBurst', descriptionKey: 'explosion.shapeDescriptions.smokeBurst', buildParameters: () => selectExplosionShape(SHAPE_THUMBNAIL_BASE, 'smokeBurst') },
   { value: 'shockBlast', labelKey: 'explosion.options.shockBlast', descriptionKey: 'explosion.shapeDescriptions.shockBlast', buildParameters: () => selectExplosionShape(SHAPE_THUMBNAIL_BASE, 'shockBlast') },
 ]

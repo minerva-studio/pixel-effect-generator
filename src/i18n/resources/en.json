@@ -531,7 +531,7 @@
       },
       "radius": {
         "label": "Radius",
-        "description": "Maximum radius of the centered fireball."
+        "description": "Overall blast range; rolling fireball size and travel scale with it."
       },
       "volume": {
         "label": "Volume layering",
@@ -574,12 +574,16 @@
       },
       "fieldMaterial": "This shape builds its outline and color bands from one field; tune band flow and late breakup here.",
       "churnAmount": {
-        "label": "Fire-mass expansion",
-        "description": "Controls how strongly individual fire masses keep rolling outward after their staggered formation."
+        "label": "Rolling intensity",
+        "description": "Controls each fireball's rotating contour and moving hot spot."
       },
       "lobeCount": {
-        "label": "Fire-mass count",
-        "description": "Number of overlapping fire masses forming the rolling fireball."
+        "label": "Fireball count",
+        "description": "Number of distinct fireballs in the chain explosion."
+      },
+      "burstStagger": {
+        "label": "Burst interval",
+        "description": "Spreads fireball births across the opening 60% of the animation; zero starts them together."
       },
       "pressureCount": {
         "label": "Shell count",
@@ -849,7 +853,7 @@
     "shapeDescriptions": {
       "billowBurst": "A surging front with billowed edges that rolls over, burns out from the middle, and throws sparks.",
       "puffCluster": "Thrown fire masses slow, roll, rise, and cool into separate chunks.",
-      "rollingFireball": "Overlapping fire masses roll outward as one connected explosion.",
+      "rollingFireball": "Distinct fireballs burst in sequence, roll outward, and overlap in depth.",
       "shockBlast": "A bright core drives separated short shell plates through angular gaps.",
       "smokeBurst": "A low broad smoke mass expands around hot embers.",
       "legacyRadial": "The original dense radial pixel explosion."
@@ -882,7 +886,7 @@
       },
       "rollingFireball": {
         "name": "Rolling Fireball",
-        "description": "Overlapping fire masses expand and cool on staggered schedules."
+        "description": "Distinct fireballs burst in sequence, overlap in depth, and cool separately."
       },
       "pressureBurst": {
         "name": "Shock Blast",
@@ -902,7 +906,7 @@
       },
       "moltenCoreFireball": {
         "name": "Molten Core Fireball",
-        "description": "A dark shell with a persistent exposed molten core."
+        "description": "Separate fireballs hold their molten hot spots longer as they cool."
       }
     },
     "seed": {

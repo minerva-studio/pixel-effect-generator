@@ -6,6 +6,7 @@ import { ShapeCardGrid, ShockwaveControls, type DissolvePatch, type FamilyTransl
 import type { SharedShockwaveParameters } from '../../shared-effects/types'
 import { ExplosionControls, ExplosionPreviewTools } from '../controls'
 import { DEFAULT_EXPLOSION_PARAMETERS, LEGACY_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
+import * as explosionRenderer from '../renderer'
 import type { ExplosionCategory } from '../module'
 
 afterEach(() => vi.unstubAllGlobals())
@@ -17,6 +18,20 @@ function renderControls(category: ExplosionCategory, locale: 'en' | 'zh-CN' = 'e
 }
 
 describe('combustion explosion controls', () => {
+  it('previews the rolling shape with the same volume body as its preset', () => {
+    const render = vi.spyOn(explosionRenderer, 'renderExplosionFrames')
+    try {
+      renderControls('shape')
+      const thumbnail = render.mock.calls.find(([parameters]) => parameters.body.shape === 'rollingFireball')?.[0]
+      expect(thumbnail).toBeDefined()
+      expect(thumbnail?.volume).toEqual({ enabled: true, profile: 'hardShell' })
+      expect(thumbnail?.core.enabled).toBe(false)
+      expect(thumbnail?.fragments.enabled).toBe(false)
+    } finally {
+      render.mockRestore()
+    }
+  })
+
   it('renders fixed-seed shape cards and shape-specific body controls', () => {
     const body = renderControls('shape', 'en', MODERN_EXPLOSION_PARAMETERS)
     expect(body).toContain('Rolling fireball')
@@ -27,8 +42,9 @@ describe('combustion explosion controls', () => {
     expect(body.indexOf('Legacy radial')).toBeLessThan(body.indexOf('Rolling fireball'))
     expect(body.indexOf('Smoke burst')).toBeLessThan(body.indexOf('Shock blast'))
     expect(body).toContain('shape-card')
-    expect(body).toContain('Fire-mass expansion')
-    expect(body).toContain('Fire-mass count')
+    expect(body).toContain('Rolling intensity')
+    expect(body).toContain('Fireball count')
+    expect(body).toContain('Burst interval')
     expect(body).not.toContain('Surface material')
     expect(body).not.toContain('Volume layering')
     expect(body).not.toContain('Internal structure')

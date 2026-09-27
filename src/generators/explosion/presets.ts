@@ -8,6 +8,7 @@ import {
   clampInteger,
   createExplosionSurface,
   DEFAULT_EXPLOSION_PARAMETERS,
+  DEFAULT_ROLLING_BURST_STAGGER,
   EXPLOSION_SHAPES,
   FIELD_BODY_DEFAULTS,
   LEGACY_EXPLOSION_PARAMETERS,
@@ -83,6 +84,9 @@ export function parseExplosionPresetPayload(value: unknown): ExplosionPresetFiel
       shapeIrregularity: readNumber(body, 'shapeIrregularity', 0, 1),
       churnAmount: readNumber(body, 'churnAmount', 0, 1),
       lobeCount: readOptionalInteger(body, 'lobeCount', 3, 9, 5),
+      ...(shape === 'rollingFireball' || body.burstStagger !== undefined
+        ? { burstStagger: readOptionalNumber(body, 'burstStagger', 0, 1, DEFAULT_ROLLING_BURST_STAGGER) }
+        : {}),
       pressureWidth: readInteger(body, 'pressureWidth', 1, 48),
       pressureCount: readOptionalInteger(body, 'pressureCount', 3, 12, 5),
       pressureSharpness: readNumber(body, 'pressureSharpness', 0, 1),
@@ -355,18 +359,18 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
   {
     id: 'rollingFireball',
     name: 'Rolling Fireball',
-    description: 'Overlapping fire masses expand and cool on staggered schedules.',
+    description: 'Distinct fireballs burst in sequence, overlap in depth, and cool separately.',
     payload: captureExplosionPreset(MODERN_EXPLOSION_PARAMETERS),
   },
   {
     id: 'moltenCoreFireball',
     name: 'Molten Core Fireball',
-    description: 'A dark shell with a persistent exposed molten core.',
+    description: 'Separate fireballs hold their molten hot spots longer as they cool.',
     payload: captureExplosionPreset({
       ...MODERN_EXPLOSION_PARAMETERS,
-      seed: 20260809,
+      seed: 20260810,
       volume: { enabled: true, profile: 'moltenCore' },
-      core: { ...MODERN_EXPLOSION_PARAMETERS.core, radius: 18, duration: 0.82 },
+      core: { ...MODERN_EXPLOSION_PARAMETERS.core, enabled: false },
     }),
   },
   {

@@ -1,6 +1,6 @@
 import { isPlainRecord } from '../../shared/project/document'
 import type { GeneratorProjectCodec, JsonValue } from '../../shared/project/types'
-import { assertValidExplosionParameters, FIELD_BODY_DEFAULTS, type ExplosionParameters } from './model'
+import { assertValidExplosionParameters, DEFAULT_ROLLING_BURST_STAGGER, FIELD_BODY_DEFAULTS, normalizeExplosionVolume, type ExplosionParameters } from './model'
 
 const REQUIRED_ROOT_KEYS = [
   'palette', 'canvasWidth', 'canvasHeight', 'frameCount', 'seed',
@@ -39,7 +39,7 @@ export function parseExplosionParameters(value: unknown): ExplosionParameters {
   requireSurface(value.surface)
   requirePalette(value.palette)
 
-  const parameters = JSON.parse(JSON.stringify(value)) as ExplosionParameters
+  let parameters = JSON.parse(JSON.stringify(value)) as ExplosionParameters
   // Projects saved before the billow and fire-mass shapes lack their body fields.
   for (const [key, fallback] of Object.entries(FIELD_BODY_DEFAULTS)) {
     const body = parameters.body as unknown as Record<string, unknown>
@@ -49,6 +49,13 @@ export function parseExplosionParameters(value: unknown): ExplosionParameters {
   requireBoolean(parameters.core.enabled, 'core.enabled')
   requireBoolean(parameters.tongues.enabled, 'tongues.enabled')
   requireBoolean(parameters.fragments.enabled, 'fragments.enabled')
+  if (parameters.body.shape === 'rollingFireball') {
+    parameters = {
+      ...parameters,
+      body: { ...parameters.body, burstStagger: parameters.body.burstStagger === undefined ? DEFAULT_ROLLING_BURST_STAGGER : parameters.body.burstStagger },
+      volume: normalizeExplosionVolume(parameters.body.shape, parameters.volume),
+    }
+  }
   try {
     assertValidExplosionParameters(parameters)
   } catch (error) {

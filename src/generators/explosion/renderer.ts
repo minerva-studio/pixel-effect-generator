@@ -11,6 +11,7 @@ import { renderTongues } from '../shared-effects/tongues'
 import type { FragmentDescriptor } from '../shared-effects/fragments'
 import type { DissolveStyle, LobeView, SurfaceSample } from '../shared-effects/types'
 import { renderBillowBurstBody, renderPuffClusterBody } from './fieldBodies'
+import { renderRollingFireballBody, rollingFireballViews } from './rollingFireball'
 import {
   assertValidExplosionParameters,
   explosionShapeCount,
@@ -29,7 +30,7 @@ interface BlobDescriptor {
   readonly curveSign: number
 }
 
-type BodyPrimitiveRole = 'core' | 'fire' | 'shell' | 'ember' | 'cinder' | 'smoke' | 'smokeWisp' | 'smokeParticle' | 'smokeParticleDark' | 'smokeBridge' | 'spark' | 'connector'
+type BodyPrimitiveRole = 'core' | 'shell' | 'ember' | 'cinder' | 'smoke' | 'smokeWisp' | 'smokeParticle' | 'smokeParticleDark' | 'smokeBridge' | 'spark' | 'connector'
 
 interface BodyPrimitiveBase {
   readonly owner: number
@@ -90,7 +91,7 @@ interface PrimitiveHit {
 export function renderExplosionFrames(parameters: ExplosionParameters): PixelFrame[] {
   assertValidExplosionParameters(parameters)
   const fragments = generateFragments(parameters.palette, parameters.seed, parameters.fragments)
-  const blobs = parameters.body.shape === 'legacyRadial' || isFieldExplosionShape(parameters.body.shape) ? [] : generateBlobs(parameters)
+  const blobs = parameters.body.shape === 'legacyRadial' || parameters.body.shape === 'rollingFireball' || isFieldExplosionShape(parameters.body.shape) ? [] : generateBlobs(parameters)
   return Array.from({ length: parameters.frameCount }, (_, frameIndex) => (
     renderExplosionFrame(parameters, fragments, blobs, frameIndex)
   ))
@@ -112,6 +113,7 @@ function renderExplosionFrame(
   const legacyBody = parameters.body.shape === 'legacyRadial' && parameters.surface.style === 'retroPixel'
   if (parameters.body.shape === 'billowBurst') renderBillowBurstBody(pixels, width, height, parameters, lifecycle)
   else if (parameters.body.shape === 'puffCluster') renderPuffClusterBody(pixels, width, height, parameters, lifecycle)
+  else if (parameters.body.shape === 'rollingFireball') renderRollingFireballBody(pixels, width, height, parameters, lifecycle)
   else if (legacyBody) renderLegacyPixelNoiseBody(pixels, width, height, parameters, time)
   else renderModernBody(pixels, width, height, parameters, blobs, time)
   const views = parameters.tongues.enabled && parameters.tongues.length > 0
@@ -157,23 +159,10 @@ function generateBlobs(parameters: ExplosionParameters): BlobDescriptor[] {
   }))
   const averageGap = Math.PI * 2 / count
   let angles: number[]
-  if (parameters.body.shape === 'rollingFireball') {
-    const minimumGap = averageGap * lerp(1, 0.48, effectiveIrregularity)
-    const remainingAngle = Math.max(0, Math.PI * 2 - minimumGap * count)
-    const totalWeight = samples.reduce((sum, sample) => sum + sample.gapWeight, 0)
-    const phase = samples[0].angleNoise * averageGap * 0.35 * effectiveIrregularity
-    let cursor = rotation + phase
-    angles = samples.map((sample) => {
-      const angle = cursor
-      cursor += minimumGap + remainingAngle * sample.gapWeight / totalWeight
-      return angle
-    })
-  } else {
-    const angleJitter = Math.min(0.42, irregularity * 0.36 * (1 + Math.max(0, count - 5) * 0.32))
-    angles = samples.map((sample, index) => (
-      rotation + index / count * Math.PI * 2 + sample.angleNoise * averageGap * angleJitter
-    ))
-  }
+  const angleJitter = Math.min(0.42, irregularity * 0.36 * (1 + Math.max(0, count - 5) * 0.32))
+  angles = samples.map((sample, index) => (
+    rotation + index / count * Math.PI * 2 + sample.angleNoise * averageGap * angleJitter
+  ))
   const layerOrder = samples
     .map((sample, index) => ({ index, noise: sample.layerNoise }))
     .sort((left, right) => left.noise - right.noise)
@@ -262,97 +251,13 @@ function buildBodyPrimitives(
   lifecycle: number,
 ): BodyPrimitive[] {
   switch (parameters.body.shape) {
-    case 'rollingFireball': return buildRollingFireballPrimitives(parameters, blobs, lifecycle)
+    case 'rollingFireball': return []
     case 'shockBlast': return buildShockBlastPrimitives(parameters, blobs, time, lifecycle)
     case 'smokeBurst': return buildSmokeBurstPrimitives(parameters, blobs, time, lifecycle)
     case 'billowBurst':
     case 'puffCluster':
     case 'legacyRadial': return []
   }
-}
-
-/** Builds the compact overlapping fire masses used by the rolling fireball. */
-function buildRollingFireballPrimitives(
-  parameters: ExplosionParameters,
-  blobs: readonly BlobDescriptor[],
-  lifecycle: number,
-): BodyPrimitive[] {
-  const radius = parameters.body.radius
-  const growth = 0.82 * (1 - Math.exp(-12 * lifecycle)) + 0.18 * (1 - Math.exp(-2 * lifecycle))
-  const coreScale = parameters.volume.profile === 'moltenCore' ? 0.46 : 0.34
-  const coreExpansion = 1 + growth * 0.16 * parameters.body.churnAmount
-  const coreBurnout = 1 - smoothStep(clamp01((lifecycle - parameters.motion.dissolveStart) / Math.max(0.05, 0.74 - parameters.motion.dissolveStart)))
-  const expiries = rollingLobeExpiries(parameters)
-  const primitives: BodyPrimitive[] = []
-  if (coreBurnout > 0) primitives.push({
-    kind: 'ellipse', owner: 0, depth: parameters.volume.profile === 'moltenCore' ? 4 : 0, role: 'core',
-    x: 0, y: 0,
-    rx: radius * coreScale * growth * coreExpansion * coreBurnout,
-    ry: radius * coreScale * growth * coreExpansion * coreBurnout,
-    angle: 0,
-  })
-  blobs.slice(0, parameters.body.lobeCount).forEach((blob, index) => {
-    const age = Math.max(0, lifecycle - blob.delay * 0.12)
-    const lobeGrowth = 0.82 * (1 - Math.exp(-12 * age)) + 0.18 * (1 - Math.exp(-2 * age))
-    const expiry = expiries[index]
-    if (lifecycle >= expiry) return
-    const burnout = clamp01((lifecycle - parameters.motion.dissolveStart) / Math.max(0.05, expiry - parameters.motion.dissolveStart))
-    const orbit = (1 - Math.exp(-1.8 * age)) * parameters.body.churnAmount * 1.8
-    const direction = parameters.body.shapeIrregularity === 0 ? 1 : blob.curveSign
-    const angle = blob.angle + orbit * direction
-    const centerDistance = radius * (0.34 * lobeGrowth + 0.1 * burnout) * blob.radialScale
-    const stretch = 1 + Math.sin(age * 8 + blob.tongueNoise * parameters.body.shapeIrregularity * 2) * 0.2 * parameters.body.churnAmount
-    const retreat = 1 - 0.3 * burnout
-    const highCount = Math.max(0, parameters.body.lobeCount - 5)
-    const horizontalRadius = parameters.body.lobeCount <= 5
-      ? 0.28 + (index % 2) * 0.05
-      : 0.305 + blob.tongueNoise * 0.06 * parameters.body.shapeIrregularity * (1 + highCount * 0.2)
-    primitives.push({
-      kind: 'ellipse', owner: index + 1, depth: blob.depth, role: 'fire',
-      x: Math.cos(angle) * centerDistance,
-      y: Math.sin(angle) * centerDistance - radius * 0.06 * burnout,
-      rx: radius * horizontalRadius * blob.radiusScale * lobeGrowth * stretch * retreat
-        * (1 + lobeGrowth * 0.28 * parameters.body.churnAmount),
-      ry: radius * 0.3 * blob.radiusScale * lobeGrowth / stretch * retreat
-        * (1 + lobeGrowth * 0.28 * parameters.body.churnAmount),
-      angle,
-    })
-  })
-  // Afterburn particles use their own launch schedule and directions instead of mirroring the five lobes.
-  const cinderCount = Math.max(7, Math.round(parameters.body.lobeCount * 1.5))
-  for (let index = 0; index < cinderCount; index += 1) {
-    const launch = 0.54 + hashUnit(parameters.seed, index, 101) * 0.2
-    const expiry = 0.965 + hashUnit(parameters.seed, index, 106) * 0.02
-    const progress = clamp01((lifecycle - launch) / Math.max(0.01, expiry - launch))
-    if (progress <= 0 || lifecycle >= expiry) continue
-    const angle = parameters.body.rotation / 180 * Math.PI + hashUnit(parameters.seed, index, 102) * Math.PI * 2
-    const distance = radius * (0.58 + progress * (0.38 + hashUnit(parameters.seed, index, 103) * 0.34))
-    const tangent = (hashUnit(parameters.seed, index, 104) * 2 - 1) * radius * 0.1 * Math.sin(progress * Math.PI)
-    const cinderBloom = 0.45 + smoothStep(clamp01(progress / 0.75)) * 0.55
-    const cinderShrink = smoothStep(clamp01((progress - 0.7) / 0.3))
-    const cinderRadius = Math.max(0.7, radius * (0.026 + hashUnit(parameters.seed, index, 105) * 0.025) * cinderBloom * (1 - cinderShrink * 0.8))
-    primitives.push({
-      kind: 'ellipse', owner: 30 + index, depth: 4, role: 'cinder',
-      x: Math.cos(angle) * distance - Math.sin(angle) * tangent,
-      y: Math.sin(angle) * distance + Math.cos(angle) * tangent,
-      rx: cinderRadius * (1.1 + progress * 0.4), ry: cinderRadius, angle,
-    })
-  }
-  return primitives
-}
-
-/** Spreads lobe exits across the tail even when a seed clusters its raw hashes. */
-function rollingLobeExpiries(parameters: ExplosionParameters): number[] {
-  const order = Array.from({ length: parameters.body.lobeCount }, (_, index) => index)
-    .sort((left, right) => hashUnit(parameters.seed, left, 107) - hashUnit(parameters.seed, right, 107))
-  const expiries = new Array<number>(order.length)
-  const firstExit = Math.max(0.875, parameters.motion.dissolveStart + 0.025)
-  const lastExit = Math.max(0.945, firstExit + 0.04)
-  order.forEach((index, rank) => {
-    expiries[index] = firstExit + rank * ((lastExit - firstExit) / Math.max(1, order.length - 1))
-      + hashUnit(parameters.seed, index, 108) * 0.002
-  })
-  return expiries
 }
 
 const SHOCK_LAUNCH_RADIUS = 0.25
@@ -899,37 +804,14 @@ function frontPrimitiveHit(
   primitives: readonly BodyPrimitive[],
   x: number,
   y: number,
-  accepts: (hit: PrimitiveHit) => boolean = () => true,
 ): PrimitiveHit | undefined {
   let front: PrimitiveHit | undefined
   for (const primitive of primitives) {
     const hit = sampleBodyPrimitive(primitive, x, y)
-    if (!hit || !accepts(hit)) continue
+    if (!hit) continue
     if (!front || hit.depth > front.depth) front = hit
   }
   return front
-}
-
-/** Tests whether one visible fire-lobe hit has retreated during the late edge breakup. */
-function rollingFireballHitEroded(
-  parameters: ExplosionParameters,
-  hit: PrimitiveHit,
-  x: number,
-  y: number,
-  lifecycle: number,
-  expiries: readonly number[],
-): boolean {
-  if (parameters.body.shape !== 'rollingFireball' || hit.role !== 'fire') return false
-  if (lifecycle <= parameters.motion.dissolveStart) return false
-  const end = expiries[hit.owner - 1]
-  if (lifecycle >= end) return true
-  const ending = clamp01((lifecycle - parameters.motion.dissolveStart) / Math.max(0.05, end - parameters.motion.dissolveStart))
-  const angle = Math.atan2(y, x)
-  const sector = Math.floor((angle + Math.PI) / (Math.PI / 6))
-  const noise = interpolatedNoise(parameters.seed ^ 0x6a37ce91, x / 8, y / 8)
-  const erosion = 0.47 + hashUnit(parameters.seed, hit.owner, sector) * 0.06 + noise * 0.04
-  const cavity = Math.hypot(x, y) < parameters.body.radius * (0.43 * ending * ending + 0.17 * ending ** 8) * (0.8 + noise * 0.4)
-  return cavity || hit.distance > 1 - ending ** 0.63 * erosion
 }
 
 /** Draws ordered rear/core/front volumes with deterministic occlusion and fixed top-left light. */
@@ -950,29 +832,15 @@ function renderVolumeBody(
   const frontDepths = new Float32Array(size)
   const baseColors = new Uint8Array(size)
   const frontRoles = new Array<BodyPrimitiveRole | undefined>(size)
-  const rollingExpiries = parameters.body.shape === 'rollingFireball' ? rollingLobeExpiries(parameters) : []
   for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
     const localX = x + 0.5 - cx
     const localY = y + 0.5 - cy
-    const front = frontPrimitiveHit(
-      primitives,
-      localX,
-      localY,
-      (hit) => !rollingFireballHitEroded(parameters, hit, localX, localY, lifecycle, rollingExpiries),
-    )
+    const front = frontPrimitiveHit(primitives, localX, localY)
     if (!front) continue
     let band = front.distance * 0.72 + (1 - front.light) * 0.18
     if (parameters.body.shape === 'shockBlast' && front.role === 'core') {
       // Directional lighting avoids turning the central flash into concentric target rings.
       band = 0.16 + (1 - front.light) * 0.55
-    }
-    if (parameters.body.shape === 'rollingFireball' && (front.role === 'fire' || front.role === 'core')) {
-      const globalRadius = Math.hypot(localX, localY) / Math.max(1, parameters.body.radius)
-      const light = clamp01(0.65 - (localX + localY) / (parameters.body.radius * 3))
-      const variation = interpolatedNoise(parameters.seed ^ 0x194f3a7d, localX / 12, localY / 12) - 0.5
-      const cooling = smoothStep(clamp01((lifecycle - parameters.motion.dissolveStart) / Math.max(0.05, 0.95 - parameters.motion.dissolveStart)))
-      band = 0.1 + globalRadius * 0.8 + (1 - light) * 0.12 + variation * 0.24
-        + cooling * (0.3 + globalRadius * 0.48)
     }
     if (front.role === 'connector') band = 0.56
     if (front.role === 'smokeBridge') band = 0.64
@@ -1000,13 +868,10 @@ function renderVolumeBody(
     const paletteBand = clamp01(Math.min(0.94, band))
     const rawColorIndex = paletteIndex(parameters.palette, paletteBand)
     const smokeMayUseDeep = profile === 'smokeFire' && front.role === 'smokeParticleDark'
-    const rollingMayUseDeep = parameters.body.shape === 'rollingFireball'
-      && lifecycle >= 0.68
-      && (front.role === 'fire' || front.role === 'core' || front.role === 'cinder')
     const shockMayUseDeep = parameters.body.shape === 'shockBlast'
       && lifecycle >= parameters.motion.dissolveStart
       && (front.role === 'shell' || front.role === 'cinder')
-    const colorIndex = smokeMayUseDeep || rollingMayUseDeep || shockMayUseDeep
+    const colorIndex = smokeMayUseDeep || shockMayUseDeep
       ? rawColorIndex
       : Math.min(parameters.palette.length - 2, rawColorIndex)
     const offset = y * width + x
@@ -1053,7 +918,7 @@ function renderVolumeBody(
         ? internalDark
         : deepest
     }
-    else if (frontBoundary && parameters.body.shape !== 'rollingFireball') colorIndex = internalDark
+    else if (frontBoundary) colorIndex = internalDark
     writePixel(pixels, width, height, x, y, parameters.palette[colorIndex])
   }
 }
@@ -1266,30 +1131,9 @@ function shapeViews(
   time: number,
 ): LobeView[] {
   const lifecycle = lifecycleAt(parameters.motion.mode, time)
+  if (parameters.body.shape === 'rollingFireball') return rollingFireballViews(parameters, lifecycle)
   if (parameters.body.shape !== 'legacyRadial' && blobs.length > 0) {
-    const rollingPrimitives = parameters.body.shape === 'rollingFireball'
-      ? buildRollingFireballPrimitives(parameters, blobs, lifecycle)
-      : []
     return blobs.map((blob, index) => {
-      if (parameters.body.shape === 'rollingFireball') {
-        const primitive = rollingPrimitives.find((candidate) => candidate.role === 'fire' && candidate.owner === index + 1)
-        if (!primitive || primitive.kind !== 'ellipse') return {
-          angle: blob.angle,
-          tipDistance: 0,
-          growth: 0,
-          lengthScale: blob.radiusScale,
-          tongueNoise: blob.tongueNoise,
-          curveSign: blob.curveSign,
-        }
-        return {
-          angle: Math.atan2(primitive.y, primitive.x),
-          tipDistance: Math.hypot(primitive.x, primitive.y) + Math.max(primitive.rx, primitive.ry),
-          growth: clamp01(Math.max(primitive.rx, primitive.ry) / Math.max(1, parameters.body.radius * 0.36)),
-          lengthScale: blob.radiusScale,
-          tongueNoise: blob.tongueNoise,
-          curveSign: blob.curveSign,
-        }
-      }
       const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle, blob.delay)
       const centerDistance = parameters.body.radius * 0.42 * growth
       const blobRadius = Math.max(0.5, parameters.body.radius * 0.28 * growth * blob.radiusScale)

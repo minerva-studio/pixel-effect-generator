@@ -531,7 +531,7 @@
       },
       "radius": {
         "label": "半径",
-        "description": "居中火球的最大半径。"
+        "description": "爆炸的整体范围；翻滚火球的大小与飞行距离随之缩放。"
       },
       "volume": {
         "label": "体积层级",
@@ -574,12 +574,16 @@
       },
       "fieldMaterial": "此形状的轮廓与色带来自同一个场；在此调节色带流动与后段破碎。",
       "churnAmount": {
-        "label": "火团膨胀",
-        "description": "控制各火团错时成形后继续翻滚并向外膨胀的幅度。"
+        "label": "翻滚强度",
+        "description": "控制各火球轮廓的旋转起伏与内部热点的移动。"
       },
       "lobeCount": {
-        "label": "火团数量",
-        "description": "构成翻滚火团的重叠火团数量。"
+        "label": "火球数量",
+        "description": "连爆中彼此可辨的火球数量。"
+      },
+      "burstStagger": {
+        "label": "连爆间隔",
+        "description": "将火球的出生时间铺在动画前 60%；设为零时同时爆出。"
       },
       "pressureCount": {
         "label": "壳片数量",
@@ -849,7 +853,7 @@
     "shapeDescriptions": {
       "billowBurst": "前缘猛冲、轮廓翻卷，中段翻滚、由内向外燃尽，并抛出火星。",
       "puffCluster": "火团被抛出后减速、翻滚、上浮并冷却，碎成独立的块。",
-      "rollingFireball": "多个火团作为一个连通爆炸体持续向外翻滚膨胀。",
+      "rollingFireball": "多个火球依次爆出、向外翻滚，并以前后层次相互遮挡。",
       "shockBlast": "亮核推动带角向缺口的短宽外壳裂片向外释放。",
       "smokeBurst": "低矮宽阔的烟团包围热余烬。",
       "legacyRadial": "原有密集径向像素爆炸。"
@@ -882,7 +886,7 @@
       },
       "rollingFireball": {
         "name": "翻滚火团",
-        "description": "多个火团错时膨胀、翻滚并逐步冷却。"
+        "description": "多个独立火球依次爆出、前后叠合，并各自翻滚冷却。"
       },
       "pressureBurst": {
         "name": "冲击爆破",
@@ -902,7 +906,7 @@
       },
       "moltenCoreFireball": {
         "name": "熔融热核火球",
-        "description": "暗色外壳包住持续透出的熔融热核。"
+        "description": "独立火球在冷却时更久地保留熔融热点。"
       }
     },
     "seed": {
