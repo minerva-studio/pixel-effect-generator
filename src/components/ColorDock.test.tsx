@@ -77,8 +77,10 @@ describe('ColorDockView', () => {
     expect(open).not.toContain('Apply colors to')
   })
 
-  it('reserves swatch room for the slot maximum so the palette button never shifts', () => {
-    expect(markup(1, 6)).toContain('class="color-dock-swatches" style="--slot-maximum:6"')
+  it('keeps the palette button before the swatches and the add button after them', () => {
+    const html = markup(1, 6)
+    expect(html.indexOf('class="color-dock-library-anchor"')).toBeLessThan(html.indexOf('class="color-dock-swatches"'))
+    expect(html.indexOf('class="color-dock-swatch"')).toBeLessThan(html.indexOf('class="color-dock-add"'))
   })
 
   it('exposes the color lock through aria-pressed', () => {

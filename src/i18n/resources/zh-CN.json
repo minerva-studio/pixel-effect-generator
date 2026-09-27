@@ -310,7 +310,7 @@
     "value": "{label} 数值",
     "colorDock": "生成器颜色",
     "editColors": "编辑",
-    "paletteLibraryToggle": "色库",
+    "paletteLibraryToggle": "色卡",
     "lockColors": "锁定颜色",
     "lockColorsHint": "锁定颜色：应用预设时保持当前颜色",
     "palette": {

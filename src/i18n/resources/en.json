@@ -310,7 +310,7 @@
     "value": "{label} value",
     "colorDock": "Generator colors",
     "editColors": "Edit",
-    "paletteLibraryToggle": "Palettes",
+    "paletteLibraryToggle": "Color cards",
     "lockColors": "Lock colors",
     "lockColorsHint": "Lock colors: keep current colors when applying a preset",
     "palette": {
