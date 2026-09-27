@@ -852,7 +852,7 @@
       "rollingFireball": "多个火团作为一个连通爆炸体持续向外翻滚膨胀。",
       "shockBlast": "亮核推动带角向缺口的短宽外壳裂片向外释放。",
       "smokeBurst": "低矮宽阔的烟团包围热余烬。",
-      "legacyRadial": "密集径向像素爆炸，外圈领先冲出、变细并逐渐断开。"
+      "legacyRadial": "原有密集径向像素爆炸。"
     },
     "effects": {
       "enabled": "开启",
@@ -898,7 +898,7 @@
       },
       "retroBurst": {
         "name": "复古爆发",
-        "description": "外圈领先冲出并断开，径向像素逐渐冷却成余烬。"
+        "description": "原有径向圆环与密集逐像素噪点。"
       },
       "moltenCoreFireball": {
         "name": "熔融热核火球",

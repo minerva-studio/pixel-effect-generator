@@ -3,7 +3,6 @@ import {
   LEGACY_EXPLOSION_PARAMETERS,
   DEFAULT_EXPLOSION_PARAMETERS,
   MODERN_EXPLOSION_PARAMETERS,
-  RETRO_EXPLOSION_PARAMETERS,
   assertValidExplosionParameters,
   createExplosionSurface,
   explosionFrameLimits,
@@ -24,35 +23,6 @@ describe('combustion explosion parameter model', () => {
     expect(selected.fragments).toBe(base.fragments)
     expect(selected.surface.style).toBe('burningLayers')
     expect(selected.volume).toEqual({ enabled: false, profile: 'hardShell' })
-  })
-
-  it('starts retro radial with the Retro Burst effect profile while retaining document settings', () => {
-    const base = {
-      ...DEFAULT_EXPLOSION_PARAMETERS,
-      seed: 77,
-      frameCount: 16,
-      motion: { ...DEFAULT_EXPLOSION_PARAMETERS.motion, mode: 'implosion' as const },
-    }
-    const selected = selectExplosionShape(base, 'legacyRadial')
-    expect(selected.body.shape).toBe('legacyRadial')
-    expect(selected.palette).toBe(base.palette)
-    expect(selected.seed).toBe(77)
-    expect(selected.frameCount).toBe(16)
-    expect(selected.motion).toEqual({ ...RETRO_EXPLOSION_PARAMETERS.motion, mode: 'implosion' })
-    expect(selected.surface).toEqual(RETRO_EXPLOSION_PARAMETERS.surface)
-    expect(selected.core).toEqual(RETRO_EXPLOSION_PARAMETERS.core)
-    expect(selected.shockwave).toEqual(RETRO_EXPLOSION_PARAMETERS.shockwave)
-    expect(selected.fragments).toEqual(RETRO_EXPLOSION_PARAMETERS.fragments)
-    expect(() => assertValidExplosionParameters(selected)).not.toThrow()
-    expect(selectExplosionShape(selected, 'legacyRadial').surface).toBe(selected.surface)
-  })
-
-  it('fits the retro starting profile to a small canvas', () => {
-    const small = resizeExplosionCanvas(DEFAULT_EXPLOSION_PARAMETERS, { width: 32, height: 32 })
-    const selected = selectExplosionShape(small, 'legacyRadial')
-    expect(() => assertValidExplosionParameters(selected)).not.toThrow()
-    expect(selected.body.radius).toBe(small.body.radius)
-    expect(selected.core.radius).toBe(Math.round(RETRO_EXPLOSION_PARAMETERS.core.radius * small.body.radius / RETRO_EXPLOSION_PARAMETERS.body.radius))
   })
 
   it('clamps shape-dependent tongue counts when selecting another shape', () => {

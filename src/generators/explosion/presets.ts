@@ -1,6 +1,7 @@
 import { isPlainRecord } from '../../shared/project/document'
 import type { JsonValue } from '../../shared/project/types'
 import type { RgbColor } from '../../shared/pixel/color'
+import { builtinPalette } from '../../shared/palette/library'
 import type { GeneratorPreset, GeneratorPresetCapability } from '../contract'
 import {
   assertValidExplosionParameters,
@@ -9,9 +10,9 @@ import {
   DEFAULT_EXPLOSION_PARAMETERS,
   EXPLOSION_SHAPES,
   FIELD_BODY_DEFAULTS,
+  LEGACY_EXPLOSION_PARAMETERS,
   MODERN_EXPLOSION_PARAMETERS,
   PUFF_EXPLOSION_PARAMETERS,
-  RETRO_EXPLOSION_PARAMETERS,
   SMOKE_EXPLOSION_PALETTE,
   explosionFrameLimits,
   explosionShapeCount,
@@ -297,12 +298,6 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
     }),
   },
   {
-    id: 'retroBurst',
-    name: 'Retro Burst',
-    description: 'A leading ring thins and breaks apart while radial pixels cool into embers.',
-    payload: captureExplosionPreset(RETRO_EXPLOSION_PARAMETERS),
-  },
-  {
     id: 'rollingFireball',
     name: 'Rolling Fireball',
     description: 'Overlapping fire masses expand and cool on staggered schedules.',
@@ -360,6 +355,60 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
       volume: { enabled: true, profile: 'hardShell' },
       core: { ...MODERN_EXPLOSION_PARAMETERS.core, radius: 13, duration: 0.18 },
       fragments: { ...MODERN_EXPLOSION_PARAMETERS.fragments, count: 6, travelDistance: 20 },
+    }),
+  },
+  {
+    id: 'retroBurst',
+    name: 'Retro Burst',
+    description: 'The original radial ring with dense per-pixel noise.',
+    payload: captureExplosionPreset({
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      palette: builtinPalette('retroBurst'),
+      seed: 20260805,
+      body: {
+        shape: 'legacyRadial',
+        radius: 42,
+        rotation: 0,
+        shapeIrregularity: 0.28,
+        churnAmount: 0.5,
+        lobeCount: 5,
+        pressureWidth: 6,
+        pressureCount: 5,
+        pressureSharpness: 0.8,
+        blastWidth: 0.58,
+        blastAngle: 0,
+        smokeSpread: 0.72,
+        smokeRise: 0.18,
+        smokeCount: 5,
+        smokeMotion: 'billowing',
+        ...FIELD_BODY_DEFAULTS,
+      },
+      volume: { enabled: false, profile: 'hardShell' },
+      surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1.1, dissolveCooling: 0.8 },
+      motion: {
+        mode: 'explosion',
+        formationDuration: 0.46,
+        holdDuration: 0,
+        motionCurve: 'balanced',
+        dissolveStart: 0.58,
+      },
+      core: { enabled: true, radius: 16, duration: 0.42 },
+      shockwave: {
+        mode: 'ring',
+        colorMode: 'flat',
+        thickness: 3,
+        startRadiusScale: 0,
+        endRadiusScale: 1.4,
+        startTime: 0,
+        duration: 0.7,
+        fade: 1,
+        ringCount: 3,
+        ringSpacing: 0.55,
+        squash: 0,
+        squashAngle: 0,
+      },
+      tongues: { enabled: false, count: 1, length: 0, width: 1, curvature: 0, variation: 0 },
+      fragments: { enabled: true, count: 30, minSize: 1, maxSize: 3, travelDistance: 30, tangentialDrift: 9, lifetime: 0.68 },
     }),
   },
 ]

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { payloadsEqual, resolveAppliedPresetBaseline } from '../../../components/PresetBar'
 import { en, presetDisplayKeys, translate } from '../../../i18n/messages'
 import type { JsonValue } from '../../../shared/project/types'
-import { LEGACY_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, RETRO_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
+import { LEGACY_EXPLOSION_PARAMETERS, MODERN_EXPLOSION_PARAMETERS, type ExplosionParameters } from '../model'
 import { renderExplosionFrames } from '../renderer'
 import {
   EXPLOSION_BUILTIN_PRESETS,
@@ -18,7 +18,7 @@ import {
 
 describe('combustion explosion built-in presets', () => {
   it('exposes nine unique valid V7 payloads', () => {
-    expect(EXPLOSION_BUILTIN_PRESETS.map(({ id }) => id)).toEqual(['billowBurst', 'fireMasses', 'smokyFireMasses', 'retroBurst', 'rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst'])
+    expect(EXPLOSION_BUILTIN_PRESETS.map(({ id }) => id)).toEqual(['billowBurst', 'fireMasses', 'smokyFireMasses', 'rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
     for (const preset of EXPLOSION_BUILTIN_PRESETS) {
       const payload = preset.payload as Record<string, unknown>
       expect(payload.schemaVersion).toBe(EXPLOSION_PRESET_SCHEMA_VERSION)
@@ -29,12 +29,11 @@ describe('combustion explosion built-in presets', () => {
     expect((EXPLOSION_BUILTIN_PRESETS[0].payload as Record<string, unknown>).body).toMatchObject({ shape: 'billowBurst' })
     expect((EXPLOSION_BUILTIN_PRESETS[1].payload as Record<string, unknown>).body).toMatchObject({ shape: 'puffCluster' })
     expect((EXPLOSION_BUILTIN_PRESETS[2].payload as Record<string, unknown>).body).toMatchObject({ shape: 'puffCluster' })
-    expect((EXPLOSION_BUILTIN_PRESETS[3].payload as Record<string, unknown>).body).toMatchObject({ shape: 'legacyRadial' })
-    expect(EXPLOSION_BUILTIN_PRESETS[3].payload).toEqual(captureExplosionPreset(RETRO_EXPLOSION_PARAMETERS))
-    expect((EXPLOSION_BUILTIN_PRESETS[4].payload as Record<string, unknown>).body).toMatchObject({ shape: 'rollingFireball' })
-    expect((EXPLOSION_BUILTIN_PRESETS[6].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'billowing' })
-    expect((EXPLOSION_BUILTIN_PRESETS[7].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'particulate' })
-    expect((EXPLOSION_BUILTIN_PRESETS[8].payload as Record<string, unknown>).body).toMatchObject({ shape: 'shockBlast', pressureWidth: 24, pressureCount: 5 })
+    expect((EXPLOSION_BUILTIN_PRESETS[3].payload as Record<string, unknown>).body).toMatchObject({ shape: 'rollingFireball' })
+    expect((EXPLOSION_BUILTIN_PRESETS[5].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'billowing' })
+    expect((EXPLOSION_BUILTIN_PRESETS[6].payload as Record<string, unknown>).body).toMatchObject({ shape: 'smokeBurst', smokeMotion: 'particulate' })
+    expect((EXPLOSION_BUILTIN_PRESETS[7].payload as Record<string, unknown>).body).toMatchObject({ shape: 'shockBlast', pressureWidth: 24, pressureCount: 5 })
+    expect((EXPLOSION_BUILTIN_PRESETS.at(-1)!.payload as Record<string, unknown>).body).toMatchObject({ shape: 'legacyRadial' })
   })
 
   it('defaults missing V6 pressure count and writes it on the next V7 capture', () => {
