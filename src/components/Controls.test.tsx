@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { I18nProvider } from '../i18n/I18nProvider'
-import { InfoHint, NumberControl, PercentControl, SelectControl, SegmentedControl, ToggleControl } from './controls'
+import { InfoHint, NumberControl, PercentControl, SelectControl, SegmentedControl, ToggleControl } from './Controls'
 
 afterEach(() => {
   vi.unstubAllGlobals()

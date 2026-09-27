@@ -1,4 +1,4 @@
-import { PercentControl, NumberControl, SelectControl } from '../../components/controls'
+import { PercentControl, NumberControl, SelectControl } from '../../components/Controls'
 import { createPreviewTools } from '../../components/PreviewTools'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { FrameSize } from '../../shared/pixel/frame'

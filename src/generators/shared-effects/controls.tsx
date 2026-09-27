@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { drawFrame } from '../../components/export'
-import { PercentControl, NumberControl, SelectControl  } from '../../components/controls'
+import { PercentControl, NumberControl, SelectControl  } from '../../components/Controls'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/messages'
 import type { PixelFrame } from '../../shared/pixel/frame'

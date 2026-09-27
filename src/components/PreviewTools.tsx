@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import { useI18n } from '../i18n/I18nProvider'
 import type { MessageKey } from '../i18n/messages'
 import type { FrameSize } from '../shared/pixel/frame'
-import { InfoHint } from './controls'
+import { InfoHint } from './Controls'
 
 /** Stable canvas preset identifiers used as select values; labels come from i18n. */
 const CANVAS_PRESETS: readonly { readonly id: string; readonly size: FrameSize }[] = [
