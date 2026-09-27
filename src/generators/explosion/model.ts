@@ -105,11 +105,25 @@ export interface ExplosionParameters {
   readonly fragments: SharedFragmentParameters
 }
 
-/** Changes only the selected shape and the volume/surface dependencies required to validate it. */
+/** The retro radial body's pixel surface, without preset colors or optional effects. */
+export const RETRO_RADIAL_BASE_SURFACE: Extract<ExplosionSurfaceParameters, { style: 'retroPixel' }> = {
+  style: 'retroPixel',
+  coverage: 0.9,
+  dissolveStyle: 'pixelNoise',
+  dissolveSize: 6,
+  dissolveJitter: 0.5,
+  dissolveDensity: 0,
+  dissolveSpeed: 1.1,
+  dissolveCooling: 0.8,
+}
+
+/** Changes the body shape and its required surface without applying a preset's colors or effects. */
 export function selectExplosionShape(parameters: ExplosionParameters, shape: ExplosionShape): ExplosionParameters {
   const surface = isFieldExplosionShape(shape) && parameters.surface.style !== 'burningLayers'
     ? createExplosionSurface('burningLayers', parameters.surface.coverage)
-    : parameters.surface
+    : shape === 'legacyRadial' && parameters.surface.style !== 'retroPixel'
+      ? RETRO_RADIAL_BASE_SURFACE
+      : parameters.surface
   const maxTongues = explosionShapeCount(shape, parameters.body.lobeCount, parameters.body.pressureCount)
   return {
     ...parameters,

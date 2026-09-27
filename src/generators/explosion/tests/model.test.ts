@@ -9,11 +9,27 @@ import {
   explosionShapeCount,
   explosionVolumeProfiles,
   normalizeExplosionVolume,
+  RETRO_RADIAL_BASE_SURFACE,
   resizeExplosionCanvas,
   selectExplosionShape,
 } from '../model'
 
 describe('combustion explosion parameter model', () => {
+  it('selects the retro radial body surface without applying Retro Burst colors or effects', () => {
+    const current = DEFAULT_EXPLOSION_PARAMETERS
+    const selected = selectExplosionShape(current, 'legacyRadial')
+
+    expect(selected.body.shape).toBe('legacyRadial')
+    expect(selected.surface).toEqual(RETRO_RADIAL_BASE_SURFACE)
+    expect(selected.palette).toBe(current.palette)
+    expect(selected.motion).toBe(current.motion)
+    expect(selected.core).toBe(current.core)
+    expect(selected.shockwave).toBe(current.shockwave)
+    expect(selected.fragments).toBe(current.fragments)
+    expect(selected.shockwave.mode).toBe('none')
+    expect(() => assertValidExplosionParameters(selected)).not.toThrow()
+  })
+
   it('changes body shape while preserving palette and effects and normalizing required dependencies', () => {
     const base = { ...DEFAULT_EXPLOSION_PARAMETERS, volume: { enabled: true, profile: 'hardShell' as const } }
     const selected = selectExplosionShape(base, 'billowBurst')

@@ -70,7 +70,7 @@ describe('generator registry', () => {
     expect(explosionModule.categories.map((category) => category.id)).toEqual(['shape', 'motion', 'material', 'effects'])
     expect(explosionModule.projectCodec?.generatorId).toBe('explosion')
     expect(explosionModule.projectCodec?.parse(explosionModule.projectCodec.serialize(explosionModule.defaultParameters))).toEqual(explosionModule.defaultParameters)
-    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['billowBurst', 'fireMasses', 'smokyFireMasses', 'rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst', 'retroBurst'])
+    expect(explosionModule.presetCapability?.builtIns.map((preset) => preset.id)).toEqual(['billowBurst', 'fireMasses', 'smokyFireMasses', 'retroBurst', 'rollingFireball', 'moltenCoreFireball', 'smokeBurst', 'particleSmokeBurst', 'pressureBurst'])
     expect(explosionModule.defaultParameters.body.shape).toBe('billowBurst')
     expect(explosionModule.render(explosionModule.defaultParameters)).toHaveLength(24)
   })
