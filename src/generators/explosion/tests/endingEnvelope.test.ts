@@ -31,8 +31,10 @@ describe('explosion preset ending envelope', () => {
         const lastVisible = areas.slice().reverse().find((area) => area > 0) ?? 0
         const largestDrop = Math.max(...areas.slice(1).map((area, index) => areas[index] - area))
         expect(peak).toBeGreaterThan(0)
-        expect(peakIndex / (frameCount - 1), `${presetId} peak frame`).toBeGreaterThanOrEqual(0.45)
-        expect(peakIndex / (frameCount - 1), `${presetId} peak frame`).toBeLessThanOrEqual(0.65)
+        // A shock blast hits at launch and brakes afterwards; bodies that build up peak mid-clip.
+        const [earliestPeak, latestPeak] = presetId === 'pressureBurst' ? [0.05, 0.3] : [0.45, 0.65]
+        expect(peakIndex / (frameCount - 1), `${presetId} peak frame`).toBeGreaterThanOrEqual(earliestPeak)
+        expect(peakIndex / (frameCount - 1), `${presetId} peak frame`).toBeLessThanOrEqual(latestPeak)
         expect(lastVisible / peak, `${presetId} last visible area`).toBeLessThanOrEqual(0.15)
         expect(largestDrop / peak, `${presetId} largest frame drop`).toBeLessThanOrEqual(0.45)
       })

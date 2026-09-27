@@ -337,12 +337,7 @@ function buildRollingFireballPrimitives(
 
 const SHOCK_LAUNCH_RADIUS = 0.25
 const SHOCK_EXIT_RADIUS = 1.05
-const SHOCK_DRAG = 2.2
-
-/** Quintic ease with zero velocity and acceleration at both ends. */
-function smootherStep(value: number): number {
-  return value * value * value * (value * (value * 6 - 15) + 10)
-}
+const SHOCK_DRAG = 2.5
 
 /** Builds separated short radial shell plates pushed outward by one central flash. */
 function buildShockBlastPrimitives(
@@ -356,7 +351,9 @@ function buildShockBlastPrimitives(
   const dissolveStart = parameters.motion.dissolveStart
   const growth = Math.max(formationGrowth(parameters.motion.mode, parameters.motion, lifecycle), Math.sqrt(clamp01(drift / 0.12)) * 0.9)
   const rotation = parameters.body.rotation / 180 * Math.PI
-  const coreRetreat = 1 - smoothStep(clamp01((drift - dissolveStart) / 0.2))
+  // The flash spends itself on the same drag law that throws the plates, then retires after dissolve start.
+  const coreRetreat = (0.3 + 0.7 * Math.exp(-SHOCK_DRAG * drift / (dissolveStart + 0.34)))
+    * (1 - smoothStep(clamp01((drift - dissolveStart) / 0.2)))
   const primitives: BodyPrimitive[] = []
   if (coreRetreat > 0) primitives.push({
     kind: 'ellipse', owner: 0, depth: parameters.volume.profile === 'moltenCore' ? 4 : 0, role: 'core',
@@ -369,22 +366,19 @@ function buildShockBlastPrimitives(
     if (drift <= delay) continue
     const jitter = (blob?.tongueNoise ?? 0) * parameters.body.shapeIrregularity * 0.14
     const angle = rotation + index / plateCount * Math.PI * 2 + jitter
-    // Each plate stays whole and keeps pushing outward until it leaves; exits are lightly staggered.
-    const exit = 0.92 + hashUnit(parameters.seed, index, 107) * 0.06
+    // Each plate stays whole and keeps pushing outward until it leaves; dissolve start sets its lifetime.
+    const exit = Math.min(0.98, dissolveStart + 0.34 + hashUnit(parameters.seed, index, 107) * 0.06)
     const life = clamp01((drift - delay) / Math.max(0.05, exit - delay))
     if (life >= 1) continue
-    // A drag-slowed blast front: launched at full speed, velocity decays exponentially and never
-    // reaches zero, so speed, acceleration, and jerk all change monotonically with no kinks.
-    const front = radius * (SHOCK_LAUNCH_RADIUS + (SHOCK_EXIT_RADIUS - SHOCK_LAUNCH_RADIUS)
-      * (1 - Math.exp(-SHOCK_DRAG * life)) / (1 - Math.exp(-SHOCK_DRAG)))
-    // Thickness swells in and thins out through C2-smooth envelopes. The plate emerges from the
-    // core while it swells; after dissolve start its trailing edge catches up with the front,
-    // leaving a 1px rim that exits on its own.
+    // Both edges follow one drag law: the plate is thrown at full speed and every speed decays by the
+    // same exponential factor, so the front and the trailing edge brake together as one shock. The
+    // trailing edge carries the extra travel that compresses the plate into a 1px rim by its exit.
     const width = parameters.body.pressureWidth
-    const swell = smootherStep(clamp01(life / 0.12))
-    const outerEdge = front + width * 0.5 * swell
-    const fade = clamp01((drift - dissolveStart) / Math.max(0.05, (exit - dissolveStart) * 1.1))
-    const thickness = Math.max(1, width * swell * (1 - smootherStep(fade)))
+    const settled = Math.exp(-SHOCK_DRAG)
+    const remaining = (Math.exp(-SHOCK_DRAG * life) - settled) / (1 - settled)
+    const travel = radius * (SHOCK_EXIT_RADIUS - SHOCK_LAUNCH_RADIUS) * (1 - remaining)
+    const outerEdge = radius * SHOCK_LAUNCH_RADIUS + width * 0.5 + travel
+    const thickness = 1 + (width - 1) * remaining
     const halfAngle = (Math.PI / plateCount) * (0.52 + (blob?.radiusScale ?? 1) * 0.08)
     primitives.push({
       kind: 'shellSector', owner: index + 1, depth: 2 + (blob?.depth ?? 1) * 0.2, role: 'shell',

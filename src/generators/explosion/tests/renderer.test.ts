@@ -136,15 +136,15 @@ describe('renderExplosionFrames', () => {
       volume: { enabled: true, profile: 'hardShell' },
     }, MODERN_EXPLOSION_PARAMETERS)
     const frames = renderExplosionFrames(parameters)
-    const middle = frames[4]
+    const middle = frames[3]
     expect(opaqueComponents(middle)).toBeGreaterThanOrEqual(4)
     expect(opaqueComponents(middle)).toBeLessThanOrEqual(6)
     expect(countOpaqueInside(middle, 6)).toBeGreaterThan(0)
     expect(occupiedAngleBinsOutside(middle, 72, parameters.body.radius * 0.35)).toBeLessThan(64)
     expect(countOpaqueRegion(middle, (x, y) => Math.hypot(x - middle.width / 2, y - middle.height / 2) > parameters.body.radius * 0.3))
       .toBeGreaterThan(countOpaqueInside(middle, parameters.body.radius * 0.3))
-    expect(countExactColorOutside(middle, parameters.palette[0], parameters.body.radius * 0.3)).toBeGreaterThan(0)
-    const wedgeSpans = [28, 32, 36].map((radius) => angularSpanNear(middle, radius, 0, 0.7))
+    expect(countExactColorOutside(middle, parameters.palette[0], 0), 'the contracting flash stays white-hot').toBeGreaterThan(0)
+    const wedgeSpans = [34, 36, 38].map((radius) => angularSpanNear(middle, radius, 0, 0.7))
     expect(wedgeSpans[0]).toBeGreaterThan(wedgeSpans[1])
     expect(wedgeSpans[1]).toBeGreaterThan(wedgeSpans[2])
   })
@@ -201,17 +201,18 @@ describe('renderExplosionFrames', () => {
       body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'shockBlast', pressureWidth: 4, pressureSharpness: 0.8, shapeIrregularity: 0, rotation: 0 },
       volume: { enabled: true, profile: 'hardShell' },
     }, MODERN_EXPLOSION_PARAMETERS)
-    const thin = renderExplosionFrames(base)[5]
-    const normal = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 14 } })[5]
-    const thick = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 24 } })[5]
-    const maximum = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 48 } })[5]
+    const thin = renderExplosionFrames(base)[3]
+    const normal = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 14 } })[3]
+    const thick = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 24 } })[3]
+    const maximum = renderExplosionFrames({ ...base, body: { ...base.body, pressureWidth: 48 } })[3]
     const minimumRadius = base.body.radius * 0.35
     expect(countOpaque(normal)).toBeGreaterThan(countOpaque(thin))
     expect(countOpaque(thick)).toBeGreaterThan(countOpaque(normal))
     expect(countOpaque(maximum)).toBeGreaterThan(countOpaque(thick))
     expect(occupiedAngleRunsOutside(maximum, 144, minimumRadius)).toBe(5)
     expect(Math.abs(occupiedAngleBinsOutside(thin, 72, minimumRadius) - occupiedAngleBinsOutside(thick, 72, minimumRadius))).toBeLessThanOrEqual(3)
-    expect(Math.abs(meanOpaqueRadiusOutside(thin, minimumRadius) - meanOpaqueRadiusOutside(thick, minimumRadius))).toBeLessThanOrEqual(1.5)
+    // Plates launch centered on the core edge, so the front sits half the extra width further out.
+    expect(Math.abs(maximumRadius(thick) - maximumRadius(thin) - (24 - 4) / 2)).toBeLessThanOrEqual(1.5)
   })
 
   it('does not let hidden flat-surface coverage suppress volume rendering', () => {
@@ -1071,19 +1072,6 @@ function angularSpanNear(
   return Number.isFinite(minimum) && Number.isFinite(maximum) ? maximum - minimum : 0
 }
 
-/** Measures the mean centered radius of opaque pixels beyond a solid core. */
-function meanOpaqueRadiusOutside(frame: PixelFrame, minimumRadius: number): number {
-  let total = 0
-  let count = 0
-  for (let y = 0; y < frame.height; y += 1) for (let x = 0; x < frame.width; x += 1) {
-    if (frame.pixels[(y * frame.width + x) * 4 + 3] === 0) continue
-    const radius = Math.hypot(x + 0.5 - frame.width / 2, y + 0.5 - frame.height / 2)
-    if (radius < minimumRadius) continue
-    total += radius
-    count += 1
-  }
-  return total / Math.max(1, count)
-}
 
 /** Splits opaque pixels into contiguous radial bands with their angular coverage. */
 function radialBands(frame: PixelFrame): { readonly angleBins: number }[] {
