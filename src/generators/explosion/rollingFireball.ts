@@ -16,6 +16,17 @@ interface RollingBallsTuning {
 
 const TAU = Math.PI * 2
 
+// A brief outward impulse makes new lobes travel before they reach full size;
+// the linear remainder keeps them drifting after that first surge.
+function rollingTravelProgress(age: number): number {
+  const progress = clamp01(age)
+  return 0.55 * (1 - Math.exp(-12 * progress)) / (1 - Math.exp(-12)) + 0.45 * progress
+}
+
+function rollingGrowthProgress(age: number, index: number): number {
+  return 1 - Math.exp(-(index === 0 ? 16 : 8) * clamp01(age))
+}
+
 function tuningFor(parameters: ExplosionParameters): RollingBallsTuning {
   return {
     ...parameters.body,
@@ -99,7 +110,7 @@ export function renderRollingFireballBody(
     if (rawAge <= 0 || rawAge >= 1) continue
     const age = rawAge
     if (age >= 0.995) continue
-    const travel = (1 - Math.exp(-2.4 * age)) / (1 - Math.exp(-2.4))
+    const travel = rollingTravelProgress(age)
     const lift = smoothStep(clamp01((age - 0.55) / 0.45))
     const tangent = (age * 0.055 + Math.sin(age * 8 + ball.phase) * 0.025) * tuning.radius * churn
     const centerX = Math.cos(ball.angle) * ball.travel * travel - Math.sin(ball.angle) * tangent
@@ -108,7 +119,7 @@ export function renderRollingFireballBody(
     const coolingStart = Math.min(0.88, tuning.dissolveStart + 0.1 * birthRank ** 3) - ball.coolingLead
     const cooling = smoothStep(clamp01((age - coolingStart) / Math.max(0.05, 1 - coolingStart)))
     const erosion = Math.min(1, cooling * 1.02)
-    const growth = 1 - Math.exp(-16 * age)
+    const growth = rollingGrowthProgress(age, ball.index)
     const radius = ball.radius * growth * (1 - 0.2 * erosion - 0.1 * erosion * erosion)
     if (radius < 0.5) continue
     const threshold = 0.08 + 0.35 * erosion + 0.025 * smoothStep(clamp01((age - 0.82) / 0.18))
@@ -170,6 +181,7 @@ export function renderRollingFireballBody(
     pixels[offset + 2] = color.b
     pixels[offset + 3] = color.a
   }
+  renderRollingBurstSparks(pixels, width, height, parameters, balls, time)
   renderRollingCinders(pixels, width, height, parameters, balls, time)
 }
 
@@ -178,8 +190,8 @@ export function rollingFireballViews(parameters: ExplosionParameters, time: numb
   const tuning = tuningFor(parameters)
   return ballsFor(parameters.seed, tuning).map((ball) => {
     const age = (time - ball.birth) / (ball.death - ball.birth)
-    const growth = age > 0 && age < 1 ? 1 - Math.exp(-16 * age) : 0
-    const travel = (1 - Math.exp(-2.4 * clamp01(age))) / (1 - Math.exp(-2.4))
+    const growth = age > 0 && age < 1 ? rollingGrowthProgress(age, ball.index) : 0
+    const travel = rollingTravelProgress(age)
     return {
       angle: ball.angle + ball.spin * clamp01(age) * TAU * (0.4 + tuning.churnAmount * 0.8),
       tipDistance: growth ? ball.travel * travel + ball.radius * growth : 0,
@@ -189,6 +201,56 @@ export function rollingFireballViews(parameters: ExplosionParameters, time: numb
       curveSign: ball.spin,
     }
   })
+}
+
+/** Throws short, fast streaks from each fireball as its individual burst begins. */
+function renderRollingBurstSparks(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  parameters: ExplosionParameters,
+  balls: readonly Ball[],
+  time: number,
+): void {
+  const { palette, seed } = parameters
+  for (const ball of balls) for (let spark = 0; spark < 7; spark += 1) {
+    const lifetime = ball.death - ball.birth
+    const launch = ball.birth + lifetime * (0.035 + spark * 0.015)
+    const duration = 0.19 + hashUnit(seed, ball.index, 61 + spark) * 0.08
+    const age = (time - launch) / duration
+    if (age <= 0 || age >= 1) continue
+
+    const spread = (hashUnit(seed, ball.index, 71 + spark) - 0.5) * 0.9
+    const angle = ball.index === 0 ? ball.phase + spark * TAU / 7 + spread * 0.4 : ball.angle + spread
+    const launchAge = (launch - ball.birth) / lifetime
+    const ballTravel = rollingTravelProgress(launchAge)
+    const launchRadius = ball.radius * rollingGrowthProgress(launchAge, ball.index)
+    const originX = Math.cos(ball.angle) * ball.travel * ballTravel
+    const originY = Math.sin(ball.angle) * ball.travel * ballTravel
+    const speed = ball.radius * (2.3 + hashUnit(seed, ball.index, 81 + spark) * 1.1)
+    const distance = launchRadius * 0.8 + speed * (1 - Math.exp(-4.5 * age)) / (1 - Math.exp(-4.5))
+    const drift = (hashUnit(seed, ball.index, 91 + spark) - 0.5) * ball.radius * age * age * 0.35
+    const centerX = width / 2 + originX + Math.cos(angle) * distance - Math.sin(angle) * drift
+    const centerY = height / 2 + originY + Math.sin(angle) * distance + Math.cos(angle) * drift
+    const band = Math.min(palette.length - 1, Math.floor((0.12 + smoothStep(clamp01((age - 0.15) / 0.85)) * 0.76) * palette.length))
+    const length = age < 0.35 ? 5 : age < 0.75 ? 3 : 1
+    for (let segment = 0; segment < length; segment += 1) {
+      const trailX = Math.round(centerX - Math.cos(angle) * segment - 0.5)
+      const trailY = Math.round(centerY - Math.sin(angle) * segment - 0.5)
+      const size = segment === 0 && age < 0.65 ? spark % 3 === 0 && age < 0.35 ? 3 : 2 : 1
+      const color = palette[Math.min(palette.length - 1, band + (segment > 0 ? 1 : 0))]
+      for (let dy = 0; dy < size; dy += 1) for (let dx = 0; dx < size; dx += 1) {
+        const x = trailX + dx
+        const y = trailY + dy
+        if (x < 0 || x >= width || y < 0 || y >= height) continue
+        const offset = (y * width + x) * 4
+        pixels[offset] = color.r
+        pixels[offset + 1] = color.g
+        pixels[offset + 2] = color.b
+        pixels[offset + 3] = color.a
+      }
+    }
+  }
 }
 
 /** Leaves brief radial embers as individual fireballs burn out. */
