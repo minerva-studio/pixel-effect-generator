@@ -194,16 +194,19 @@ function ExplosionSurfaceAdvancedControls({
   const surface = parameters.surface
   if (surface.style === 'retroPixel') {
     return (
-      <DissolveControls
-        family="explosion"
-        t={familyT}
-        style={surface.dissolveStyle}
-        size={surface.dissolveSize}
-        jitter={surface.dissolveJitter}
-        density={surface.dissolveDensity}
-        speed={surface.dissolveSpeed}
-        onChange={(dissolve) => onChange({ ...parameters, surface: { ...surface, ...dissolve } })}
-      />
+      <>
+        <DissolveControls
+          family="explosion"
+          t={familyT}
+          style={surface.dissolveStyle}
+          size={surface.dissolveSize}
+          jitter={surface.dissolveJitter}
+          density={surface.dissolveDensity}
+          speed={surface.dissolveSpeed}
+          onChange={(dissolve) => onChange({ ...parameters, surface: { ...surface, ...dissolve } })}
+        />
+        <PercentControl label={familyT('explosion.controls.dissolveCooling.label')} description={familyT('explosion.controls.dissolveCooling.description')} value={surface.dissolveCooling ?? 0} minimum={0} maximum={1} onChange={(dissolveCooling) => onChange({ ...parameters, surface: { ...surface, dissolveCooling } })} />
+      </>
     )
   }
   return (

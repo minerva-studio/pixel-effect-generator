@@ -299,6 +299,7 @@
       "irisBloom": "Iris Bloom",
       "smokeEmber": "Smoke & Ember",
       "aetherCyan": "Aether Cyan",
+      "aethiumMist": "Aethium Mist",
       "orchidCrystal": "Orchid Crystal",
       "duskSteel": "Dusk Steel",
       "runedSteel": "Runed Steel",
@@ -648,6 +649,10 @@
         "label": "Dissolve speed",
         "description": "How quickly the dissolve finishes after it starts."
       },
+      "dissolveCooling": {
+        "label": "Dissolve cooling",
+        "description": "Darken surviving retro pixels as the body breaks apart."
+      },
       "coverage": {
         "label": "Body integrity",
         "description": "Keeps more of the body geometry without changing the surface grain."
@@ -715,6 +720,10 @@
       "shockwaveThickness": {
         "label": "Thickness",
         "description": "Radial band thickness of each wave ring."
+      },
+      "shockwaveFade": {
+        "label": "Ring fade",
+        "description": "Thin the shockwave and break it into staggered arc segments near its end."
       },
       "shockwaveStartRadius": {
         "label": "Start radius",

@@ -18,6 +18,8 @@ export interface SharedShockwaveParameters {
   readonly mode: 'none' | 'ring' | 'multiRing'
   readonly colorMode: 'flat' | 'gradient'
   readonly thickness: number
+  /** Optional ring thinning and staggered breakup; zero preserves the original ring. */
+  readonly fade?: number
   readonly startRadiusScale: number
   readonly endRadiusScale: number
   readonly startTime: number

@@ -20,9 +20,8 @@ describe('explosion preset ending envelope', () => {
   for (const { id: presetId } of EXPLOSION_BUILTIN_PRESETS) {
     for (const frameCount of [10, 24]) {
       // Field simulations already wind down smoothly at 24 frames, but their 10-frame
-      // sampling still exceeds the per-frame drop limit; Retro keeps its byte-stable baseline.
-      const knownGap = presetId === 'retroBurst'
-        || (frameCount === 10 && ['billowBurst', 'fireMasses', 'smokyFireMasses'].includes(presetId))
+      // sampling still exceeds the per-frame drop limit.
+      const knownGap = frameCount === 10 && ['billowBurst', 'fireMasses', 'smokyFireMasses'].includes(presetId)
       const check = knownGap ? it.fails : it
       check(`${presetId} at ${frameCount} frames`, () => {
         const areas = opaqueAreas(presetId, frameCount)
@@ -37,6 +36,7 @@ describe('explosion preset ending envelope', () => {
         expect(peakIndex / (frameCount - 1), `${presetId} peak frame`).toBeLessThanOrEqual(latestPeak)
         expect(lastVisible / peak, `${presetId} last visible area`).toBeLessThanOrEqual(0.15)
         expect(largestDrop / peak, `${presetId} largest frame drop`).toBeLessThanOrEqual(0.45)
+        if (presetId === 'retroBurst') expect(areas.at(-2), 'retro must remain visible until the final visible frame').toBeGreaterThan(0)
       })
     }
   }

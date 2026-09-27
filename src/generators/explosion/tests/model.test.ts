@@ -160,7 +160,7 @@ describe('combustion explosion parameter model', () => {
   it('creates style-specific default surfaces', () => {
     expect(createExplosionSurface('burningLayers')).toMatchObject({ style: 'burningLayers', bandWarp: 0.18, edgeBreakup: 0.32 })
     expect(createExplosionSurface('rollingSoot')).toMatchObject({ style: 'rollingSoot', sootAmount: 0.3, sootScale: 11 })
-    expect(createExplosionSurface('retroPixel')).toEqual({ style: 'retroPixel', coverage: 0.96, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 })
+    expect(createExplosionSurface('retroPixel')).toEqual({ style: 'retroPixel', coverage: 0.96, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1, dissolveCooling: 0 })
   })
 
   it('rejects invalid retro-pixel dissolve styles', () => {
@@ -175,6 +175,8 @@ describe('combustion explosion parameter model', () => {
     expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSize: 9 } })).toThrow(/dissolveSize/i)
     expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveJitter: -0.1 } })).toThrow(/dissolveJitter/i)
     expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveDensity: 1.2 } })).toThrow(/dissolveDensity/i)
+    expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveCooling: 1.2 } })).toThrow(/dissolveCooling/i)
+    expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, fade: -0.1 } })).toThrow(/shockwave.fade/i)
     expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSpeed: 2 } })).toThrow(/dissolveSpeed/i)
     expect(() => assertValidExplosionParameters({ ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveSize: 6.5 } })).toThrow(/dissolveSize/i)
   })

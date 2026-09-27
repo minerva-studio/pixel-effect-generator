@@ -45,6 +45,8 @@ export type ExplosionSurfaceParameters =
       readonly dissolveJitter: number
       readonly dissolveDensity: number
       readonly dissolveSpeed: number
+      /** Darkens surviving retro pixels while they dissolve; zero preserves the original palette mapping. */
+      readonly dissolveCooling?: number
     })
 
 export interface ExplosionBodyParameters {
@@ -175,7 +177,7 @@ export function createExplosionSurface(
   switch (style) {
     case 'burningLayers': return { style, coverage, bandWarp: 0.18, edgeBreakup: 0.32 }
     case 'rollingSoot': return { style, coverage, sootAmount: 0.3, sootScale: 11 }
-    case 'retroPixel': return { style, coverage, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 }
+    case 'retroPixel': return { style, coverage, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1, dissolveCooling: 0 }
   }
 }
 
@@ -261,6 +263,7 @@ export const MODERN_EXPLOSION_PARAMETERS: ExplosionParameters = {
     mode: 'none',
     colorMode: 'gradient',
     thickness: 2,
+    fade: 0,
     startRadiusScale: 0.78,
     endRadiusScale: 1.32,
     startTime: 0.12,
@@ -303,7 +306,7 @@ export const LEGACY_EXPLOSION_PARAMETERS: ExplosionParameters = {
     ...FIELD_BODY_DEFAULTS,
   },
   volume: { enabled: false, profile: 'hardShell' },
-  surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+  surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1, dissolveCooling: 0 },
   motion: {
     mode: 'explosion',
     formationDuration: 0.46,
@@ -316,6 +319,7 @@ export const LEGACY_EXPLOSION_PARAMETERS: ExplosionParameters = {
     mode: 'ring',
     colorMode: 'flat',
     thickness: 3,
+    fade: 0,
     startRadiusScale: 0,
     endRadiusScale: 1.18,
     startTime: 0,
@@ -400,6 +404,7 @@ export function assertValidExplosionParameters(parameters: ExplosionParameters):
   assertInRange(parameters.core.radius, 0, limits.maxRadius, 'core.radius')
   assertInRange(parameters.core.duration, 0.1, 0.9, 'core.duration')
   assertInRange(parameters.shockwave.thickness, 1, MAX_SHOCKWAVE_THICKNESS, 'shockwave.thickness')
+  if (parameters.shockwave.fade !== undefined) assertInRange(parameters.shockwave.fade, 0, 1, 'shockwave.fade')
   assertInRange(parameters.shockwave.startRadiusScale, 0, 2, 'shockwave.startRadiusScale')
   assertInRange(parameters.shockwave.endRadiusScale, 0.25, 2.5, 'shockwave.endRadiusScale')
   assertInRange(parameters.shockwave.startTime, 0, 0.8, 'shockwave.startTime')
@@ -473,6 +478,7 @@ function assertValidSurface(surface: ExplosionSurfaceParameters): void {
       assertInRange(surface.dissolveJitter, 0, 1, 'surface.dissolveJitter')
       assertInRange(surface.dissolveDensity, 0, 1, 'surface.dissolveDensity')
       assertInRange(surface.dissolveSpeed, 0.5, 1.5, 'surface.dissolveSpeed')
+      if (surface.dissolveCooling !== undefined) assertInRange(surface.dissolveCooling, 0, 1, 'surface.dissolveCooling')
       if (!Number.isInteger(surface.dissolveSize)) throw new RangeError('surface.dissolveSize must be an integer.')
       return
     default:

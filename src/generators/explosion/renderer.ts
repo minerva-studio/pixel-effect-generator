@@ -1164,7 +1164,8 @@ function retroPixelBand(
   )) {
     return undefined
   }
-  return paletteIndex(parameters.palette, sample.axis * 0.68 + (1 - sample.depth) * 0.32)
+  const cooling = (surface.dissolveCooling ?? 0) * effective
+  return paletteIndex(parameters.palette, sample.axis * 0.68 + (1 - sample.depth) * 0.32 + cooling)
 }
 
 /** Samples smooth deterministic low-frequency noise. */
@@ -1178,7 +1179,7 @@ function interpolatedNoise(seed: number, x: number, y: number): number {
   return lerp(top, bottom, ty)
 }
 
-/** Preserves the original dense radial body for byte-stable Retro Burst. */
+/** Draws the dense radial body while optional cooling shifts surviving pixels darker. */
 function renderLegacyPixelNoiseBody(
   pixels: Uint8ClampedArray,
   width: number,
@@ -1227,9 +1228,10 @@ function renderLegacyPixelNoiseBody(
       )) {
         continue
       }
+      const cooling = surface.style === 'retroPixel' ? (surface.dissolveCooling ?? 0) * effective : 0
       writePixel(
         pixels, width, height, x, y,
-        parameters.palette[Math.min(parameters.palette.length - 1, Math.floor(normalizedDistance * parameters.palette.length))],
+        parameters.palette[Math.min(parameters.palette.length - 1, Math.floor((normalizedDistance + cooling) * parameters.palette.length))],
       )
     }
   }

@@ -158,6 +158,7 @@ describe('combustion explosion built-in presets', () => {
         mode: 'multiRing',
         colorMode: 'gradient',
         thickness: 2,
+        fade: 0.65,
         startRadiusScale: 0.78,
         endRadiusScale: 1.32,
         startTime: 0.12,
@@ -172,6 +173,7 @@ describe('combustion explosion built-in presets', () => {
     expect(captured.shockwave).toMatchObject({
       mode: 'multiRing',
       colorMode: 'gradient',
+      fade: 0.65,
       ringCount: 4,
       ringSpacing: 0.8,
       squash: 0.35,
@@ -202,6 +204,7 @@ describe('combustion explosion built-in presets', () => {
       expect(shockwave.ringSpacing).toBe(0.55)
       expect(shockwave.squash).toBe(0)
       expect(shockwave.squashAngle).toBe(0)
+      expect(shockwave.fade).toBe(0)
     }
   })
 
@@ -212,7 +215,15 @@ describe('combustion explosion built-in presets', () => {
     if (result.ok) {
       expect(((result.payload as Record<string, unknown>).surface as Record<string, unknown>).dissolveStyle).toBe('pixelNoise')
       expect(((result.payload as Record<string, unknown>).surface as Record<string, unknown>).dissolveSize).toBe(6)
+      expect(((result.payload as Record<string, unknown>).surface as Record<string, unknown>).dissolveCooling).toBe(0)
     }
+  })
+
+  it('round-trips retro surface cooling through a V7 payload', () => {
+    const surface = LEGACY_EXPLOSION_PARAMETERS.surface
+    if (surface.style !== 'retroPixel') throw new Error('Expected retro surface')
+    const source: ExplosionParameters = { ...LEGACY_EXPLOSION_PARAMETERS, surface: { ...surface, dissolveCooling: 0.8 } }
+    expect(applyExplosionPreset(source, captureExplosionPreset(source)).surface).toEqual(source.surface)
   })
 
   it('exposes translated names and an unmodified applied baseline', () => {

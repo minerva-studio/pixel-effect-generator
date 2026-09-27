@@ -116,6 +116,7 @@ export function parseExplosionPresetPayload(value: unknown): ExplosionPresetFiel
       mode: readShockwaveMode(shockwave, 'mode'),
       colorMode: readOptionalEnum(shockwave, 'colorMode', ['flat', 'gradient'], 'flat'),
       thickness: readInteger(shockwave, 'thickness', 1, 6),
+      fade: readOptionalNumber(shockwave, 'fade', 0, 1, 0),
       startRadiusScale: readNumber(shockwave, 'startRadiusScale', 0, 2),
       endRadiusScale: readNumber(shockwave, 'endRadiusScale', 0.25, 2.5),
       startTime: readNumber(shockwave, 'startTime', 0, 0.8),
@@ -163,6 +164,7 @@ function parseV4Surface(value: Readonly<Record<string, unknown>>): ExplosionSurf
         dissolveJitter: readOptionalNumber(value, 'dissolveJitter', 0, 1, 0.5),
         dissolveDensity: readOptionalNumber(value, 'dissolveDensity', 0, 1, 0),
         dissolveSpeed: readOptionalNumber(value, 'dissolveSpeed', 0.5, 1.5, 1),
+        dissolveCooling: readOptionalNumber(value, 'dissolveCooling', 0, 1, 0),
       }
   }
 }
@@ -382,7 +384,7 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
         ...FIELD_BODY_DEFAULTS,
       },
       volume: { enabled: false, profile: 'hardShell' },
-      surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1 },
+      surface: { style: 'retroPixel', coverage: 0.9, dissolveStyle: 'pixelNoise', dissolveSize: 6, dissolveJitter: 0.5, dissolveDensity: 0, dissolveSpeed: 1.1, dissolveCooling: 0.8 },
       motion: {
         mode: 'explosion',
         formationDuration: 0.46,
@@ -396,9 +398,10 @@ export const EXPLOSION_BUILTIN_PRESETS: readonly GeneratorPreset[] = [
         colorMode: 'flat',
         thickness: 3,
         startRadiusScale: 0,
-        endRadiusScale: 1.18,
+        endRadiusScale: 1.4,
         startTime: 0,
-        duration: 1,
+        duration: 0.7,
+        fade: 1,
         ringCount: 3,
         ringSpacing: 0.55,
         squash: 0,

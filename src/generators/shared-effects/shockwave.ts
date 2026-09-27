@@ -1,4 +1,4 @@
-import { clamp01, easeOutCubic, lerp, smoothStep } from '../../shared/pixel/rng'
+import { clamp01, easeOutCubic, hashUnit, lerp, smoothStep } from '../../shared/pixel/rng'
 import { paletteIndex } from './palette'
 import { writePixel } from './output'
 import type { Palette, SharedShockwaveParameters } from './types'
@@ -29,7 +29,7 @@ export function renderShockwave(
   renderCompoundShockwave(pixels, width, height, palette, mode, bodyRadius, shockwave, local)
 }
 
-/** Legacy circular single-ring path kept byte-for-byte for retro presets. */
+/** Circular single-ring path; a zero fade keeps the original pixel decisions. */
 function renderFlatCircularRing(
   pixels: Uint8ClampedArray,
   width: number,
@@ -43,13 +43,16 @@ function renderFlatCircularRing(
   const baseProgress = easeOutCubic(clamp01(local ** lerp(1.6, 0.5, 0.72)))
   const progress = mode === 'explosion' ? baseProgress : 1 - smoothStep(baseProgress)
   const radius = bodyRadius * lerp(shockwave.startRadiusScale, shockwave.endRadiusScale, progress)
+  const age = mode === 'explosion' ? local : 1 - local
+  const thickness = fadedThickness(shockwave, age)
   const centerX = width / 2
   const centerY = height / 2
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const dx = x + 0.5 - centerX
       const dy = y + 0.5 - centerY
-      if (Math.abs(Math.hypot(dx, dy) - radius) > shockwave.thickness / 2) continue
+      if (Math.abs(Math.hypot(dx, dy) - radius) > thickness / 2) continue
+      if (fadedSegmentMissing(shockwave, age, dx, dy, 0)) continue
       writePixel(pixels, width, height, x, y, palette[Math.min(1, palette.length - 1)])
     }
   }
@@ -97,13 +100,33 @@ function renderCompoundShockwave(
         const baseProgress = easeOutCubic(clamp01(ringLocal ** lerp(1.6, 0.5, 0.72)))
         const progress = mode === 'explosion' ? baseProgress : 1 - smoothStep(baseProgress)
         const radius = bodyRadius * lerp(shockwave.startRadiusScale, shockwave.endRadiusScale, progress)
-        if (Math.abs(distance - radius) > shockwave.thickness / 2) continue
+        const age = mode === 'explosion' ? ringLocal : 1 - ringLocal
+        const thickness = fadedThickness(shockwave, age)
+        if (Math.abs(distance - radius) > thickness / 2) continue
+        if (fadedSegmentMissing(shockwave, age, dx, dy, ring)) continue
         const color = gradient
-          ? palette[paletteIndex(palette, (radius + shockwave.thickness / 2 - distance) / shockwave.thickness)]
+          ? palette[paletteIndex(palette, (radius + thickness / 2 - distance) / thickness)]
           : flatColor
         writePixel(pixels, width, height, x, y, color)
         break
       }
     }
   }
+}
+
+/** Optional fade thins the ring before deterministic angular segments fall away. */
+function fadedThickness(shockwave: SharedShockwaveParameters, age: number): number {
+  const fade = shockwave.fade ?? 0
+  if (fade === 0) return shockwave.thickness
+  const decay = fade * smoothStep(clamp01((age - 0.34) / 0.66))
+  return lerp(shockwave.thickness, 1, decay)
+}
+
+function fadedSegmentMissing(shockwave: SharedShockwaveParameters, age: number, dx: number, dy: number, ring: number): boolean {
+  const fade = shockwave.fade ?? 0
+  if (fade === 0 || age < 0.72) return false
+  const angle = (Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)
+  const segment = Math.floor(angle * 48)
+  const lifetime = lerp(1, 0.76 + 0.22 * hashUnit(0x4f1bbcdc, segment, ring), fade)
+  return age >= lifetime
 }

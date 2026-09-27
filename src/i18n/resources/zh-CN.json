@@ -299,6 +299,7 @@
       "irisBloom": "冷紫绽放 · Iris Bloom",
       "smokeEmber": "烟烬 · Smoke & Ember",
       "aetherCyan": "琉璃青 · Aether Cyan",
+      "aethiumMist": "辉素雾光 · Aethium Mist",
       "orchidCrystal": "星晶紫 · Orchid Crystal",
       "duskSteel": "暮钢 · Dusk Steel",
       "runedSteel": "符文钢 · Runed Steel",
@@ -648,6 +649,10 @@
         "label": "消散速度",
         "description": "消散开始后完成的快慢。"
       },
+      "dissolveCooling": {
+        "label": "消散冷却",
+        "description": "主体破碎时让仍然可见的复古像素逐渐变暗。"
+      },
       "coverage": {
         "label": "主体完整度",
         "description": "保留更多主体几何，不改变当前表面的噪点粒度。"
@@ -715,6 +720,10 @@
       "shockwaveThickness": {
         "label": "厚度",
         "description": "每个冲击波圆环的径向带宽度。"
+      },
+      "shockwaveFade": {
+        "label": "冲击环衰减",
+        "description": "冲击环后段逐渐变细，并错开断成弧段。"
       },
       "shockwaveStartRadius": {
         "label": "起始半径",

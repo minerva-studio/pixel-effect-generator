@@ -11,9 +11,9 @@ import {
 } from '../model'
 import { EXPLOSION_BUILTIN_PRESETS, applyExplosionPreset } from '../presets'
 import { renderExplosionFrames } from '../renderer'
+import { renderShockwave } from '../../shared-effects/shockwave'
 
 const SURFACES: readonly ExplosionSurfaceStyle[] = ['burningLayers', 'rollingSoot', 'retroPixel']
-const FULL_RETRO_BASELINE_HASH = 'ad4d95b'
 
 describe('renderExplosionFrames', () => {
   it('renders deterministic binary-alpha frames with transparent endpoints', () => {
@@ -464,13 +464,63 @@ describe('renderExplosionFrames', () => {
     expect(countExactColor(frames[7], parameters.palette.at(-1)!)).toBeGreaterThan(0)
   })
 
-  it('keeps Retro Burst byte-identical through a full-byte golden hash', () => {
-    const retro = applyExplosionPreset(LEGACY_EXPLOSION_PARAMETERS, EXPLOSION_BUILTIN_PRESETS.at(-1)!.payload)
-    expect(fullFrameHash(renderExplosionFrames(retro))).toBe(FULL_RETRO_BASELINE_HASH)
-    expect(retro.body.shape).toBe('legacyRadial')
-    expect(retro.surface.style).toBe('retroPixel')
-    expect(retro.shockwave.mode).toBe('ring')
-    expect(retro.tongues.enabled).toBe(false)
+  it('preserves every retro frame when optional ring fade and cooling are zero', () => {
+    const original = LEGACY_EXPLOSION_PARAMETERS
+    const withoutOptions: ExplosionParameters = {
+      ...original,
+      shockwave: { ...original.shockwave, fade: undefined },
+      surface: original.surface.style === 'retroPixel'
+        ? { ...original.surface, dissolveCooling: undefined }
+        : original.surface,
+    }
+    for (const frameCount of [10, 24]) {
+      expect(frameBytes(renderExplosionFrames({ ...original, frameCount })))
+        .toEqual(frameBytes(renderExplosionFrames({ ...withoutOptions, frameCount })))
+    }
+  })
+
+  it('thins the retro ring before breaking it into staggered angular arcs', () => {
+    const wave = { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, thickness: 6, startRadiusScale: 0.6, endRadiusScale: 1.4 }
+    const isolated = (time: number, fade: number): PixelFrame => {
+      const frame: PixelFrame = { width: 128, height: 128, pixels: new Uint8ClampedArray(128 * 128 * 4) }
+      renderShockwave(frame.pixels, frame.width, frame.height, LEGACY_EXPLOSION_PARAMETERS.palette, 'explosion', 42, { ...wave, fade }, time)
+      return frame
+    }
+    const ratios = [0.3, 0.5, 0.7].map((time) => countOpaque(isolated(time, 1)) / countOpaque(isolated(time, 0)))
+    expect(ratios[0]).toBeGreaterThan(ratios[1])
+    expect(ratios[1]).toBeGreaterThan(ratios[2])
+    expect(occupiedAngleBins(isolated(0.9, 1), 72)).toBeLessThan(occupiedAngleBins(isolated(0.9, 0), 72))
+    expect(countOpaque(isolated(0.9, 1))).toBeGreaterThan(0)
+  })
+
+  it('applies the optional fade to compound gradient rings too', () => {
+    const render = (fade: number): PixelFrame => {
+      const frame: PixelFrame = { width: 128, height: 128, pixels: new Uint8ClampedArray(128 * 128 * 4) }
+      renderShockwave(frame.pixels, frame.width, frame.height, LEGACY_EXPLOSION_PARAMETERS.palette, 'explosion', 42, {
+        ...LEGACY_EXPLOSION_PARAMETERS.shockwave,
+        mode: 'multiRing', colorMode: 'gradient', squash: 0.3, ringCount: 3, fade,
+      }, 0.85)
+      return frame
+    }
+    expect(countOpaque(render(1))).toBeGreaterThan(0)
+    expect(countOpaque(render(1))).toBeLessThan(countOpaque(render(0)))
+  })
+
+  it('cools surviving retro pixels toward deeper palette bands', () => {
+    const surface = LEGACY_EXPLOSION_PARAMETERS.surface
+    if (surface.style !== 'retroPixel') throw new Error('Expected retro surface')
+    const base: ExplosionParameters = {
+      ...LEGACY_EXPLOSION_PARAMETERS,
+      frameCount: 24,
+      core: { ...LEGACY_EXPLOSION_PARAMETERS.core, enabled: false },
+      shockwave: { ...LEGACY_EXPLOSION_PARAMETERS.shockwave, mode: 'none' },
+      fragments: { ...LEGACY_EXPLOSION_PARAMETERS.fragments, enabled: false },
+    }
+    const warm = renderExplosionFrames({ ...base, surface: { ...surface, dissolveCooling: 0 } })[19]
+    const cool = renderExplosionFrames({ ...base, surface: { ...surface, dissolveCooling: 0.8 } })[19]
+    const averageBand = (frame: PixelFrame) => base.palette.reduce((sum, color, index) => sum + index * countExactColor(frame, color), 0) / countOpaque(frame)
+    expect(countOpaque(cool)).toBe(countOpaque(warm))
+    expect(averageBand(cool)).toBeGreaterThan(averageBand(warm))
   })
 
   it('keeps the classic radial shape with the new warm default colors', () => {

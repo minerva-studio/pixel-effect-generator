@@ -13,6 +13,16 @@ describe('explosion project codec', () => {
     expect(restored.body).toEqual(LEGACY_EXPLOSION_PARAMETERS.body)
   })
 
+  it('renders older projects without optional ring fade and cooling unchanged', () => {
+    const current = { ...LEGACY_EXPLOSION_PARAMETERS, frameCount: 24 }
+    const json = serializeExplosionParameters(current) as Record<string, unknown>
+    const { fade: _fade, ...shockwave } = json.shockwave as Record<string, unknown>
+    const { dissolveCooling: _cooling, ...surface } = json.surface as Record<string, unknown>
+    const restored = parseExplosionParameters({ ...json, shockwave, surface })
+    expect(renderExplosionFrames(restored).map(({ pixels }) => Array.from(pixels)))
+      .toEqual(renderExplosionFrames(current).map(({ pixels }) => Array.from(pixels)))
+  })
+
   it('serializes detached plain JSON and round-trips each surface shape', () => {
     const json = serializeExplosionParameters(LEGACY_EXPLOSION_PARAMETERS) as { palette: JsonValue[] }
     expect(json).toEqual(JSON.parse(JSON.stringify(json)))
