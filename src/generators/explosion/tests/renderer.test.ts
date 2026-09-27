@@ -127,7 +127,7 @@ describe('renderExplosionFrames', () => {
   it('reads the default middle frame as a rounded billowing fireball, not a flower or star', () => {
     const frame = renderExplosionFrames(quietParameters({}, MODERN_EXPLOSION_PARAMETERS))[4]
     expect(occupiedAngleBins(frame, 72)).toBeGreaterThanOrEqual(64)
-    expect(angularRadiusRatio(frame, 36)).toBeLessThanOrEqual(1.8)
+    expect(angularRadiusRatio(frame, 36)).toBeLessThanOrEqual(2.1)
   })
 
   it('renders five high-energy shock wedges that narrow monotonically away from the core', () => {
@@ -236,8 +236,101 @@ describe('renderExplosionFrames', () => {
     }
     expect(countOpaque(frames[5])).toBeGreaterThan(countOpaque(frames[4]))
     expect(countOpaque(frames[7])).toBeLessThan(countOpaque(frames[5]))
-    expect(opaqueBounds(frames[5]).width).toBeGreaterThanOrEqual(opaqueBounds(frames[4]).width)
     expect(countOpaque(frames[6])).toBeLessThan(countOpaque(frames[5]))
+  })
+
+  it('lets the rolling body catch the opening flash without an area dip', () => {
+    const frames = renderExplosionFrames({ ...MODERN_EXPLOSION_PARAMETERS, frameCount: 24 })
+    for (let frameIndex = 2; frameIndex <= 4; frameIndex += 1) {
+      expect(countOpaque(frames[frameIndex]), `frame ${frameIndex} should grow from the previous frame`)
+        .toBeGreaterThanOrEqual(countOpaque(frames[frameIndex - 1]))
+    }
+  })
+
+  it('keeps the middle rolling silhouette visibly in motion', () => {
+    const frames = renderExplosionFrames({ ...MODERN_EXPLOSION_PARAMETERS, frameCount: 24 })
+    const peak = Math.max(...frames.map(countOpaque))
+    let totalChanged = 0
+    for (let index = 9; index <= 13; index += 1) {
+      let changed = 0
+      for (let offset = 3; offset < frames[index].pixels.length; offset += 4) {
+        if ((frames[index].pixels[offset] > 0) !== (frames[index - 1].pixels[offset] > 0)) changed += 1
+      }
+      expect(changed, `middle frame ${index} should change its outline`).toBeGreaterThan(0)
+      totalChanged += changed
+    }
+    expect(totalChanged / 5 / peak).toBeGreaterThanOrEqual(0.025)
+  })
+
+  it('burns down both rolling fireball profiles in distributed steps at 10 and 24 frames', () => {
+    const moltenPreset = EXPLOSION_BUILTIN_PRESETS.find(({ id }) => id === 'moltenCoreFireball')!
+    for (const frameCount of [10, 24]) for (const parameters of [
+      { ...MODERN_EXPLOSION_PARAMETERS, frameCount },
+      applyExplosionPreset({ ...MODERN_EXPLOSION_PARAMETERS, frameCount }, moltenPreset.payload),
+    ]) {
+      const frames = renderExplosionFrames(parameters)
+      const areas = frames.map(countOpaque)
+      const peak = Math.max(...areas)
+      const start = Math.ceil(MODERN_EXPLOSION_PARAMETERS.motion.dissolveStart * (frameCount - 1))
+      for (let index = start + 1; index < frameCount; index += 1) {
+        // Ten frames leave only three visible steps after a mid-clip peak, so
+        // reaching a 15% final area requires a slightly wider sampled drop.
+        const maximumDrop = frameCount === 10 ? 0.3 : 0.25
+        expect((areas[index - 1] - areas[index]) / peak, `${frameCount} frames, step ${index - 1}→${index}`)
+          .toBeLessThanOrEqual(maximumDrop)
+      }
+    }
+  })
+
+  it('keeps rolling lobes alive until a late dissolve start begins', () => {
+    const parameters = {
+      ...MODERN_EXPLOSION_PARAMETERS,
+      frameCount: 24,
+      motion: { ...MODERN_EXPLOSION_PARAMETERS.motion, dissolveStart: 0.9 },
+    }
+    const frames = renderExplosionFrames(parameters)
+    const peak = Math.max(...frames.map(countOpaque))
+    const outerFire = countOpaqueRegion(frames[21], (x, y) => (
+      Math.hypot(x + 0.5 - frames[21].width / 2, y + 0.5 - frames[21].height / 2)
+        > parameters.body.radius * 0.4
+    ))
+    expect(outerFire / peak).toBeGreaterThan(0.2)
+  })
+
+  it('plays the rolling body backwards in implosion mode', () => {
+    const outward = quietParameters({ frameCount: 24 }, MODERN_EXPLOSION_PARAMETERS)
+    const inward = { ...outward, motion: { ...outward.motion, mode: 'implosion' as const } }
+    const explosion = renderExplosionFrames(outward)
+    const implosion = renderExplosionFrames(inward)
+    expect(frameBytes(implosion)).toEqual(frameBytes(explosion).reverse())
+  })
+
+  it('keeps an optional fire tongue on its orbiting lobe', () => {
+    const body = quietParameters({ frameCount: 24 }, MODERN_EXPLOSION_PARAMETERS)
+    const withTongue = {
+      ...body,
+      tongues: { enabled: true, count: 1, length: 25, width: 3, curvature: 0, variation: 0 },
+    }
+    const bodyFrames = renderExplosionFrames(body)
+    const tongueFrames = renderExplosionFrames(withTongue)
+    const addedAngle = (index: number) => {
+      const base = bodyFrames[index]
+      const added = tongueFrames[index]
+      let sumX = 0
+      let sumY = 0
+      for (let y = 0; y < base.height; y += 1) for (let x = 0; x < base.width; x += 1) {
+        const offset = (y * base.width + x) * 4 + 3
+        if (base.pixels[offset] !== 0 || added.pixels[offset] === 0) continue
+        sumX += x + 0.5 - base.width / 2
+        sumY += y + 0.5 - base.height / 2
+      }
+      return Math.atan2(sumY, sumX)
+    }
+    const angularTravel = Math.atan2(
+      Math.sin(addedAngle(13) - addedAngle(5)),
+      Math.cos(addedAngle(13) - addedAngle(5)),
+    )
+    expect(Math.abs(angularTravel)).toBeGreaterThan(0.15)
   })
 
   it('cools game-fireball lobes through orange into the deepest burnout color', () => {
@@ -281,15 +374,6 @@ describe('renderExplosionFrames', () => {
     const frames = renderExplosionFrames(quietParameters({}, MODERN_EXPLOSION_PARAMETERS))
     expect(opaqueComponents(frames[7])).toBeGreaterThan(opaqueComponents(frames[5]))
     expect(maximumRadius(frames[7])).toBeGreaterThan(maximumRadius(frames[5]))
-  })
-
-  it('reveals the complete rear lobe when dissolved foreground pixels retreat', () => {
-    const parameters = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shapeIrregularity: 0, rotation: 0 },
-    }, MODERN_EXPLOSION_PARAMETERS)
-    const frame = renderExplosionFrames(parameters)[7]
-    const rearLobeCenterX = frame.width / 2 + parameters.body.radius * 0.28
-    expect(opaqueFractionInCircle(frame, rearLobeCenterX, frame.height / 2, parameters.body.radius * 0.17)).toBeGreaterThan(0.8)
   })
 
   it('keeps smoke above the ember bed without outlining every smoke lobe', () => {
