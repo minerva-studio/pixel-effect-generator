@@ -1,130 +1,79 @@
 # Pixel Effect Generator
 
-A growing collection of deterministic tools for generating pixel-art visual
-effects. Each generator owns a focused parameter model and writes directly to
-RGBA pixel buffers, keeping the rendering algorithms portable to C# or
-WebAssembly without depending on Canvas drawing behavior.
+[简体中文](README.zh-CN.md) · [Open the web app](https://minerva-studio.github.io/pixel-effect-generator/) · [Windows releases](https://github.com/minerva-studio/pixel-effect-generator/releases)
 
-Released under the MIT License by Minerva Game Studio.
+Pixel Effect Generator is a browser and Windows desktop editor for pixel-art visual effects. Adjust a generator, preview its animation frame by frame, and export sprite sheets, animated images, or assets for Unity 6. Rendering is deterministic: the same parameters and seed produce the same pixels.
 
-## Features
+## Generators
 
-- Deterministic, binary-alpha pixel rendering with per-frame transparency.
-- Live preview with integer zoom (Fit / 1× / 2× / 4× / 8×), playback, frame
-  scrubbing, and FPS control.
-- Slash generator with shape, palette, motion, fragments, and breakup
-  categories, built-in effect presets, and browser-local custom presets.
-- Export center:
-  - Project JSON save/load for the complete current effect state.
-  - Horizontal and compact-grid transparent PNG sprite sheets.
-  - Unity 6 package (atlas PNG + `.meta` + `manifest.json`) with configurable
-    Pixels Per Unit and stable GUID.
-  - GIF and APNG animations with loop control.
-  - Per-frame transparent PNG ZIP.
-  - Collapsible sprite-sheet preview that uses the exact same packing as the
-    export.
-- English and Simplified Chinese UI.
-- Flame generator with candle, torch, and campfire silhouettes, connected
-  layered pixel flames, optional rising sparks, seamless loops, presets,
-  and Project JSON save/load. Its 3–6 palette colors are always opaque.
+| Stage | Generator | Effect |
+| --- | --- | --- |
+| Stable | Slash | Weapon trails and sweeping attack arcs |
+| Stable | Explosion | Fire, smoke, shock blasts, rolling fireballs, and retro explosions |
+| Stable | Fireball | Looping fireball flight in four forms |
+| Stable | Flame | Looping candle, torch, and campfire flames |
+| Experimental | Arrow | Solid and energy arrow flight loops |
+| Experimental | Crystal | Faceted crystal projectile loops |
+| Experimental | Energy Bloom | Petal, star, and corolla energy effects |
 
-## Project vs Export
+Experimental generators are still being refined; their parameters and output may change.
 
-**Project** (the `Project ▾` menu in the parameter header) saves and restores
-the complete current effect: generator parameters, random seed, playback FPS,
-and Unity PPU/GUID. Importing renders the whole frame set once and replaces the
-session atomically; failures never leave partial state.
+## Make an effect
 
-**Export** (the Export panel) only produces finished assets from the
-already-rendered frames: PNG sprite sheets, Unity 6 packages, GIF/APNG, and
-frame ZIPs.
+1. Choose **New** and select a generator. The dialog separates stable and experimental generators.
+2. Start from a built-in preset or save your own. Adjust the generator's shape, motion, material, and effect controls where available. A restore action appears beside the generator name when the effect differs from its preset or default settings.
+3. Edit colors directly in the color dock below the playback controls. Click a swatch to change its HEX value, opacity, or position; use **Color cards** to apply a palette. Lock colors before applying a preset to keep the current colors.
+4. Play or scrub the preview. Adjust frame count, playback speed, canvas size, and seed as needed.
+5. Use **Save** to keep an editable project, or **Export** to create assets.
 
-Custom presets are stored only in the current browser (localStorage) and are
-never written into Project JSON. Project JSON migrates the current effect but
-not the preset library, and Reset never deletes custom presets.
+The interface is available in English and Simplified Chinese. The web editor uses browser file downloads and uploads; the Windows app adds native file dialogs and recent projects.
 
-## Commands
+## Export formats
 
-- `npm run dev` starts the local Vite development server.
-- `npm run tauri:dev` starts the Tauri desktop development environment.
-- `npm run test` runs renderer, preset, storage, and export tests.
-- `npm run typecheck` validates TypeScript.
-- `npm run build` creates the production web build.
-- `npm run tauri:build` creates the Windows x64 NSIS installer.
+| Format | Contents |
+| --- | --- |
+| PNG sprite sheet | Transparent frames in a horizontal strip or compact grid |
+| GIF / APNG | Animated image, with optional looping |
+| Unity 6 ZIP | Sprite atlas PNG, Unity `.meta` file, and manifest; pixels per unit and GUID are configurable |
+| Frame ZIP | One transparent PNG per frame and a manifest |
 
-## Desktop app (Tauri)
+**Project JSON** is available through **Save** and **Open**, separately from the image exports. It stores generator settings (including the current colors), canvas and animation settings, seed, and Unity export settings. Custom preset and color-card libraries stay in local app storage; they are not included in project files.
 
-The Tauri desktop app uses the same React/Vite renderer as the web build.
-Project open/save, recent projects, unsaved-change confirmation, and asset
-exports use native Windows dialogs through the shared `DesktopProvider` API.
-The web app continues to use browser file inputs and downloads.
+Energy Bloom currently supports PNG, GIF, and APNG export, but does not yet support project JSON, Unity ZIP, or frame ZIP.
 
-Installation:
+## Run locally
 
-1. Run `npm run tauri:build` or download the NSIS installer from a GitHub
-   Release.
-2. Run the installer. It installs for the current user and does not require
-   administrator rights.
+Use Node.js 22 and npm:
 
-Notes:
+```sh
+npm ci
+npm run dev
+```
 
-- The installer uses Tauri's `downloadBootstrapper` WebView2 mode. Windows
-  already includes WebView2 on supported versions; if the runtime is missing,
-  setup downloads it. An internet connection is needed only for that case.
-- UI preferences and custom presets remain in browser storage for each app
-  origin/profile. Project JSON files are the portable project format and can
-  be moved freely.
-- Desktop shortcuts: `Ctrl+N` new project, `Ctrl+O` open, `Ctrl+S` save,
-  `Ctrl+Shift+S` save as, `Space` play/pause (when not focused in a control),
-  `F11` full screen, `Escape` closes menus or exits full screen, and the File
-  menu in the custom title bar tracks the current project and unsaved state.
+Open the URL printed by Vite. On Windows, `dev.cmd` also starts the development server and opens a browser.
 
-Publishing:
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the web development server |
+| `npm run build` | Typecheck and build the production web app |
+| `npm run typecheck` | Check TypeScript without building |
+| `npm run test` | Run the Vitest suite |
+| `npm run tauri:dev` | Run the Windows desktop app in development |
+| `npm run tauri:build` | Build the Windows desktop installer |
 
-- The web app remains on GitHub Pages: pushes to `main` run the
-  `deploy-pages` workflow, and `workflow_dispatch` can publish it manually.
-- Pushing a `v*` tag runs the `desktop-release` workflow: it verifies the tag
-  equals `v${package.json.version}`, runs tests and typecheck, then builds the
-  Windows x64 Tauri NSIS installer and records its size. The installer and its
-  SHA-256 are uploaded as a CI artifact and attached to a GitHub Release. A
-  `workflow_dispatch` run only uploads the artifact and never creates a
-  Release. Releasing an existing tag fails instead of overwriting it.
+Desktop development and builds also require Rust and the Tauri 2 Windows prerequisites. The desktop installer uses NSIS and WebView2.
 
-## Architecture
+## Project layout
 
-Generators live as vertical slices under `src/generators/<id>/`. Each slice
-owns its parameter model, rendering pipeline, controls, and tests. Shared
-primitives (`PixelFrame`, colors, PRNG, sprite sheets, preview zoom) live under
-`src/shared/`, and the generic workspace, preview, presets, and form controls
-live under `src/components/`. `src/generators/registry.ts` is the single source
-of truth for navigation and workspace modules, and per-generator sessions are
-kept independently so switching generators preserves parameters and playback
-state.
+- `src/generators/<id>/` contains each generator's parameters, renderer, controls, presets, and project codec where supported.
+- `src/generators/registry.ts` registers generators and defines their order and stage.
+- `src/shared/` contains pixel rendering, palette, project, and export primitives.
+- `src/components/` contains the workbench, preview, color dock, presets, and export UI.
+- `src/i18n/resources/` contains the English and Simplified Chinese strings.
+- `src-tauri/` contains the Windows desktop shell.
 
-## Adding a generator
+The web app is deployed from `main`. Version tags matching `package.json` trigger Windows release builds.
 
-1. Create `src/generators/<id>/` with a `GeneratorModule` implementing the
-   contract in `src/generators/contract.ts`: definition, categories, default
-   parameters, `render`, frame-count read/write adapters, and a `Controls`
-   component.
-2. Optional capabilities on the module:
-   - `projectCodec` — enables the Project save/load menu.
-   - `presetCapability` — enables the preset toolbar (built-ins and custom
-     presets).
-   - `resize` / `minimumFrameSize` / `maximumFrameSize` — enables canvas
-     resizing.
-   - `PreviewTools` — extra controls under the preview timeline.
-3. Register the module in `src/generators/registry.ts`; navigation and the
-   workspace pick it up without changes.
-4. Add tests under `src/generators/<id>/tests/` covering the model, rendering,
-   and any pure helpers. Keep rendering deterministic and binary-alpha.
+## License
 
-## Generator 01: Slash
-
-Slash uses a guided five-category parameter menu for shape, palette, motion,
-fragments, and breakup. It supports built-in effect presets (Clean Arc, Heavy
-Cleave, Energy Sweep, Shattered Edge, Full Circle) and up to 32 browser-local
-custom presets, editable 2–6 color bands, bidirectional sweeps, multiple
-deterministic breakup and fragment modes, live playback with integer zoom,
-frame scrubbing, and transparent PNG sprite-sheet, Unity 6, animation, and
-frame-ZIP export.
+[MIT](LICENSE) © 2026 Minerva Game Studio.
