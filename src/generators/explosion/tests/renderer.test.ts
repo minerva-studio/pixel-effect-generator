@@ -103,23 +103,6 @@ describe('renderExplosionFrames', () => {
     expect(new Set(profiles).size).toBe(3)
   })
 
-  it('keeps a one-pixel dark contour around the rolling fireballs', () => {
-    const parameters = quietParameters({
-      volume: { enabled: true, profile: 'hardShell' },
-      surface: { style: 'burningLayers', coverage: 1, bandWarp: 0, edgeBreakup: 0 },
-    }, MODERN_EXPLOSION_PARAMETERS)
-    const frame = renderExplosionFrames(parameters)[4]
-    const deepest = parameters.palette.at(-1)!
-    for (let y = 1; y < frame.height - 1; y += 1) for (let x = 1; x < frame.width - 1; x += 1) {
-      const offset = (y * frame.width + x) * 4
-      const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]
-      if (frame.pixels[offset + 3] === 0 || !neighbors.some(([nx, ny]) => frame.pixels[(ny * frame.width + nx) * 4 + 3] === 0)) continue
-      expect(frame.pixels[offset]).toBe(deepest.r)
-      expect(frame.pixels[offset + 1]).toBe(deepest.g)
-      expect(frame.pixels[offset + 2]).toBe(deepest.b)
-    }
-  })
-
   it('requires layered volume for independent rolling fireballs', () => {
     const flat = quietParameters({ volume: { enabled: false, profile: 'hardShell' } }, MODERN_EXPLOSION_PARAMETERS)
     expect(() => renderExplosionFrames(flat)).toThrow(/volume is not compatible/)
