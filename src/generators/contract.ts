@@ -90,6 +90,8 @@ export interface GeneratorModule<Id extends string, Parameters, Category extends
   readonly defaultPreviewFps?: number
   /** Optional project persistence codec; without it the Project tab is hidden. */
   readonly projectCodec?: GeneratorProjectCodec<Parameters>
+  /** Optional share-link codec; defaults to projectCodec and never enables project files. */
+  readonly shareCodec?: GeneratorProjectCodec<Parameters>
   /** Optional effect presets; without it the preset toolbar is hidden. */
   readonly presetCapability?: GeneratorPresetCapability<Parameters>
   readonly render: (parameters: Parameters) => readonly PixelFrame[]
@@ -170,6 +172,8 @@ export interface RegisteredGenerator<Id extends string> {
   readonly defaultPreviewFps: number
   /** Opaque project codec; undefined for generators without project support. */
   readonly projectCodec?: GeneratorProjectCodec<unknown>
+  /** Opaque share-link codec; falls back to the project codec. */
+  readonly shareCodec?: GeneratorProjectCodec<unknown>
   readonly minimumFrameCount: number
   readonly maximumFrameCount: number
   createSession(previewFps: number): RegisteredGeneratorSession<Id>

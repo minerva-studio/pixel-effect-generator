@@ -26,6 +26,20 @@
     "openFailed": "Could not open this project. The current document has been kept.",
     "newFailed": "Could not create this effect. The current document has been kept."
   },
+  "share": {
+    "button": "Share",
+    "menuLabel": "Share options",
+    "copyEntry": "Copy generator link",
+    "copyEffect": "Copy current effect link",
+    "copied": "Link copied to the clipboard.",
+    "copyFailed": "Could not copy automatically. Copy the link below.",
+    "manualTitle": "Copy link",
+    "manualHint": "Select the link and copy it manually.",
+    "linkLabel": "Share link",
+    "close": "Close",
+    "invalidLink": "This effect link could not be opened. Showing the default effect instead.",
+    "encodeFailed": "Could not create a link for the current effect."
+  },
   "flame": {
     "name": "Flame",
     "description": "Seamless candle, torch, and campfire loops.",

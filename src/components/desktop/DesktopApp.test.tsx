@@ -60,6 +60,7 @@ describe('desktop vs web shell', () => {
     expect(markup).toContain('>File<')
     expect(markup).toContain('id="desktop-export-button"')
     expect(markup).toContain('>Export<')
+    expect(markup).toContain('>Share<')
     expect(markup).toContain('Untitled')
     expect(markup).toContain('aria-label="Minimize"')
     expect(markup).toContain('class="titlebar-language"')

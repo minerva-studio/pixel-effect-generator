@@ -12,6 +12,8 @@ import { useToast } from './components/toast/ToastProvider'
 import { ThemeToggle, NewDocumentDialog } from './components/Workbench'
 import { documentGenerator, prepareNewDocument, prepareOpenedDocument, type PreparedDocument } from './components/documentSession'
 import { downloadText } from './components/export'
+import { formatRoute, parseRoute, resolveRouteDocument, type RouteResolution } from './components/generatorRoute'
+import { ShareMenu } from './components/ShareMenu'
 import type { UnityExportSettingsState } from './components/unitySettings'
 import { GENERATOR_REGISTRY } from './generators/registry'
 
@@ -23,7 +25,10 @@ export default function App() {
 function WebApp() {
   const { t } = useI18n()
   const toast = useToast()
-  const document = useDocumentSession()
+  const [initialRoute] = useState<RouteResolution>(() => resolveRouteDocument(typeof window === 'undefined' ? '' : window.location.hash))
+  const document = useDocumentSession(initialRoute.kind === 'default' ? undefined : initialRoute.document)
+  // The effect snapshot currently shown in the address bar; cleared once the document diverges from it.
+  const routeEffect = useRef(initialRoute.kind === 'effect' ? initialRoute.route.effect : null)
   const [newOpen, setNewOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [fileName, setFileName] = useState<string | null>(null)
@@ -34,12 +39,23 @@ function WebApp() {
   const Workspace = document.generator.Workspace
   const busy = document.fileOperations.activeTask !== null
   const confirmReplace = () => !dirty || window.confirm(t('workbench.discard'))
-  const acceptDocument = (next: PreparedDocument, name: string | null) => {
+  const acceptDocument = (next: PreparedDocument, name: string | null, effect: string | null = null) => {
     const generator = documentGenerator(next.session.generatorId)
     setBaseline(serializeProjectSnapshot(generator.projectCodec, next.session.parameters, next.session.previewFps, next.unitySettings))
     document.replace(next)
     setFileName(name)
+    routeEffect.current = effect
+    replaceRoute(formatRoute(generator.id, effect))
   }
+  const { dispatch: dispatchSession } = document
+  const dispatch = useCallback((action: RegisteredGeneratorAction<string>) => {
+    const type = action.action.type
+    if (routeEffect.current !== null && (type === 'parameters' || type === 'fps' || type === 'importProject')) {
+      routeEffect.current = null
+      replaceRoute(formatRoute(action.generatorId))
+    }
+    dispatchSession(action)
+  }, [dispatchSession])
   const save = () => {
     if (!document.generator.projectCodec || !document.fileOperations.tryStart('projectSave')) return
     try {
@@ -52,6 +68,36 @@ function WebApp() {
     } catch { toast.show('error', t('desktop.toasts.saveFailed')) }
     finally { document.fileOperations.finish('projectSave') }
   }
+  const reportedInitialRoute = useRef(false)
+  useEffect(() => {
+    if (reportedInitialRoute.current || initialRoute.kind !== 'invalidEffect') return
+    reportedInitialRoute.current = true
+    replaceRoute(formatRoute(initialRoute.route.generatorId))
+    toast.show('error', t('share.invalidLink'))
+  }, [initialRoute, toast, t])
+  useEffect(() => {
+    const handleHashChange = () => {
+      const route = parseRoute(window.location.hash)
+      const currentId = document.generator.id
+      const targetId = route?.generatorId ?? GENERATOR_REGISTRY.registrations[0].id
+      if ((route === null || route.effect === null) && targetId === currentId) {
+        routeEffect.current = null
+        return
+      }
+      const resolution = route === null ? null : resolveRouteDocument(window.location.hash)
+      if (resolution?.kind === 'invalidEffect') toast.show('error', t('share.invalidLink'))
+      if (!confirmReplace()) {
+        replaceRoute(formatRoute(currentId, routeEffect.current))
+        return
+      }
+      try {
+        if (resolution === null || resolution.kind === 'default') acceptDocument(prepareNewDocument(targetId), null)
+        else acceptDocument(resolution.document, null, resolution.kind === 'effect' ? resolution.route.effect : null)
+      } catch { toast.show('error', t('workbench.newFailed')) }
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  })
   useEffect(() => {
     if (!dirty) return
     const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
@@ -68,6 +114,7 @@ function WebApp() {
         <button className="toolbar-button" type="button" disabled={busy} onClick={() => setNewOpen(true)}><span aria-hidden="true">＋</span> {t('workbench.new')}</button>
         <button className="toolbar-button" type="button" disabled={busy} onClick={() => fileInput.current?.click()}>{t('desktop.titleBar.openProject')}</button>
         <button className="toolbar-button" type="button" disabled={busy || !document.generator.projectCodec} title={!document.generator.projectCodec ? t('workbench.noProjectSave') : undefined} onClick={save}>{t('desktop.titleBar.save')}</button>
+        <ShareMenu generator={document.generator} session={document.session} isDesktop={false} align="start" />
       </div>
       <DocumentIdentity name={fileName ?? t('workbench.untitled')} generatorId={document.generator.id} dirty={dirty} />
       <button className="primary-button toolbar-export" id="web-export-button" type="button" aria-haspopup="dialog" aria-expanded={exportOpen} onClick={() => setExportOpen(true)}>{t('desktop.titleBar.export')} <span aria-hidden="true">↗</span></button>
@@ -82,7 +129,7 @@ function WebApp() {
         finally { document.fileOperations.finish('projectLoad') }
       }} />
     </div>
-    <Workspace key={document.revision} session={document.session} onSessionAction={document.dispatch}
+    <Workspace key={document.revision} session={document.session} onSessionAction={dispatch}
       unitySettings={document.unitySettings} onUnitySettingsChange={document.setUnitySettings} fileOperations={document.fileOperations}
       desktopExportOpen={exportOpen} onCloseDesktopExport={() => { setExportOpen(false); window.document.getElementById('web-export-button')?.focus() }} />
     <NewDocumentDialog open={newOpen} busy={busy} onClose={() => setNewOpen(false)} onCreate={async (id) => {
@@ -129,6 +176,7 @@ function DesktopApp({ api }: { readonly api: DesktopAppApi }) {
       <div className="document-toolbar desktop-document-toolbar">
         <button className="toolbar-button" type="button" disabled={document.fileOperations.activeTask !== null} onClick={workflow.newProject}>＋ {t('workbench.new')}</button>
         <DocumentIdentity name={workflow.currentFileName ?? t('workbench.untitled')} generatorId={document.generator.id} dirty={workflow.dirty} />
+        <ShareMenu generator={document.generator} session={document.session} isDesktop />
         <ThemeToggle />
       </div>
     <Workspace key={document.revision} session={document.session} onSessionAction={document.dispatch}
@@ -152,9 +200,14 @@ function LanguageSelect() {
   </select>
 }
 
+/** Rewrites the address-bar fragment without adding a browser history entry. */
+function replaceRoute(fragment: string) {
+  if (window.location.hash !== fragment) window.history.replaceState(window.history.state, '', fragment)
+}
+
 /** One live document. Replacement is atomic and resets workspace-local view state even for the same type. */
-function useDocumentSession() {
-  const [document, setDocument] = useState(() => ({ ...prepareNewDocument(GENERATOR_REGISTRY.registrations[0].id), revision: 0 }))
+function useDocumentSession(initial?: PreparedDocument) {
+  const [document, setDocument] = useState(() => ({ ...(initial ?? prepareNewDocument(GENERATOR_REGISTRY.registrations[0].id)), revision: 0 }))
   const fileOperations = useFileOperationController()
   const generator = documentGenerator(document.session.generatorId)
   const replace = useCallback((next: PreparedDocument) => setDocument((current) => ({ ...next, revision: current.revision + 1 })), [])

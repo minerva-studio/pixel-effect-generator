@@ -34,6 +34,14 @@ describe('generator registry', () => {
     expect(slashModule.projectCodec).toBe(slashProjectCodec)
   })
 
+  it('gives every registered generator a share codec, defaulting to its project codec', () => {
+    for (const registration of GENERATOR_REGISTRY.registrations) {
+      expect(registration.shareCodec?.generatorId).toBe(registration.id)
+      if (registration.projectCodec) expect(registration.shareCodec).toBe(registration.projectCodec)
+    }
+    expect(GENERATOR_REGISTRY.get('energyBloom').projectCodec).toBeUndefined()
+  })
+
   it('registers unique ids and indexes while preserving order', () => {
     expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.id)).toEqual(['slash', 'explosion', 'fireball', 'flame', 'arrow', 'crystal', 'energyBloom'])
     expect(GENERATOR_REGISTRY.registrations.map((registration) => registration.index)).toEqual([1, 2, 3, 4, 5, 6, 7])

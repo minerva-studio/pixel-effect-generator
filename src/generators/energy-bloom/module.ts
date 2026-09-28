@@ -11,6 +11,7 @@ import {
 } from './model'
 import { bloomPresetCapability } from './presets'
 import { renderBloomFrames } from './renderer'
+import { bloomShareCodec } from './share'
 
 export type BloomCategory = 'shape' | 'motion' | 'material' | 'effects'
 
@@ -33,6 +34,7 @@ export const bloomModule = defineGenerator({
   categories: BLOOM_CATEGORIES,
   paletteSlots: [{ id: 'energyBloom', labelKey: 'controls.palette.colors', guideKeys: ['energyBloom.palette.hotCore', 'energyBloom.palette.outerEdge'], minimum: 2, maximum: 6, read: (p) => p.palette, write: (p, palette) => ({ ...p, palette }) }],
   defaultParameters: DEFAULT_BLOOM_PARAMETERS,
+  shareCodec: bloomShareCodec,
   presetCapability: bloomPresetCapability,
   render: renderBloomFrames,
   readFrameCount: (parameters) => parameters.frameCount,

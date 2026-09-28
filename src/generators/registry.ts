@@ -63,6 +63,7 @@ export function registerGenerator<Id extends string, Parameters, Category extend
     previewTitle: module.previewTitle,
     defaultPreviewFps: module.defaultPreviewFps ?? 12,
     projectCodec: module.projectCodec as GeneratorProjectCodec<unknown> | undefined,
+    shareCodec: (module.shareCodec ?? module.projectCodec) as GeneratorProjectCodec<unknown> | undefined,
     minimumFrameCount: module.minimumFrameCount,
     maximumFrameCount: module.maximumFrameCount,
     createSession: (previewFps) => ({
