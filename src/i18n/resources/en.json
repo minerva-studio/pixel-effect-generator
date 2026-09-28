@@ -29,8 +29,10 @@
   "share": {
     "button": "Share",
     "menuLabel": "Share options",
-    "copyEntry": "Copy generator link",
-    "copyEffect": "Copy current effect link",
+    "effect": "Share this effect",
+    "effectHint": "Opens with your current settings and playback speed",
+    "generator": "Share this generator",
+    "generatorHint": "Opens with the default effect",
     "copied": "Link copied to the clipboard.",
     "copyFailed": "Could not copy automatically. Copy the link below.",
     "manualTitle": "Copy link",

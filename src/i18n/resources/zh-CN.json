@@ -29,8 +29,10 @@
   "share": {
     "button": "分享",
     "menuLabel": "分享选项",
-    "copyEntry": "复制生成器入口",
-    "copyEffect": "复制当前效果链接",
+    "effect": "分享当前效果",
+    "effectHint": "对方打开后看到与你相同的参数和播放速度",
+    "generator": "分享生成器",
+    "generatorHint": "对方打开后从默认效果开始",
     "copied": "链接已复制到剪贴板。",
     "copyFailed": "无法自动复制，请手动复制下方链接。",
     "manualTitle": "复制链接",

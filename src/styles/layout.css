@@ -355,6 +355,11 @@
 .share-menu-panel-start {
     left: 0;
     right: auto;
+    min-width: 160px;
+}
+
+.share-menu .project-menu-item {
+    white-space: nowrap;
 }
 
 .share-dialog {

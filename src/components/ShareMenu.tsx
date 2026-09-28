@@ -81,8 +81,8 @@ export function ShareMenu({ generator, session, isDesktop, align = 'end' }: {
     <button ref={buttonRef} className="toolbar-button" type="button" aria-haspopup="menu" aria-expanded={open} aria-controls={open ? menuId : undefined}
       onClick={() => setOpen((value) => !value)}>{t('share.button')}</button>
     {open && <div ref={panelRef} id={menuId} className={`project-menu-panel${align === 'start' ? ' share-menu-panel-start' : ''}`} role="menu" aria-label={t('share.menuLabel')} onKeyDown={handleMenuKeyDown}>
-      <button className="project-menu-item" type="button" role="menuitem" onClick={() => void copy(false)}>{t('share.copyEntry')}</button>
-      <button className="project-menu-item" type="button" role="menuitem" disabled={!generator.shareCodec} onClick={() => void copy(true)}>{t('share.copyEffect')}</button>
+      <button className="project-menu-item" type="button" role="menuitem" title={t('share.effectHint')} disabled={!generator.shareCodec} onClick={() => void copy(true)}>{t('share.effect')}</button>
+      <button className="project-menu-item" type="button" role="menuitem" title={t('share.generatorHint')} onClick={() => void copy(false)}>{t('share.generator')}</button>
     </div>}
     <ManualCopyDialog link={manualLink} onClose={() => { setManualLink(null); buttonRef.current?.focus() }} />
   </div>
