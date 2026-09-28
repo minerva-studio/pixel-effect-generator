@@ -513,7 +513,7 @@
       },
       "material": {
         "label": "质感",
-        "description": "选择表面、覆盖范围、体积轮廓与表面纹理。"
+        "description": "调整当前形状的表面、内部结构或烟尘冷却。"
       },
       "effects": {
         "label": "特效",
@@ -541,7 +541,6 @@
         "label": "内部结构",
         "description": "选择主体内部的热核、外壳与前景火团如何分层。"
       },
-      "fixedVolumeProfile": "内部结构：烟火混合（由烟尘爆开固定）。",
       "flatCompatibility": "此预设正在使用旧版平面渲染；下方参数仍会保持原样生效。",
       "convertToVolume": "转换为体积表现",
       "impulse": {
@@ -615,7 +614,11 @@
       },
       "smokeCount": {
         "label": "烟团数量",
-        "description": "紧密堆积成同一片翻卷烟云的主烟团数量。"
+        "description": "上浮烟云中主烟团的数量。"
+      },
+      "smokeDarkness": {
+        "label": "暗烟比例",
+        "description": "控制烟云从余烬橙冷却成灰紫与炭黑的速度。"
       },
       "smokeMotion": {
         "label": "烟雾动态",

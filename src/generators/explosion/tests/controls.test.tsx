@@ -138,13 +138,16 @@ describe('combustion explosion controls', () => {
     expect(burning).not.toContain('Body integrity')
   })
 
-  it('explains fixed smoke structure without showing a redundant selector', () => {
+  it('shows smoke cooling without old volume or surface controls', () => {
     const smoke = renderControls('material', 'en', {
       ...MODERN_EXPLOSION_PARAMETERS,
       body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst' },
       volume: { enabled: true, profile: 'smokeFire' },
     })
-    expect(smoke).toContain('Internal structure: Smoke and fire (fixed by Smoke Burst).')
+    expect(smoke).toContain('Dark smoke proportion')
+    expect(smoke).not.toContain('Internal structure')
+    expect(smoke).not.toContain('Soot scale')
+    expect(smoke).not.toContain('Surface material')
     expect(smoke).not.toContain('<select')
   })
 

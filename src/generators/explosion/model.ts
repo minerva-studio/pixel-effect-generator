@@ -22,6 +22,11 @@ export const EXPLOSION_SHAPES = ['billowBurst', 'puffCluster', 'rollingFireball'
 export function isFieldExplosionShape(shape: ExplosionShape): shape is 'billowBurst' | 'puffCluster' {
   return shape === 'billowBurst' || shape === 'puffCluster'
 }
+
+/** Identifies bodies whose renderer builds its own field instead of body primitives. */
+export function usesFieldRenderer(shape: ExplosionShape): boolean {
+  return isFieldExplosionShape(shape) || shape === 'rollingFireball' || shape === 'smokeBurst'
+}
 export type ExplosionSurfaceStyle = 'burningLayers' | 'rollingSoot' | 'retroPixel'
 export type ExplosionVolumeProfile = 'hardShell' | 'moltenCore' | 'smokeFire'
 export type ExplosionSmokeMotion = 'billowing' | 'particulate'
@@ -127,6 +132,8 @@ export function selectExplosionShape(parameters: ExplosionParameters, shape: Exp
     ? createExplosionSurface('burningLayers', parameters.surface.coverage)
     : shape === 'legacyRadial' && parameters.surface.style !== 'retroPixel'
       ? RETRO_RADIAL_BASE_SURFACE
+      : shape === 'smokeBurst' && parameters.surface.style !== 'rollingSoot'
+        ? createExplosionSurface('rollingSoot', parameters.surface.coverage)
       : parameters.surface
   const maxTongues = explosionShapeCount(shape, parameters.body.lobeCount, parameters.body.pressureCount)
   return {

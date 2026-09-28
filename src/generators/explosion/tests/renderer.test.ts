@@ -401,176 +401,129 @@ describe('renderExplosionFrames', () => {
     expect(countOpaqueRegion(frames[8], (x, y) => Math.hypot(x - 64, y - 64) > MODERN_EXPLOSION_PARAMETERS.body.radius * 0.9)).toBeGreaterThan(0)
   })
 
-  it('keeps smoke above the ember bed without outlining every smoke lobe', () => {
+  it('expands the main smoke cloud to the requested body radius', () => {
     const parameters = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeSpread: 1.12, smokeRise: 0.2 },
+      frameCount: 24,
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'billowing', smokeSpread: 1.2 },
       volume: { enabled: true, profile: 'smokeFire' },
       palette: SMOKE_EXPLOSION_PALETTE,
     }, MODERN_EXPLOSION_PARAMETERS)
     const frames = renderExplosionFrames(parameters)
-    const early = frames[2]
-    const frame = frames[4]
-    expect(opaqueComponents(frame)).toBe(1)
-    const coldSmoke = parameters.palette.at(-2)!
-    const hottest = parameters.palette[1]
-    expect(colorCentroidY(frame, coldSmoke)).toBeLessThan(colorCentroidY(frame, hottest))
-    expect(paletteGroupCentroidY(frame, parameters.palette.slice(2))).toBeLessThan(paletteGroupCentroidY(early, parameters.palette.slice(2)))
-    expect(opaqueBounds(frame).width / opaqueBounds(frame).height).not.toBeCloseTo(opaqueBounds(early).width / opaqueBounds(early).height, 2)
+    const peak = frames.slice(1, -1).reduce((best, frame) => countOpaque(frame) > countOpaque(best) ? frame : best)
+    expect(maximumRadius(peak)).toBeGreaterThanOrEqual(parameters.body.radius * 0.8)
   })
 
-  it('keeps the ember visible as a rear heat source without exposing it on the smoke silhouette', () => {
+  it('builds deterministic binary-alpha smoke fields with seed and puff-count variation', () => {
+    const base = quietParameters({
+      frameCount: 24,
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeCount: 5, smokeSpread: 1.2 },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frames = renderExplosionFrames(base)
+    expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(base)))
+    expect(alphaJaccard(frames[12], renderExplosionFrames({ ...base, seed: base.seed + 1 })[12])).toBeLessThan(0.95)
+    const allowed = new Set(['0,0,0,0', ...base.palette.map(({ r, g, b, a }) => [r,g,b,a].join(','))])
+    expect([...new Set(frames.flatMap(colors))].every((color) => allowed.has(color))).toBe(true)
+    expect(new Set(frames.flatMap(alphaValues))).toEqual(new Set([0, 255]))
+    const appearances = [3, 5, 9].map((smokeCount) => fullFrameHash(renderExplosionFrames({
+      ...base, body: { ...base.body, smokeCount },
+    })))
+    expect(new Set(appearances).size).toBe(3)
+  }, 10_000)
+
+  it('uses spread for cloud width and rise for late upward travel', () => {
+    const base = quietParameters({
+      frameCount: 24,
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeCount: 5 },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const narrow = renderExplosionFrames({ ...base, body: { ...base.body, smokeSpread: 0.3 } })[12]
+    const wide = renderExplosionFrames({ ...base, body: { ...base.body, smokeSpread: 1.4 } })[12]
+    expect(opaqueBounds(wide).width).toBeGreaterThan(opaqueBounds(narrow).width)
+    const low = renderExplosionFrames({ ...base, body: { ...base.body, smokeRise: -0.5 } })[17]
+    const high = renderExplosionFrames({ ...base, body: { ...base.body, smokeRise: 0.5 } })[17]
+    expect(opaqueCentroid(high).y).toBeLessThan(opaqueCentroid(low).y)
+  })
+
+  it('cools the smoke after its short-lived ember bed and shades lit edges purple', () => {
+    const parameters = quietParameters({
+      frameCount: 24,
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'billowing' },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const frames = renderExplosionFrames(parameters)
+    expect(countPaletteGroup(frames[3], parameters.palette.slice(0, 2))).toBeGreaterThan(0)
+    expect(countPaletteGroup(frames[18], parameters.palette.slice(0, 2))).toBe(0)
+    expect(countOpaque(frames[18])).toBeGreaterThan(0)
+    expect(exposedColorCount(frames[12], parameters.palette.at(-2)!, 'lit')).toBeGreaterThan(0)
+    expect(exposedColorCount(frames[12], parameters.palette.at(-1)!, 'shadow')).toBeGreaterThan(0)
+    expect(enclosedTransparentPixels(frames[12])).toBe(0)
+  })
+
+  it('splits particulate smoke into detached drifting masses after the peak', () => {
+    const base = quietParameters({
+      frameCount: 24,
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeCount: 5 },
+      volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
+    }, MODERN_EXPLOSION_PARAMETERS)
+    const billowing = renderExplosionFrames({ ...base, body: { ...base.body, smokeMotion: 'billowing' } })
+    const particulate = renderExplosionFrames({ ...base, body: { ...base.body, smokeMotion: 'particulate' } })
+    expect(opaqueComponents(particulate[18])).toBeGreaterThan(opaqueComponents(billowing[18]))
+    expect(silhouetteSignature(particulate[14])).not.toBe(silhouetteSignature(particulate[17]))
+    expect(countOpaque(particulate[19])).toBeGreaterThan(0)
+    expect(countExactColor(particulate[19], base.palette.at(-1)!)).toBeGreaterThan(0)
+  })
+
+  it('keeps a diminishing smoke tail through the penultimate frame without a dark scaffold', () => {
     for (const smokeMotion of ['billowing', 'particulate'] as const) {
       const parameters = quietParameters({
+        frameCount: 24,
         body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion },
         volume: { enabled: true, profile: 'smokeFire' },
         palette: SMOKE_EXPLOSION_PALETTE,
       }, MODERN_EXPLOSION_PARAMETERS)
       const frames = renderExplosionFrames(parameters)
-      const hotColors = parameters.palette.slice(0, 2)
-      if (smokeMotion === 'billowing') {
-        const earlyGlow = frames.slice(1, 4).reduce((total, frame) => total + countPaletteGroup(frame, hotColors), 0)
-        expect(earlyGlow, 'billowing smoke should retain an early rear glow').toBeGreaterThan(0)
-      }
-      expect(exposedPaletteGroupPixels(frames[4], hotColors), `${smokeMotion} glow must remain inside the smoke silhouette`).toBe(0)
+      const peak = Math.max(...frames.map(countOpaque))
+      expect(countOpaque(frames.at(-2)!)).toBeGreaterThan(0)
+      expect(countOpaque(frames.at(-2)!)).toBeLessThan(peak * 0.15)
+      expect(countOpaque(frames.at(-1)!)).toBe(0)
+      expect(narrowBottomStemLength(frames[18])).toBeLessThanOrEqual(2)
     }
   })
 
-  it('keeps three through nine deterministic smoke puffs connected and hole-free', () => {
-    for (const smokeCount of [3, 5, 9]) {
-      const parameters = quietParameters({
-        body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeCount, smokeSpread: 1.12, smokeRise: 0.2 },
-        volume: { enabled: true, profile: 'smokeFire' },
-      }, MODERN_EXPLOSION_PARAMETERS)
-      const frames = renderExplosionFrames(parameters)
-      expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames(parameters)))
-      expect(frameBytes(frames)).not.toEqual(frameBytes(renderExplosionFrames({ ...parameters, seed: parameters.seed + 1 })))
-      const allowed = new Set(['0,0,0,0', ...parameters.palette.map(({ r, g, b, a }) => `${r},${g},${b},${a}`)])
-      expect([...new Set(frames.flatMap(colors))].every((color) => allowed.has(color))).toBe(true)
-      expect(new Set(frames.flatMap(alphaValues))).toEqual(new Set([0, 255]))
-      expect(opaqueComponents(frames[4]), `${smokeCount} puffs must stay connected`).toBe(1)
-      expect(enclosedTransparentPixels(frames[4]), `${smokeCount} puffs must not enclose holes`).toBe(0)
-    }
-  }, 10_000)
-
-  it('winds down the main cloud while detached smoke continues through the final visible frame', () => {
-    const parameters = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeCount: 5, smokeSpread: 1.2, smokeRise: 0.18 },
-      volume: { enabled: true, profile: 'smokeFire' },
-      palette: SMOKE_EXPLOSION_PALETTE,
-    }, MODERN_EXPLOSION_PARAMETERS)
-    const frames = renderExplosionFrames(parameters)
-    const mainAreas = [6, 7, 8].map((index) => opaqueComponentAreas(frames[index])[0] ?? 0)
-    expect(mainAreas[1]).toBeLessThan(mainAreas[0])
-    expect(mainAreas[2]).toBeLessThan(mainAreas[1])
-    expect(maximumRadius(frames[8])).toBeGreaterThanOrEqual(maximumRadius(frames[7]))
-    expect(countExactColor(frames[8], parameters.palette.at(-1)!)).toBeGreaterThan(0)
-    expect(countOpaque(frames[8])).toBeGreaterThan(0)
-    expect(opaqueComponentAreas(frames[8])[0]).toBeLessThan(countOpaque(frames[8]) * 0.33)
-    expect(countOpaque(frames[9])).toBe(0)
-    expect(enclosedTransparentPixels(frames[8])).toBe(0)
-    expect(colorCentroidY(frames[8], parameters.palette.at(-2)!)).toBeLessThan(colorCentroidY(frames[8], parameters.palette[1]))
-  }, 10_000)
-
-  it('uses the seed to produce visibly different smoke-cluster compositions', () => {
+  it('keeps smoke independent of the old volume and surface controls except darkness', () => {
     const base = quietParameters({
-      body: {
-        ...MODERN_EXPLOSION_PARAMETERS.body,
-        shape: 'smokeBurst', smokeMotion: 'billowing', smokeCount: 5,
-        smokeSpread: 1.2, smokeRise: 0.18, shapeIrregularity: 0.22,
-      },
+      frameCount: 24,
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst' },
       volume: { enabled: true, profile: 'smokeFire' },
+      surface: { style: 'rollingSoot', coverage: 0.94, sootAmount: 0.38, sootScale: 15 },
       palette: SMOKE_EXPLOSION_PALETTE,
-    }, MODERN_EXPLOSION_PARAMETERS)
-    const frames = [101, 202, 303].map((seed) => renderExplosionFrames({ ...base, seed })[5])
-    expect(alphaJaccard(frames[0], frames[1])).toBeLessThan(0.9)
-    expect(alphaJaccard(frames[0], frames[2])).toBeLessThan(0.9)
-    expect(alphaJaccard(frames[1], frames[2])).toBeLessThan(0.9)
-    expect(frameBytes(renderExplosionFrames({ ...base, seed: 101 }))).toEqual(frameBytes(renderExplosionFrames({ ...base, seed: 101 })))
-  })
-
-  it('uses gray-purple on lit smoke edges and charcoal only on shadow-facing edges', () => {
-    const parameters = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'billowing' },
-      volume: { enabled: true, profile: 'smokeFire' },
-      palette: SMOKE_EXPLOSION_PALETTE,
-    }, MODERN_EXPLOSION_PARAMETERS)
-    const frame = renderExplosionFrames(parameters)[5]
-    const charcoal = parameters.palette.at(-1)!
-    const coolPurple = parameters.palette.at(-2)!
-    expect(exposedColorCount(frame, coolPurple, 'lit')).toBeGreaterThan(0)
-    expect(exposedColorCount(frame, charcoal, 'shadow')).toBeGreaterThan(0)
-    expect(exposedColorCount(frame, charcoal, 'litOnly')).toBe(0)
-  })
-
-  it('removes the ember root before the final smoke remnants', () => {
-    const parameters = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'billowing' },
-      volume: { enabled: true, profile: 'smokeFire' },
-      palette: SMOKE_EXPLOSION_PALETTE,
-    }, MODERN_EXPLOSION_PARAMETERS)
-    const frame = renderExplosionFrames(parameters)[8]
-    expect(countExactColor(frame, parameters.palette[0])).toBe(0)
-    expect(countExactColor(frame, parameters.palette[1])).toBe(0)
-    expect(narrowBottomStemLength(frame)).toBeLessThanOrEqual(2)
-  })
-
-  it('keeps the nine-puff problem frame as one asymmetric smoke cluster with central mass', () => {
-    const parameters = quietParameters({
-      frameCount: 10,
-      body: {
-        ...MODERN_EXPLOSION_PARAMETERS.body,
-        shape: 'smokeBurst', smokeMotion: 'billowing', smokeCount: 9,
-        smokeSpread: 1.2, smokeRise: 0.18,
-      },
-      volume: { enabled: true, profile: 'smokeFire' },
-      palette: SMOKE_EXPLOSION_PALETTE,
-    }, MODERN_EXPLOSION_PARAMETERS)
-    const frame = renderExplosionFrames(parameters)[7]
-    const areas = opaqueComponentAreas(frame)
-    const smokeColorsUsed = parameters.palette.slice(2, 5).filter((color) => countExactColor(frame, color) > 0)
-    expect(areas[0]).toBeGreaterThan((areas[1] ?? 0) * 5)
-    expect(opaqueFractionInCircle(frame, frame.width / 2, frame.height / 2 - parameters.body.radius * 0.12, parameters.body.radius * 0.18)).toBeGreaterThan(0.58)
-    expect(horizontalMirrorAgreement(frame)).toBeLessThan(0.9)
-    expect(new Set(colors(frame).filter((color) => color !== '0,0,0,0')).size).toBeGreaterThanOrEqual(4)
-    expect(smokeColorsUsed.length).toBeGreaterThanOrEqual(3)
-  })
-
-  it('renders billowing and particulate smoke as structurally different motion languages', () => {
-    const base = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeCount: 5, smokeSpread: 1.16, smokeRise: 0.18 },
-      volume: { enabled: true, profile: 'smokeFire' },
-    }, MODERN_EXPLOSION_PARAMETERS)
-    const billowing = renderExplosionFrames({ ...base, body: { ...base.body, smokeMotion: 'billowing' } })
-    const particulate = renderExplosionFrames({ ...base, body: { ...base.body, smokeMotion: 'particulate' } })
-    expect(frameBytes(billowing)).not.toEqual(frameBytes(particulate))
-    expect(silhouetteSignature(billowing[4])).not.toBe(silhouetteSignature(billowing[7]))
-    expect(opaqueComponents(particulate[7])).toBeGreaterThan(opaqueComponents(particulate[4]))
-    expect(maximumRadius(particulate[7])).toBeGreaterThan(maximumRadius(particulate[4]))
-  })
-
-  it('keeps the compound billowing crown changing shape without losing its fused middle cloud', () => {
-    const base = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'billowing', smokeCount: 5, shapeIrregularity: 0.72 },
-      volume: { enabled: true, profile: 'smokeFire' },
     }, MODERN_EXPLOSION_PARAMETERS)
     const frames = renderExplosionFrames(base)
-    expect(new Set([4, 6, 8].map((index) => fullFrameHash([frames[index]]))).size).toBe(3)
-    expect(opaqueComponents(frames[4])).toBe(1)
-    expect(enclosedTransparentPixels(frames[4])).toBe(0)
-    const regular = renderExplosionFrames({ ...base, body: { ...base.body, shapeIrregularity: 0 } })
-    expect(frameBytes(frames)).not.toEqual(frameBytes(regular))
+    expect(frameBytes(frames)).toEqual(frameBytes(renderExplosionFrames({
+      ...base, volume: { ...base.volume, enabled: false },
+      surface: { style: 'rollingSoot', coverage: 0.5, sootAmount: 0.38, sootScale: 6 },
+    })))
+    const darker = renderExplosionFrames({
+      ...base, surface: { style: 'rollingSoot', coverage: 0.94, sootAmount: 0.65, sootScale: 15 },
+    })
+    expect(frameBytes(darker)).not.toEqual(frameBytes(frames))
   })
 
-  it('continues particulate drift, darkening, and staggered breakup through the visible tail', () => {
-    const parameters = quietParameters({
-      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst', smokeMotion: 'particulate', smokeCount: 5, shapeIrregularity: 0.64 },
+  it('reverses the field body for implosion', () => {
+    const base = quietParameters({
+      frameCount: 24,
+      body: { ...MODERN_EXPLOSION_PARAMETERS.body, shape: 'smokeBurst' },
       volume: { enabled: true, profile: 'smokeFire' },
+      palette: SMOKE_EXPLOSION_PALETTE,
     }, MODERN_EXPLOSION_PARAMETERS)
-    const frames = renderExplosionFrames(parameters)
-    expect(new Set([6, 7, 8].map((index) => fullFrameHash([frames[index]]))).size).toBe(3)
-    expect(maximumRadius(frames[8])).toBeGreaterThan(maximumRadius(frames[6]))
-    expect(opaqueComponents(frames[7])).toBeGreaterThan(opaqueComponents(frames[4]))
-    expect(countExactColor(frames[7], parameters.palette.at(-1)!)).toBeGreaterThan(0)
+    const outward = renderExplosionFrames(base)
+    const inward = renderExplosionFrames({ ...base, motion: { ...base.motion, mode: 'implosion' } })
+    expect(frameBytes(inward)).toEqual(frameBytes([...outward].reverse()))
   })
 
   it('preserves every retro frame when optional ring fade and cooling are zero', () => {

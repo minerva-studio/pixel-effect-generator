@@ -1,5 +1,5 @@
 import type { RgbColor } from '../../shared/pixel/color'
-import { clamp01, hashUnit, smoothStep } from '../../shared/pixel/rng'
+import { clamp01, hashUnit, lerp, smoothStep } from '../../shared/pixel/rng'
 import { writePixel } from '../shared-effects/output'
 import type { ExplosionParameters } from './model'
 
@@ -266,5 +266,181 @@ export function renderPuffClusterBody(
     // Like the flame, heat falls to zero at the silhouette so bands nest inside the outline.
     const interior = clamp01((f - threshold) / 0.9)
     paintHeat(pixels, width, height, i % width, Math.floor(i / width), parameters.palette, heatSum[i] / f * interior ** 0.55)
+  }
+}
+
+interface SmokePuff {
+  readonly x: number
+  readonly y: number
+  readonly radius: number
+  readonly weight: number
+  readonly temperature: number
+  readonly phase: number
+}
+
+function smokeNoise(seed: number, x: number, y: number): number {
+  const x0 = Math.floor(x)
+  const y0 = Math.floor(y)
+  const tx = smoothStep(x - x0)
+  const ty = smoothStep(y - y0)
+  return lerp(
+    lerp(hashUnit(seed, x0, y0), hashUnit(seed, x0 + 1, y0), tx),
+    lerp(hashUnit(seed, x0, y0 + 1), hashUnit(seed, x0 + 1, y0 + 1), tx),
+    ty,
+  )
+}
+
+/** Renders smoke and its short-lived ember bed from one density and heat field. */
+export function renderSmokeBurstBody(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  parameters: ExplosionParameters,
+  lifecycle: number,
+): void {
+  const time = lifecycle
+  if (time <= 0 || time >= 1) return
+  const { body, seed, palette } = parameters
+  const radius = body.radius
+  const scale = radius / REFERENCE_RADIUS
+  const centerX = width / 2
+  const centerY = height / 2 + radius * 0.12
+  const rotation = body.rotation / 180 * Math.PI
+  const soot = parameters.surface.style === 'rollingSoot' ? parameters.surface.sootAmount : 0.38
+  const rise = body.smokeRise * radius * time * time
+  const count = body.smokeCount
+  const puffs: SmokePuff[] = []
+  for (let index = 0; index < count; index += 1) {
+    const rank = count === 1 ? 0 : index / (count - 1) * 2 - 1
+    const irregularity = body.shapeIrregularity
+    const direction = -Math.PI / 2 + rank * body.smokeSpread * 0.85
+      + (hashUnit(seed, index, 501) - 0.5) * irregularity * 0.45 + rotation
+    const drag = (1 - Math.exp(-6.5 * time)) / (1 - Math.exp(-6.5))
+    const distance = radius * (0.66 + 0.12 * hashUnit(seed, index, 502)) * drag
+    const x = centerX + Math.cos(direction) * distance
+      + (hashUnit(seed, index, 516) - 0.5) * irregularity * radius * 0.18 * drag
+    const y = centerY + Math.sin(direction) * distance * 0.8 - rise
+      + (hashUnit(seed, index, 517) - 0.5) * irregularity * radius * 0.12 * drag
+    const baseSize = radius * (0.45 + 0.1 * hashUnit(seed, index, 503)) * (0.32 + 0.88 * (1 - Math.exp(-7 * time)))
+    const breakup = body.smokeMotion === 'particulate' ? smoothStep(clamp01((time - 0.51) / 0.48)) : 0
+    const expiry = 0.91 + hashUnit(seed, index, 504) * 0.07
+    const coolingStart = parameters.motion.dissolveStart + (hashUnit(seed, index, 505) - 0.5) * 0.08
+    const burnout = smoothStep(clamp01((time - coolingStart) / Math.max(0.05, expiry - coolingStart)))
+    const size = baseSize * (1 - 0.57 * burnout)
+    const weight = Math.max(0, (1 - burnout) * (1 - breakup * 0.95))
+    const temperature = clamp01(0.72 - time * (0.3 + (soot - 0.38) * 0.28)
+      - 0.18 * smoothStep(clamp01((time - 0.15) / 0.5)))
+    const phase = hashUnit(seed, index, 506) * TAU + time * (index % 2 ? 1.5 : -1.5)
+    puffs.push({ x, y, radius: size, weight, temperature, phase })
+    for (let billow = 0; billow < 3; billow += 1) {
+      const angle = phase + billow * TAU / 3
+      puffs.push({
+        x: x + Math.cos(angle) * size * 0.65,
+        y: y + Math.sin(angle) * size * 0.65,
+        radius: size * 0.55,
+        weight: weight * 0.7,
+        temperature: temperature * 0.92,
+        phase: angle,
+      })
+    }
+    if (body.smokeMotion === 'billowing' && time > 0.5) {
+      const wispAge = clamp01((time - 0.5) / 0.48)
+      const wispFade = 1 - smoothStep(clamp01((time - (0.86 + hashUnit(seed, index, 515) * 0.05)) / 0.085))
+      puffs.push({
+        x: x + Math.cos(direction) * radius * 0.17 * wispAge,
+        y: y - radius * (0.12 + body.smokeRise * 0.35) * wispAge,
+        radius: baseSize * 0.28 * (1 - 0.45 * wispAge),
+        weight: 0.55 * wispFade,
+        temperature: 0.22 * (1 - wispAge),
+        phase,
+      })
+    }
+    if (body.smokeMotion !== 'particulate' || time <= 0.51) continue
+    const split = clamp01((time - 0.51) / 0.47)
+    const children = 4 + Math.floor(hashUnit(seed, index, 507) * 3)
+    for (let child = 0; child < children; child += 1) {
+      const item = index * 7 + child
+      const childAge = clamp01((split - child * 0.055) / Math.max(0.1, 1 - child * 0.055))
+      if (childAge <= 0) continue
+      const childExpiry = 0.93 + hashUnit(seed, item, 508) * 0.065
+      const fade = 1 - smoothStep(clamp01((time - (0.7 + child * 0.025)) / Math.max(0.05, childExpiry - 0.7 - child * 0.025)))
+      const angle = direction + (hashUnit(seed, item, 509) - 0.5) * 2.5
+      const travel = radius * (0.2 + hashUnit(seed, item, 510) * 0.36) * (1 - Math.exp(-4 * childAge))
+      puffs.push({
+        x: x + Math.cos(angle) * travel,
+        y: y + Math.sin(angle) * travel - rise * 0.18 * childAge,
+        radius: baseSize * (0.27 + 0.13 * hashUnit(seed, item, 511)) * (1 - 0.58 * childAge),
+        weight: fade * (0.8 + 0.3 * hashUnit(seed, item, 512)),
+        temperature: temperature * (0.8 - 0.5 * childAge),
+        phase: angle,
+      })
+    }
+  }
+  // Tiny wisps persist after the main field has burnt away, without a connecting base.
+  if (time > 0.72 && time < 0.99) for (let index = 0; index < count; index += 1) {
+    const expiry = 0.98 + hashUnit(seed, index, 518) * 0.015
+    const fade = 1 - smoothStep(clamp01((time - 0.92) / (expiry - 0.92)))
+    puffs.push({
+      x: centerX + (hashUnit(seed, index, 519) - 0.5) * radius * 1.7,
+      y: centerY - radius * (0.35 + time * 0.7) + (hashUnit(seed, index, 520) - 0.5) * radius * 0.6,
+      radius: radius * (0.1 + hashUnit(seed, index, 521) * 0.06) * (1 - 0.3 * time),
+      weight: 0.7 * fade,
+      temperature: 0.18,
+      phase: hashUnit(seed, index, 522) * TAU,
+    })
+  }
+  const density = new Float32Array(width * height)
+  const heat = new Float32Array(width * height)
+  for (const puff of puffs) {
+    if (puff.weight <= 0.01 || puff.radius <= 0.5) continue
+    const extent = puff.radius * 1.3
+    for (let y = Math.max(1, Math.floor(puff.y - extent)); y < Math.min(height - 1, Math.ceil(puff.y + extent)); y += 1) {
+      for (let x = Math.max(1, Math.floor(puff.x - extent)); x < Math.min(width - 1, Math.ceil(puff.x + extent)); x += 1) {
+        const dx = x + 0.5 - puff.x
+        const dy = y + 0.5 - puff.y
+        const angle = Math.atan2(dy, dx)
+        const warp = 1 + 0.09 * Math.sin(3 * angle + puff.phase) + 0.05 * Math.sin(5 * angle - puff.phase)
+        const d2 = (dx * dx + dy * dy) / (puff.radius * puff.radius * warp * warp)
+        if (d2 >= 1) continue
+        const value = (1 - d2) ** 2 * puff.weight
+        const offset = y * width + x
+        density[offset] += value
+        heat[offset] += value * puff.temperature
+      }
+    }
+  }
+  const dissolve = smoothStep(clamp01((time - parameters.motion.dissolveStart) / Math.max(0.05, 0.97 - parameters.motion.dissolveStart)))
+  const threshold = 0.17 + dissolve * (body.smokeMotion === 'particulate' ? 0.12 : 0.11)
+  const emberFade = 1 - smoothStep(clamp01((time - 0.16) / 0.34))
+  const emberX = centerX + (hashUnit(seed, 0, 513) - 0.5) * radius * 0.22
+  const emberY = centerY + radius * (0.08 - time * 0.16)
+  const texturedDensity = new Float32Array(density.length)
+  for (let y = 1; y < height - 1; y += 1) for (let x = 1; x < width - 1; x += 1) {
+    const offset = y * width + x
+    if (density[offset] <= 0) continue
+    const texture = smokeNoise(seed ^ 0x5d48a1b3, x / (7 * scale), y / (7 * scale))
+    texturedDensity[offset] = density[offset] * (0.82 + texture * 0.34)
+    if (emberFade > 0) {
+      const dx = (x + 0.5 - emberX) / (radius * 0.44)
+      const dy = (y + 0.5 - emberY) / (radius * 0.3)
+      const glow = 1 - smoothStep(clamp01(dx * dx + dy * dy))
+      heat[offset] += density[offset] * emberFade * glow * (0.32 + texture * 0.18)
+    }
+  }
+  for (let y = 1; y < height - 1; y += 1) for (let x = 1; x < width - 1; x += 1) {
+    const offset = y * width + x
+    const value = texturedDensity[offset]
+    if (value <= threshold) continue
+    const texture = (value / density[offset] - 0.82) / 0.34
+    const interior = clamp01((value - threshold) / 1.25)
+    const light = (centerX - x + centerY - y) / (radius * 3)
+    const warmth = clamp01((heat[offset] / density[offset] + (texture - 0.5) * 0.18 + light * 0.045) * interior ** 0.3)
+    const edge = texturedDensity[offset - 1] <= threshold || texturedDensity[offset + 1] <= threshold
+      || texturedDensity[offset - width] <= threshold || texturedDensity[offset + width] <= threshold
+    if (!edge) paintHeat(pixels, width, height, x, y, palette, warmth)
+    else {
+      const lit = texturedDensity[offset - 1] <= threshold || texturedDensity[offset - width] <= threshold
+      writePixel(pixels, width, height, x, y, palette[palette.length - (lit ? 2 : 1)])
+    }
   }
 }

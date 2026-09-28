@@ -10,12 +10,12 @@ import { dissolveAmount, formationGrowth, legacyRadialProgress, lifecycleAt } fr
 import { renderTongues } from '../shared-effects/tongues'
 import type { FragmentDescriptor } from '../shared-effects/fragments'
 import type { DissolveStyle, LobeView, SurfaceSample } from '../shared-effects/types'
-import { renderBillowBurstBody, renderPuffClusterBody } from './fieldBodies'
+import { renderBillowBurstBody, renderPuffClusterBody, renderSmokeBurstBody } from './fieldBodies'
 import { renderRollingFireballBody, rollingFireballViews } from './rollingFireball'
 import {
   assertValidExplosionParameters,
   explosionShapeCount,
-  isFieldExplosionShape,
+  usesFieldRenderer,
   type ExplosionParameters,
   type ExplosionSurfaceParameters,
 } from './model'
@@ -30,13 +30,12 @@ interface BlobDescriptor {
   readonly curveSign: number
 }
 
-type BodyPrimitiveRole = 'core' | 'shell' | 'ember' | 'cinder' | 'smoke' | 'smokeWisp' | 'smokeParticle' | 'smokeParticleDark' | 'smokeBridge' | 'spark' | 'connector'
+type BodyPrimitiveRole = 'core' | 'shell'
 
 interface BodyPrimitiveBase {
   readonly owner: number
   readonly depth: number
   readonly role: BodyPrimitiveRole
-  readonly alphaOnly?: boolean
 }
 
 interface EllipsePrimitive extends BodyPrimitiveBase {
@@ -48,24 +47,6 @@ interface EllipsePrimitive extends BodyPrimitiveBase {
   readonly angle: number
 }
 
-interface TaperedCapsulePrimitive extends BodyPrimitiveBase {
-  readonly kind: 'taperedCapsule'
-  readonly startX: number
-  readonly startY: number
-  readonly endX: number
-  readonly endY: number
-  readonly startWidth: number
-  readonly endWidth: number
-}
-
-interface BoxPrimitive extends BodyPrimitiveBase {
-  readonly kind: 'box'
-  readonly x: number
-  readonly y: number
-  readonly halfWidth: number
-  readonly halfHeight: number
-}
-
 interface ShellSectorPrimitive extends BodyPrimitiveBase {
   readonly kind: 'shellSector'
   readonly innerRadius: number
@@ -75,7 +56,7 @@ interface ShellSectorPrimitive extends BodyPrimitiveBase {
   readonly sharpness: number
 }
 
-type BodyPrimitive = EllipsePrimitive | TaperedCapsulePrimitive | BoxPrimitive | ShellSectorPrimitive
+type BodyPrimitive = EllipsePrimitive | ShellSectorPrimitive
 
 interface PrimitiveHit {
   readonly owner: number
@@ -84,14 +65,13 @@ interface PrimitiveHit {
   readonly axis: number
   readonly light: number
   readonly role: BodyPrimitiveRole
-  readonly alphaOnly: boolean
 }
 
 /** Renders a complete deterministic combustion explosion or implosion animation. */
 export function renderExplosionFrames(parameters: ExplosionParameters): PixelFrame[] {
   assertValidExplosionParameters(parameters)
   const fragments = generateFragments(parameters.palette, parameters.seed, parameters.fragments)
-  const blobs = parameters.body.shape === 'legacyRadial' || parameters.body.shape === 'rollingFireball' || isFieldExplosionShape(parameters.body.shape) ? [] : generateBlobs(parameters)
+  const blobs = parameters.body.shape === 'legacyRadial' || usesFieldRenderer(parameters.body.shape) ? [] : generateBlobs(parameters)
   return Array.from({ length: parameters.frameCount }, (_, frameIndex) => (
     renderExplosionFrame(parameters, fragments, blobs, frameIndex)
   ))
@@ -114,6 +94,7 @@ function renderExplosionFrame(
   if (parameters.body.shape === 'billowBurst') renderBillowBurstBody(pixels, width, height, parameters, lifecycle)
   else if (parameters.body.shape === 'puffCluster') renderPuffClusterBody(pixels, width, height, parameters, lifecycle)
   else if (parameters.body.shape === 'rollingFireball') renderRollingFireballBody(pixels, width, height, parameters, lifecycle)
+  else if (parameters.body.shape === 'smokeBurst') renderSmokeBurstBody(pixels, width, height, parameters, lifecycle)
   else if (legacyBody) renderLegacyPixelNoiseBody(pixels, width, height, parameters, time)
   else renderModernBody(pixels, width, height, parameters, blobs, time)
   const views = parameters.tongues.enabled && parameters.tongues.length > 0
@@ -138,9 +119,7 @@ function renderExplosionFrame(
 
 /** Creates evenly distributed fireball descriptors whose variation vanishes at zero irregularity. */
 function generateBlobs(parameters: ExplosionParameters): BlobDescriptor[] {
-  const count = parameters.body.shape === 'smokeBurst'
-    ? parameters.body.smokeCount
-    : explosionShapeCount(parameters.body.shape, parameters.body.lobeCount, parameters.body.pressureCount)
+  const count = explosionShapeCount(parameters.body.shape, parameters.body.lobeCount, parameters.body.pressureCount)
   const random = createXorshift32(parameters.seed ^ 0x71e4a2d9)
   const unit = () => random() / 0x100000000
   const irregularity = parameters.body.shapeIrregularity
@@ -253,7 +232,7 @@ function buildBodyPrimitives(
   switch (parameters.body.shape) {
     case 'rollingFireball': return []
     case 'shockBlast': return buildShockBlastPrimitives(parameters, blobs, time, lifecycle)
-    case 'smokeBurst': return buildSmokeBurstPrimitives(parameters, blobs, time, lifecycle)
+    case 'smokeBurst': return []
     case 'billowBurst':
     case 'puffCluster':
     case 'legacyRadial': return []
@@ -315,423 +294,6 @@ function buildShockBlastPrimitives(
   return primitives
 }
 
-interface SmokeCoreDescriptor {
-  readonly index: number
-  readonly parentIndex: number | undefined
-  readonly x: number
-  readonly y: number
-  readonly rx: number
-  readonly ry: number
-  readonly angle: number
-  readonly direction: number
-  readonly motion: number
-}
-
-type PointRotation = (x: number, y: number) => { readonly x: number; readonly y: number }
-
-/** Selects the independent smoke simulation used by the shared smoke silhouette. */
-function buildSmokeBurstPrimitives(
-  parameters: ExplosionParameters,
-  blobs: readonly BlobDescriptor[],
-  time: number,
-  lifecycle: number,
-): BodyPrimitive[] {
-  return parameters.body.smokeMotion === 'particulate'
-    ? buildParticulateSmokePrimitives(parameters, blobs, time, lifecycle)
-    : buildBillowingSmokePrimitives(parameters, blobs, time, lifecycle)
-}
-
-/** Builds moving vortex cores with secondary buds and a few detached wisps. */
-function buildBillowingSmokePrimitives(
-  parameters: ExplosionParameters,
-  blobs: readonly BlobDescriptor[],
-  time: number,
-  lifecycle: number,
-): BodyPrimitive[] {
-  const radius = parameters.body.radius
-  const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
-  const drift = parameters.motion.mode === 'explosion' ? time : 1 - time
-  const rotation = parameters.body.rotation / 180 * Math.PI
-  const rotate = (x: number, y: number) => ({
-    x: x * Math.cos(rotation) - y * Math.sin(rotation),
-    y: x * Math.sin(rotation) + y * Math.cos(rotation),
-  })
-  const cores = createSmokeCoreDescriptors(parameters, blobs, drift, growth, rotate)
-  const emberCenter = rotate(0, 0)
-  const tailStart = Math.max(0.1, parameters.motion.dissolveStart - 0.04)
-  const tail = smoothStep(clamp01((drift - tailStart) / Math.max(0.05, 0.94 - tailStart)))
-  const emberScale = (1 - 0.4 * drift) * (1 - tail * 0.92)
-  const primitives: BodyPrimitive[] = []
-  if (emberScale > 0.12) {
-    primitives.push({
-      // The ember sits above alpha-only connectors but behind every visible smoke crown.
-      kind: 'ellipse', owner: 0, depth: 2.5, role: 'ember',
-      x: emberCenter.x, y: emberCenter.y,
-      rx: radius * 0.22 * growth * emberScale, ry: radius * 0.1 * growth * emberScale, angle: rotation,
-    })
-  }
-  const bridgeEnd = Math.min(0.9, parameters.motion.dissolveStart + 0.26)
-  if (drift < bridgeEnd) addFormationBridges(primitives, cores, emberCenter, radius, growth, drift)
-  cores.forEach((core) => {
-    const coreTailStart = tailStart + hashUnit(parameters.seed, core.index, 312) * 0.05
-    const coreTail = smoothStep(clamp01((drift - coreTailStart) / Math.max(0.01, 0.82 - coreTailStart)))
-    const coreScale = 1 - coreTail * (0.97 + hashUnit(parameters.seed, core.index, 313) * 0.02)
-    primitives.push({
-      kind: 'ellipse', owner: 0, depth: 2, role: 'smokeBridge', alphaOnly: true,
-      x: core.x, y: core.y, rx: core.rx * 0.72 * coreScale, ry: core.ry * 0.68 * coreScale, angle: core.angle,
-    })
-    const irregularity = parameters.body.shapeIrregularity
-    const crownCount = 2 + (hashUnit(parameters.seed, core.index, 224) < 0.45 + irregularity * 0.4 ? 1 : 0)
-    for (let crownIndex = 0; crownIndex < crownCount; crownIndex += 1) {
-      const sequence = crownIndex / Math.max(1, crownCount - 1)
-      const randomDelay = (hashUnit(parameters.seed, core.index, 225 + crownIndex) * 2 - 1) * 0.07 * irregularity
-      const crownDelay = 0.04 + sequence * 0.16 + randomDelay
-      const crownTime = clamp01((core.motion - crownDelay) / Math.max(0.01, 0.92 - crownDelay))
-      if (crownTime <= 0) continue
-      const side = ((crownIndex + core.index) % 2 === 0 ? 1 : -1) * core.direction
-      const phase = hashUnit(parameters.seed, core.index, 230 + crownIndex) * Math.PI * 2
-      const curl = Math.sin(crownTime * Math.PI * (1.1 + sequence * 0.38) + phase) - Math.sin(phase)
-      const tangentOffset = radius * (sequence - 0.42) * (0.12 + 0.05 * irregularity)
-        + side * radius * curl * (0.018 + 0.028 * irregularity)
-      const riseOffset = radius * (0.015 + sequence * 0.06) * crownTime
-      const normalX = Math.cos(core.angle + Math.PI / 2)
-      const normalY = Math.sin(core.angle + Math.PI / 2)
-      const forwardX = Math.cos(core.angle)
-      const forwardY = Math.sin(core.angle)
-      const pulse = 1 + Math.sin(crownTime * Math.PI * (1.45 + sequence * 0.35) + phase) * (0.045 + 0.09 * irregularity)
-      const sizeNoise = 1 + (hashUnit(parameters.seed, core.index, 235 + crownIndex) * 2 - 1) * 0.18 * irregularity
-      const crownScale = (0.55 + crownTime * (0.36 + sequence * 0.12)) * pulse * sizeNoise
-      primitives.push({
-        kind: 'ellipse', owner: 10 + core.index * 4 + crownIndex, depth: 3 + sequence, role: 'smoke',
-        x: core.x + normalX * tangentOffset - forwardX * riseOffset,
-        y: core.y + normalY * tangentOffset - forwardY * riseOffset - radius * sequence * 0.025,
-        rx: core.rx * crownScale * (0.84 + sequence * 0.12) * coreScale,
-        ry: core.ry * crownScale * (0.7 + (1 - sequence) * 0.18) * coreScale * (1 - coreTail * 0.12),
-        angle: core.angle + side * (0.18 + sequence * 0.32) + curl * (0.12 + irregularity * 0.16),
-      })
-    }
-    const budCount = 1 + (hashUnit(parameters.seed, core.index, 231) > 0.58 ? 1 : 0)
-    for (let budIndex = 0; budIndex < budCount; budIndex += 1) {
-      const spawn = 0.24 + budIndex * 0.18 + hashUnit(parameters.seed, core.index, 232 + budIndex) * 0.1
-      const budTime = clamp01((core.motion - spawn) / Math.max(0.01, 1 - spawn))
-      if (budTime <= 0) continue
-      const side = budIndex === 0 ? core.direction : -core.direction
-      const normalX = Math.cos(core.angle + side * Math.PI / 2)
-      const normalY = Math.sin(core.angle + side * Math.PI / 2)
-      const inheritedX = Math.cos(core.angle) * radius * 0.1 * budTime
-      const inheritedY = Math.sin(core.angle) * radius * 0.1 * budTime
-      const offset = radius * (0.08 + 0.18 * budTime)
-      const budRadius = radius * (0.07 + hashUnit(parameters.seed, core.index, 236 + budIndex) * 0.045) * (0.45 + budTime * 0.9) * coreScale
-      primitives.push({
-        kind: 'ellipse', owner: 40 + core.index * 2 + budIndex, depth: 4, role: 'smoke',
-        x: core.x + normalX * offset + inheritedX,
-        y: core.y + normalY * offset + inheritedY - radius * 0.04 * budTime,
-        rx: budRadius * (1.1 + 0.18 * budTime), ry: budRadius * (0.78 + 0.12 * (1 - budTime)),
-        angle: core.angle + side * (0.42 + budTime * 0.35),
-      })
-    }
-    if ((core.index + parameters.seed) % 2 === 0) {
-      const spawn = 0.57 + hashUnit(parameters.seed, core.index, 241) * 0.12
-      const wispTime = clamp01((core.motion - spawn) / Math.max(0.01, 1 - spawn))
-      const expiry = 0.86 + hashUnit(parameters.seed, core.index, 243) * 0.12
-      if (wispTime <= 0 || drift >= expiry) return
-      const wispEnding = smoothStep(clamp01((drift - 0.82) / 0.16))
-      const size = radius * (0.055 + hashUnit(parameters.seed, core.index, 242) * 0.035) * (1 - wispTime * 0.28) * (1 - coreTail * 0.38) * (1 - wispEnding * 0.95)
-     primitives.push({
-        kind: 'ellipse', owner: 70 + core.index, depth: 5, role: 'smokeWisp',
-        x: core.x + core.direction * radius * (0.14 + 0.24 * wispTime),
-        y: core.y - radius * (0.08 + 0.18 * wispTime + wispEnding * 0.08),
-        rx: size * 1.25, ry: size * 0.8, angle: core.angle + core.direction * 0.65,
-      })
-    }
-  })
-  addBillowingTailDebris(primitives, parameters, cores, tail)
-  // Detached wisps carry the tail after the formation-only bridges retire.
-  cores.filter((core) => core.index % 2 === 0).forEach((core) => {
-    const launch = Math.min(0.85, bridgeEnd - 0.07 + hashUnit(parameters.seed, core.index, 320) * 0.04)
-    const expiry = 0.965 + hashUnit(parameters.seed, core.index, 321) * 0.02
-    if (drift <= launch || drift >= expiry) return
-    const progress = clamp01((drift - launch) / (expiry - launch))
-    const size = Math.max(0.7, radius * 0.08 * Math.sin(progress * Math.PI))
-    primitives.push({
-      kind: 'ellipse', owner: 400 + core.index, depth: 6, role: 'smokeWisp',
-      x: core.x + core.direction * radius * (0.2 + progress * 0.2),
-      y: core.y - radius * (0.12 + progress * 0.18),
-      rx: size * 1.2, ry: size * 0.8, angle: core.angle + core.direction * 0.5,
-    })
-  })
-  return primitives
-}
-
-/** Releases a few staggered dark fragments from the moving outer smoke cores. */
-function addBillowingTailDebris(
-  primitives: BodyPrimitive[],
-  parameters: ExplosionParameters,
-  cores: readonly SmokeCoreDescriptor[],
-  tail: number,
-): void {
-  if (tail <= 0) return
-  const radius = parameters.body.radius
-  const debrisCount = Math.max(1, Math.ceil(cores.length / 3))
-  const outerCores = [...cores]
-    .sort((left, right) => Math.hypot(right.x, right.y) - Math.hypot(left.x, left.y))
-    .slice(0, debrisCount)
-  outerCores.forEach((core, debrisIndex) => {
-    const spawn = 0.08 + hashUnit(parameters.seed, core.index, 314) * 0.28
-    const age = clamp01((tail - spawn) / Math.max(0.01, 1 - spawn))
-    const expiry = 0.93 + hashUnit(parameters.seed, core.index, 319) * 0.07
-    if (age <= 0 || age >= expiry) return
-    const radialLength = Math.max(1, Math.hypot(core.x, core.y))
-    const radialX = core.x / radialLength
-    const radialY = core.y / radialLength
-    const tangentSign = hashUnit(parameters.seed, core.index, 315) < 0.5 ? -1 : 1
-    const tangentX = -radialY * tangentSign
-    const tangentY = radialX * tangentSign
-    const travel = radius * (0.12 + hashUnit(parameters.seed, core.index, 316) * 0.16) * age
-    const curl = Math.sin(age * Math.PI) * radius * (0.025 + hashUnit(parameters.seed, core.index, 317) * 0.04)
-    const x = core.x + radialX * travel + tangentX * curl
-    const y = core.y + radialY * travel + tangentY * curl - radius * 0.055 * age
-    const size = radius * (0.045 + hashUnit(parameters.seed, core.index, 318) * 0.025) * (1 - age * 0.95)
-    const owner = 300 + core.index
-    if (debrisIndex % 2 === 0) {
-      const angle = Math.atan2(radialY, radialX) + tangentSign * 0.28
-      primitives.push({
-        kind: 'taperedCapsule', owner, depth: 6, role: 'smokeParticleDark',
-        startX: x - Math.cos(angle) * size * 1.5,
-        startY: y - Math.sin(angle) * size * 1.5,
-        endX: x, endY: y,
-        startWidth: Math.max(1, size * 0.72), endWidth: Math.max(1, size * 0.4),
-      })
-    } else {
-      primitives.push({
-        kind: 'box', owner, depth: 6, role: 'smokeParticleDark',
-        x, y, halfWidth: Math.max(1, size * 0.7), halfHeight: Math.max(1, size * 0.5),
-      })
-    }
-  })
-}
-
-/** Builds an early fused cloud that retreats while independent pixel chunks escape. */
-function buildParticulateSmokePrimitives(
-  parameters: ExplosionParameters,
-  blobs: readonly BlobDescriptor[],
-  time: number,
-  lifecycle: number,
-): BodyPrimitive[] {
-  const radius = parameters.body.radius
-  const growth = formationGrowth(parameters.motion.mode, parameters.motion, lifecycle)
-  const drift = parameters.motion.mode === 'explosion' ? time : 1 - time
-  const rotation = parameters.body.rotation / 180 * Math.PI
-  const rotate: PointRotation = (x, y) => ({
-    x: x * Math.cos(rotation) - y * Math.sin(rotation),
-    y: x * Math.sin(rotation) + y * Math.cos(rotation),
-  })
-  const cores = createSmokeCoreDescriptors(parameters, blobs, drift, growth, rotate)
-  const breakupStart = Math.max(0.25, parameters.motion.dissolveStart - 0.11)
-  const breakup = clamp01((drift - breakupStart) / Math.max(0.05, 0.92 - breakupStart))
-  const bodyScale = 1 - smoothStep(breakup) * 0.9
-  const tailFade = smoothStep(clamp01((drift - 0.82) / 0.16))
-  const emberCenter = rotate(0, 0)
-  const primitives: BodyPrimitive[] = [{
-    // Keep the particulate mother-cloud ember behind every visible smoke layer as well.
-    kind: 'ellipse', owner: 0, depth: 2.5, role: 'ember',
-    x: emberCenter.x, y: emberCenter.y,
-    rx: radius * 0.22 * growth * (1 - drift * 0.72) * (1 - tailFade), ry: radius * 0.1 * growth * (1 - drift * 0.72) * (1 - tailFade), angle: rotation,
-  }]
-  if (drift < 0.76) addFormationBridges(primitives, cores, emberCenter, radius, growth, drift)
-  cores.forEach((core) => {
-    if (bodyScale > 0.18) primitives.push({
-      kind: 'ellipse', owner: core.index + 2, depth: 3, role: 'smoke',
-      x: core.x, y: core.y, rx: core.rx * bodyScale, ry: core.ry * bodyScale, angle: core.angle,
-    })
-    for (let particleIndex = 0; particleIndex < 3; particleIndex += 1) {
-      const spawn = 0.22 + particleIndex * 0.1 + hashUnit(parameters.seed, core.index, 251 + particleIndex) * 0.09
-      const lifetime = 0.48 + hashUnit(parameters.seed, core.index, 253 + particleIndex) * 0.24
-      const particleTime = (core.motion - spawn) / lifetime
-      if (particleTime <= 0 || particleTime >= 1) continue
-      const tangent = (hashUnit(parameters.seed, core.index, 255 + particleIndex) * 2 - 1) * radius * 0.18
-      const travel = radius * (0.12 + hashUnit(parameters.seed, core.index, 259 + particleIndex) * 0.28) * particleTime
-      const angle = core.angle + (particleIndex - 1) * 0.32 + (hashUnit(parameters.seed, core.index, 263 + particleIndex) * 2 - 1) * 0.22
-      const arc = Math.sin(particleTime * Math.PI) * tangent
-      const x = core.x + Math.cos(angle) * travel + Math.cos(angle + Math.PI / 2) * arc
-      const y = core.y + Math.sin(angle) * travel + Math.sin(angle + Math.PI / 2) * arc - radius * 0.12 * particleTime
-      const baseSize = 2 + Math.floor(hashUnit(parameters.seed, core.index, 267 + particleIndex) * 4)
-      const size = baseSize * (1 - smoothStep(clamp01((particleTime - 0.56) / 0.44)) * 0.62) * (1 - tailFade * 0.9)
-      const particleRole: BodyPrimitiveRole = particleTime > 0.58 ? 'smokeParticleDark' : 'smokeParticle'
-      if (particleIndex === 0) {
-        primitives.push({
-          kind: 'taperedCapsule', owner: 100 + core.index * 3 + particleIndex, depth: 5, role: particleRole,
-          startX: x - Math.cos(angle) * size * 1.4, startY: y - Math.sin(angle) * size * 1.4,
-          endX: x, endY: y, startWidth: Math.max(1, size * 0.7), endWidth: Math.max(1, size * 0.42),
-        })
-      } else {
-        primitives.push({
-          kind: 'box', owner: 100 + core.index * 3 + particleIndex, depth: 5, role: particleRole,
-          x, y, halfWidth: Math.max(1, size * (particleIndex === 1 ? 0.65 : 0.5)), halfHeight: Math.max(1, size * 0.5),
-        })
-      }
-      const splitStart = 0.46 + hashUnit(parameters.seed, core.index, 271 + particleIndex) * 0.14
-      if (particleTime <= splitStart) continue
-      const childCount = 2 + (hashUnit(parameters.seed, core.index, 275 + particleIndex) > 0.64 ? 1 : 0)
-      const splitTime = clamp01((particleTime - splitStart) / Math.max(0.01, 1 - splitStart))
-      for (let childIndex = 0; childIndex < childCount; childIndex += 1) {
-        const childDelay = childIndex * 0.08 + hashUnit(parameters.seed, core.index * 7 + particleIndex, 279 + childIndex) * 0.08
-        const childTime = clamp01((splitTime - childDelay) / Math.max(0.01, 1 - childDelay))
-        if (childTime <= 0 || childTime >= 0.98) continue
-        const separation = (childIndex - (childCount - 1) / 2) * (0.22 + parameters.body.shapeIrregularity * 0.18)
-        const childAngle = angle + separation + (hashUnit(parameters.seed, core.index * 11 + particleIndex, 283 + childIndex) * 2 - 1) * 0.12
-        const childTravel = radius * (0.04 + 0.12 * childTime) * (0.72 + hashUnit(parameters.seed, particleIndex, 287 + childIndex) * 0.4)
-        const childX = x + Math.cos(childAngle) * childTravel
-        const childY = y + Math.sin(childAngle) * childTravel - radius * 0.045 * childTime
-        const childSize = Math.max(0.7, baseSize * (0.34 + hashUnit(parameters.seed, core.index, 291 + childIndex) * 0.18) * (1 - childTime * 0.62) * (1 - tailFade * 0.9))
-        const childOwner = 200 + core.index * 12 + particleIndex * 3 + childIndex
-        const childRole: BodyPrimitiveRole = childTime > 0.42 ? 'smokeParticleDark' : 'smokeParticle'
-        if (childIndex === 0) {
-          primitives.push({
-            kind: 'taperedCapsule', owner: childOwner, depth: 6, role: childRole,
-            startX: childX - Math.cos(childAngle) * childSize,
-            startY: childY - Math.sin(childAngle) * childSize,
-            endX: childX,
-            endY: childY,
-            startWidth: childSize * 0.55,
-            endWidth: Math.max(1, childSize * 0.34),
-          })
-        } else {
-          primitives.push({
-            kind: 'box', owner: childOwner, depth: 6, role: childRole,
-            x: childX, y: childY, halfWidth: childSize * 0.52, halfHeight: childSize * 0.42,
-          })
-        }
-      }
-    }
-  })
-  return primitives
-}
-
-interface SmokeLayoutPoint {
-  readonly x: number
-  readonly y: number
-  readonly parentIndex: number | undefined
-}
-
-/** Generates a deterministic compact two-dimensional smoke cluster. */
-function createSmokeClusterLayout(seed: number, count: number, irregularity: number): SmokeLayoutPoint[] {
-  const compositionInfluence = Math.sqrt(irregularity)
-  const anchor: SmokeLayoutPoint = {
-    x: (-0.055 + hashUnit(seed, 0, 301) * 0.11) * compositionInfluence,
-    y: -0.14 + (hashUnit(seed, 0, 302) * 2 - 1) * 0.035 * compositionInfluence,
-    parentIndex: undefined,
-  }
-  const points = [anchor]
-  const goldenAngle = Math.PI * (3 - Math.sqrt(5))
-  for (let index = 1; index < count; index += 1) {
-    const regularRadius = 0.105 + Math.sqrt(index) * 0.085
-    const regularAngle = index * goldenAngle - Math.PI * 0.62
-    const regular = {
-      x: Math.cos(regularAngle) * regularRadius,
-      y: -0.14 + Math.sin(regularAngle) * regularRadius * 0.66,
-    }
-    let selected = regular
-    let selectedDistance = -1
-    for (let candidateIndex = 0; candidateIndex < 18; candidateIndex += 1) {
-      const angle = hashUnit(seed, index * 23 + candidateIndex, 303) * Math.PI * 2
-      const radial = Math.sqrt(hashUnit(seed, index * 23 + candidateIndex, 304))
-      const candidate = {
-        x: Math.cos(angle) * radial * 0.42,
-        y: -0.14 + Math.sin(angle) * radial * 0.25,
-      }
-      const nearest = Math.min(...points.map((point) => Math.hypot(candidate.x - point.x, candidate.y - point.y)))
-      if (nearest > 0.31 || nearest < 0.1 || nearest <= selectedDistance) continue
-      selected = candidate
-      selectedDistance = nearest
-    }
-    const x = lerp(regular.x, selected.x, compositionInfluence)
-    const y = lerp(regular.y, selected.y, compositionInfluence)
-    let parentIndex = 0
-    let parentDistance = Number.POSITIVE_INFINITY
-    points.forEach((point, placedIndex) => {
-      const distance = Math.hypot(x - point.x, y - point.y)
-      if (distance >= parentDistance) return
-      parentDistance = distance
-      parentIndex = placedIndex
-    })
-    points.push({ x, y, parentIndex })
-  }
-  return points
-}
-
-/** Generates clustered smoke cores with independently sampled motion and appearance. */
-function createSmokeCoreDescriptors(
-  parameters: ExplosionParameters,
-  blobs: readonly BlobDescriptor[],
-  drift: number,
-  growth: number,
-  rotate: PointRotation,
-): SmokeCoreDescriptor[] {
-  const radius = parameters.body.radius
-  const rise = parameters.body.smokeRise * radius * drift * 0.62
-  const irregularity = parameters.body.shapeIrregularity
-  const layout = createSmokeClusterLayout(parameters.seed, parameters.body.smokeCount, irregularity)
-  return layout.map((point, index) => {
-    const blob = blobs[index]
-    const direction = hashUnit(parameters.seed, index, 211) < 0.5 ? -1 : 1
-    const localDelay = hashUnit(parameters.seed, index, 214) * (0.04 + irregularity * 0.06) + (blob?.delay ?? 0) * 0.24
-    const localDrift = clamp01((drift - localDelay) / Math.max(0.01, 1 - localDelay))
-    const riseScale = 0.5 + hashUnit(parameters.seed, index, 215) * 0.34
-    const phase = hashUnit(parameters.seed, index, 216) * Math.PI * 2
-    const curl = Math.sin(localDrift * Math.PI * 1.35 + phase) - Math.sin(phase)
-    const radialLength = Math.max(0.08, Math.hypot(point.x, point.y + 0.14))
-    const radialX = point.x / radialLength
-    const radialY = (point.y + 0.14) / radialLength
-    const outwardRate = 0.08 + hashUnit(parameters.seed, index, 217) * 0.07
-    const tangentRate = (hashUnit(parameters.seed, index, 218) * 2 - 1) * (0.025 + irregularity * 0.035)
-    const outwardX = radius * (radialX * outwardRate - radialY * tangentRate * curl) * localDrift
-    const outwardY = radius * (radialY * outwardRate + radialX * tangentRate * curl) * localDrift
-    const independentLift = radius * (0.035 + hashUnit(parameters.seed, index, 219) * 0.05) * localDrift
-    const expansion = 0.62 + localDrift * (0.62 + hashUnit(parameters.seed, index, 220) * 0.16)
-    const aspect = Math.sin(localDrift * Math.PI * 1.7 + phase) * 0.13
-    const rawX = point.x * radius * parameters.body.smokeSpread * growth + outwardX
-    const rawY = point.y * radius * growth + outwardY - rise * riseScale - independentLift
-    const center = rotate(rawX, rawY)
-    const baseRx = 0.24 + hashUnit(parameters.seed, index, 222) * 0.075
-    const baseRy = 0.205 + hashUnit(parameters.seed, index, 223) * 0.055
-    const rx = baseRx * radius * parameters.body.smokeSpread * growth * expansion * (1 + aspect)
-    const ry = baseRy * radius * growth * expansion * (1 - aspect)
-    return {
-      index, parentIndex: point.parentIndex, x: center.x, y: center.y, rx, ry,
-      angle: parameters.body.rotation / 180 * Math.PI + (blob?.curveSign ?? direction) * curl * (0.12 + irregularity * 0.12),
-      direction,
-      motion: localDrift,
-    }
-  })
-}
-
-/** Connects each smoke core to its nearest placed neighbor without a central spine. */
-function addFormationBridges(
-  primitives: BodyPrimitive[],
-  cores: readonly SmokeCoreDescriptor[],
-  emberCenter: { readonly x: number; readonly y: number },
-  radius: number,
-  growth: number,
-  drift: number,
-): void {
-  const networkStrength = 1 - smoothStep(clamp01((drift - 0.72) / 0.2))
-  const rootStrength = 1 - smoothStep(clamp01((drift - 0.5) / 0.18))
-  if (networkStrength <= 0.04 && rootStrength <= 0.04) return
-  cores.forEach((core) => {
-    const parent = core.parentIndex === undefined ? undefined : cores[core.parentIndex]
-    const anchor = parent ?? emberCenter
-    const strength = parent ? networkStrength : rootStrength
-    if (strength <= 0.04) return
-    const width = Math.max(1, Math.min(core.rx, core.ry, parent?.rx ?? radius * 0.24 * growth) * 0.58 * strength)
-    primitives.push({
-      kind: 'taperedCapsule', owner: 0, depth: 2, role: 'smokeBridge', alphaOnly: true,
-      startX: anchor.x, startY: anchor.y, endX: core.x, endY: core.y,
-      startWidth: width, endWidth: Math.max(1, width * 1.12),
-    })
-  })
-}
-
 /** Samples one analytic body primitive in center-relative pixel coordinates. */
 function sampleBodyPrimitive(primitive: BodyPrimitive, x: number, y: number): PrimitiveHit | undefined {
   if (primitive.kind === 'ellipse') {
@@ -747,7 +309,6 @@ function sampleBodyPrimitive(primitive: BodyPrimitive, x: number, y: number): Pr
       owner: primitive.owner, depth: primitive.depth, role: primitive.role,
       distance, axis: distance,
       light: clamp01(0.72 - localX * 0.2 - localY * 0.2),
-      alphaOnly: primitive.alphaOnly === true,
     }
   }
   if (primitive.kind === 'shellSector') {
@@ -763,40 +324,9 @@ function sampleBodyPrimitive(primitive: BodyPrimitive, x: number, y: number): Pr
       distance: Math.max(Math.abs(radialProgress * 2 - 1), angularDistance),
       axis: radialProgress,
       light: clamp01(0.76 - Math.sin(primitive.angle) * 0.12 - Math.cos(primitive.angle) * 0.12 - radialProgress * 0.08),
-      alphaOnly: primitive.alphaOnly === true,
     }
   }
-  if (primitive.kind === 'box') {
-    const localX = Math.abs(x - primitive.x) / Math.max(1, primitive.halfWidth)
-    const localY = Math.abs(y - primitive.y) / Math.max(1, primitive.halfHeight)
-    const distance = Math.max(localX, localY)
-    if (distance > 1) return undefined
-    return {
-      owner: primitive.owner, depth: primitive.depth, role: primitive.role,
-      distance, axis: localX,
-      light: clamp01(0.7 - localX * 0.16 - localY * 0.2),
-      alphaOnly: primitive.alphaOnly === true,
-    }
-  }
-  const segmentX = primitive.endX - primitive.startX
-  const segmentY = primitive.endY - primitive.startY
-  const segmentLengthSquared = segmentX * segmentX + segmentY * segmentY
-  const t = segmentLengthSquared <= 0
-    ? 0
-    : clamp01(((x - primitive.startX) * segmentX + (y - primitive.startY) * segmentY) / segmentLengthSquared)
-  const centerX = primitive.startX + segmentX * t
-  const centerY = primitive.startY + segmentY * t
-  const width = Math.max(1, lerp(primitive.startWidth, primitive.endWidth, t))
-  const distance = Math.hypot(x - centerX, y - centerY) / width
-  if (distance > 1) return undefined
-  const segmentLength = Math.max(1, Math.sqrt(segmentLengthSquared))
-  const signedSide = ((x - centerX) * -segmentY + (y - centerY) * segmentX) / segmentLength / width
-  return {
-    owner: primitive.owner, depth: primitive.depth, role: primitive.role,
-    distance, axis: t,
-    light: clamp01(0.72 - t * 0.08 - signedSide * 0.2),
-    alphaOnly: primitive.alphaOnly === true,
-  }
+  return undefined
 }
 
 /** Returns the foremost accepted primitive hit, allowing dissolved foreground pixels to reveal rear layers. */
@@ -831,7 +361,6 @@ function renderVolumeBody(
   const frontIds = new Int16Array(size)
   const frontDepths = new Float32Array(size)
   const baseColors = new Uint8Array(size)
-  const frontRoles = new Array<BodyPrimitiveRole | undefined>(size)
   for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
     const localX = x + 0.5 - cx
     const localY = y + 0.5 - cy
@@ -842,47 +371,24 @@ function renderVolumeBody(
       // Directional lighting avoids turning the central flash into concentric target rings.
       band = 0.16 + (1 - front.light) * 0.55
     }
-    if (front.role === 'connector') band = 0.56
-    if (front.role === 'smokeBridge') band = 0.64
-    if (front.role === 'spark') band = 0.24 + front.distance * 0.32
     if (front.role === 'shell') {
       const shellCooling = smoothStep(clamp01((lifecycle - parameters.motion.dissolveStart) / Math.max(0.05, 0.95 - parameters.motion.dissolveStart)))
       band = 0.16 + front.axis * 0.42 + (1 - front.light) * 0.16 + shellCooling * 0.72
     }
-    if (front.role === 'cinder') {
-      const cinderCooling = smoothStep(clamp01((lifecycle - 0.7) / 0.24))
-      band = 0.38 + front.distance * 0.2 + cinderCooling * 0.28
-    }
     if (profile === 'moltenCore' && front.role === 'core') band = 0.02 + front.distance * 0.16
-    if (profile === 'smokeFire' && isSmokeBodyRole(front.role)) {
-      const stableLayer = (hashUnit(parameters.seed, front.owner, 311) - 0.5) * 0.1
-      const cooling = smoothStep(clamp01((lifecycle - 0.46) / 0.48))
-      band = 0.34 + front.distance * 0.24 + (1 - front.light) * 0.15 + stableLayer + cooling * 0.08
-      if (front.role === 'smokeWisp') band += 0.07
-      if (front.role === 'smokeParticleDark') band += 0.24
-    }
-    else if (profile === 'smokeFire') {
-      const emberCooling = smoothStep(clamp01((lifecycle - 0.42) / 0.52))
-      band += 0.04 + emberCooling * 0.26
-    }
     const paletteBand = clamp01(Math.min(0.94, band))
     const rawColorIndex = paletteIndex(parameters.palette, paletteBand)
-    const smokeMayUseDeep = profile === 'smokeFire' && front.role === 'smokeParticleDark'
     const shockMayUseDeep = parameters.body.shape === 'shockBlast'
       && lifecycle >= parameters.motion.dissolveStart
-      && (front.role === 'shell' || front.role === 'cinder')
-    const colorIndex = smokeMayUseDeep || shockMayUseDeep
+      && front.role === 'shell'
+    const colorIndex = shockMayUseDeep
       ? rawColorIndex
       : Math.min(parameters.palette.length - 2, rawColorIndex)
     const offset = y * width + x
     alpha[offset] = 1
     frontIds[offset] = front.owner
     frontDepths[offset] = front.depth
-    frontRoles[offset] = front.role
     baseColors[offset] = colorIndex
-  }
-  if (parameters.body.shape === 'smokeBurst' && (parameters.body.smokeMotion === 'billowing' || lifecycle < 0.58)) {
-    fillEnclosedSmokePixels(alpha, frontIds, frontDepths, frontRoles, baseColors, width, height, paletteIndex(parameters.palette, 0.64))
   }
   const deepest = parameters.palette.length - 1
   const internalDark = Math.max(0, parameters.palette.length - 2)
@@ -890,78 +396,28 @@ function renderVolumeBody(
     const offset = y * width + x
     if (alpha[offset] === 0) continue
     let edge = false
-    let shadowEdge = false
     let frontBoundary = false
     for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
       if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
         edge = true
-        if (nx > x || ny > y) shadowEdge = true
         continue
       }
       const neighbor = ny * width + nx
       if (alpha[neighbor] === 0) {
         edge = true
-        if (nx > x || ny > y) shadowEdge = true
       }
       else if (
         frontIds[offset] > 0
         && frontIds[neighbor] > 0
         && frontIds[neighbor] !== frontIds[offset]
         && frontDepths[offset] > frontDepths[neighbor]
-        && !(isSmokeBodyRole(frontRoles[offset]) && isSmokeBodyRole(frontRoles[neighbor]))
       ) frontBoundary = true
     }
     let colorIndex = baseColors[offset]
-    if (edge) {
-      const smokeEdge = parameters.body.shape === 'smokeBurst' && profile === 'smokeFire'
-      colorIndex = smokeEdge && frontRoles[offset] !== 'smokeParticleDark' && !shadowEdge
-        ? internalDark
-        : deepest
-    }
+    if (edge) colorIndex = deepest
     else if (frontBoundary) colorIndex = internalDark
     writePixel(pixels, width, height, x, y, parameters.palette[colorIndex])
   }
-}
-
-/** Fills early smoke-only cavities without reconnecting late detached wisps. */
-function fillEnclosedSmokePixels(
-  alpha: Uint8Array,
-  frontIds: Int16Array,
-  frontDepths: Float32Array,
-  frontRoles: Array<BodyPrimitiveRole | undefined>,
-  baseColors: Uint8Array,
-  width: number,
-  height: number,
-  fillColor: number,
-): void {
-  const outside = new Uint8Array(width * height)
-  const queue: number[] = []
-  for (let x = 0; x < width; x += 1) queue.push(x, (height - 1) * width + x)
-  for (let y = 1; y < height - 1; y += 1) queue.push(y * width, y * width + width - 1)
-  while (queue.length > 0) {
-    const offset = queue.pop()!
-    if (outside[offset] || alpha[offset] !== 0) continue
-    outside[offset] = 1
-    const x = offset % width
-    const y = Math.floor(offset / width)
-    if (x > 0) queue.push(offset - 1)
-    if (x + 1 < width) queue.push(offset + 1)
-    if (y > 0) queue.push(offset - width)
-    if (y + 1 < height) queue.push(offset + width)
-  }
-  for (let offset = 0; offset < alpha.length; offset += 1) {
-    if (alpha[offset] !== 0 || outside[offset]) continue
-    alpha[offset] = 1
-    frontIds[offset] = 0
-    frontDepths[offset] = 2
-    frontRoles[offset] = 'smokeBridge'
-    baseColors[offset] = fillColor
-  }
-}
-
-/** Groups smoke cores, buds, wisps, and particles under one shading boundary language. */
-function isSmokeBodyRole(role: BodyPrimitiveRole | undefined): boolean {
-  return role === 'smoke' || role === 'smokeWisp' || role === 'smokeParticle' || role === 'smokeParticleDark'
 }
 
 /** Selects a palette band or removes a pixel according to the active surface. */

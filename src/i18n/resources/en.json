@@ -513,7 +513,7 @@
       },
       "material": {
         "label": "Material",
-        "description": "Choose the surface, coverage, volume profile, and surface texture."
+        "description": "Adjust the selected shape's surface, internal structure, or smoke cooling."
       },
       "effects": {
         "label": "Effects",
@@ -541,7 +541,6 @@
         "label": "Internal structure",
         "description": "Choose how heat, shell, and foreground fire are layered inside the body."
       },
-      "fixedVolumeProfile": "Internal structure: Smoke and fire (fixed by Smoke Burst).",
       "flatCompatibility": "This preset uses the legacy flat renderer. Its surface controls remain available below.",
       "convertToVolume": "Convert to volume rendering",
       "impulse": {
@@ -615,7 +614,11 @@
       },
       "smokeCount": {
         "label": "Smoke puff count",
-        "description": "Number of main puffs packed into one connected, billowing smoke cluster."
+        "description": "Number of main puffs in the rising smoke cloud."
+      },
+      "smokeDarkness": {
+        "label": "Dark smoke proportion",
+        "description": "How quickly the cloud cools from ember orange to gray-purple and charcoal."
       },
       "smokeMotion": {
         "label": "Smoke motion",

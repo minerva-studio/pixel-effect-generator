@@ -116,7 +116,7 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
             { value: 'explosion', label: familyT('explosion.options.explosion') },
             { value: 'implosion', label: familyT('explosion.options.implosion') },
           ]} onChange={(mode) => updateMotion({ mode })} />
-          {isFieldExplosionShape(parameters.body.shape) ? <p className="material-mode-note">{familyT('explosion.controls.fieldMotionNote')}</p> : <>
+          {isFieldExplosionShape(parameters.body.shape) || parameters.body.shape === 'smokeBurst' ? <p className="material-mode-note">{familyT('explosion.controls.fieldMotionNote')}</p> : <>
           <SelectControl label={familyT('explosion.controls.motionCurve.label')} description={familyT('explosion.controls.motionCurve.description')} value={parameters.motion.motionCurve} options={[
             { value: 'crisp', label: familyT('explosion.options.crisp') },
             { value: 'balanced', label: familyT('explosion.options.balanced') },
@@ -129,6 +129,23 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
         </div>
       )
     case 'material': {
+      if (parameters.body.shape === 'smokeBurst') {
+        return <div className="control-list">
+          <PercentControl
+            label={familyT('explosion.controls.smokeDarkness.label')}
+            description={familyT('explosion.controls.smokeDarkness.description')}
+            value={parameters.surface.style === 'rollingSoot' ? parameters.surface.sootAmount : 0.38}
+            minimum={0}
+            maximum={0.65}
+            onChange={(sootAmount) => onChange({
+              ...parameters,
+              surface: parameters.surface.style === 'rollingSoot'
+                ? { ...parameters.surface, sootAmount }
+                : { style: 'rollingSoot', coverage: parameters.surface.coverage, sootAmount, sootScale: 11 },
+            })}
+          />
+        </div>
+      }
       if (isFieldExplosionShape(parameters.body.shape)) {
         return (
           <div className="control-list">
@@ -142,14 +159,10 @@ export function ExplosionControls({ category, parameters, onChange }: ExplosionC
       if (modernShape && parameters.volume.enabled) {
         return (
           <div className="control-list">
-            {profiles.length > 1 ? (
-              <SelectControl label={familyT('explosion.controls.volumeProfile.label')} description={familyT('explosion.controls.volumeProfile.description')} value={parameters.volume.profile} options={profiles.map((profile) => ({
-                value: profile,
-                label: familyT(`explosion.options.${profile}`),
-              }))} onChange={(profile) => onChange({ ...parameters, volume: normalizeExplosionVolume(parameters.body.shape, { ...parameters.volume, profile }) })} />
-            ) : (
-              <p className="material-mode-note">{familyT('explosion.controls.fixedVolumeProfile')}</p>
-            )}
+            <SelectControl label={familyT('explosion.controls.volumeProfile.label')} description={familyT('explosion.controls.volumeProfile.description')} value={parameters.volume.profile} options={profiles.map((profile) => ({
+              value: profile,
+              label: familyT(`explosion.options.${profile}`),
+            }))} onChange={(profile) => onChange({ ...parameters, volume: normalizeExplosionVolume(parameters.body.shape, { ...parameters.volume, profile }) })} />
           </div>
         )
       }
