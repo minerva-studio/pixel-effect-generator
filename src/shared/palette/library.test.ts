@@ -17,10 +17,13 @@ describe('shared color library', () => {
     expect(hex(PALETTE_COLORS.irisBloom)).toEqual(['#F9F4F8', '#BFD3E6', '#9B83C8', '#473D68'])
     expect(hex(PALETTE_COLORS.smokeEmber)).toEqual(['#FFE8A4', '#EE843E', '#A6776F', '#746070', '#483E52', '#2A2934'])
     expect(hex(PALETTE_COLORS.aetherCyan)).toEqual(['#F4FAF9', '#B3D8E1', '#6BAFC3', '#365A78'])
+    expect(hex(PALETTE_COLORS.aethiumMist)).toEqual(['#EDCC69', '#D49BC1', '#CD91EE', '#5056A8', '#252A4D'])
     expect(hex(PALETTE_COLORS.orchidCrystal)).toEqual(['#FBF4FA', '#D5B8E3', '#A47BC8', '#514069'])
     expect(hex(PALETTE_COLORS.duskSteel)).toEqual(['#ECE9E4', '#A9A4AC', '#55505C'])
     expect(hex(PALETTE_COLORS.runedSteel)).toEqual(['#F0E8E8', '#B5A3BA', '#5F536C'])
     expect(hex(PALETTE_COLORS.retroBurst)).toEqual(['#FFFAE0', '#FFC948', '#F25F2C', '#692A34'])
+    expect(isPaletteCompatible(PALETTE_COLORS.aethiumMist, 3, 6, true)).toBe(true)
+    expect(isPaletteCompatible(PALETTE_COLORS.aethiumMist, 2, 4, false)).toBe(false)
     expect(Object.values(PALETTE_COLORS).flat().every((color) => color.a === 255)).toBe(true)
   })
 

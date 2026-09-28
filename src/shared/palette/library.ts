@@ -8,6 +8,7 @@ export const PALETTE_COLORS = {
   irisBloom: colors('#F9F4F8', '#BFD3E6', '#9B83C8', '#473D68'),
   smokeEmber: colors('#FFE8A4', '#EE843E', '#A6776F', '#746070', '#483E52', '#2A2934'),
   aetherCyan: colors('#F4FAF9', '#B3D8E1', '#6BAFC3', '#365A78'),
+  aethiumMist: colors('#EDCC69', '#D49BC1', '#CD91EE', '#5056A8', '#252A4D'),
   orchidCrystal: colors('#FBF4FA', '#D5B8E3', '#A47BC8', '#514069'),
   duskSteel: colors('#ECE9E4', '#A9A4AC', '#55505C'),
   runedSteel: colors('#F0E8E8', '#B5A3BA', '#5F536C'),
